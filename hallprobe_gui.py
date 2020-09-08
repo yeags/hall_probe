@@ -64,19 +64,32 @@ class ZeissControls(ttk.LabelFrame):
 class DaqControls(ttk.LabelFrame):
     def __init__(self, parent, title='DAQ Controls'):
         super().__init__(parent, text=title, labelanchor='n')
+        self.therm_channels = []
+        self.therm_chan_var = []
+        self.volt_channels = []
+        self.volt_chan_var = []
         self.create_widgets()
 
     def create_widgets(self):
         self.lbl_therm_channel = tk.Label(self, text='Thermocouple Channels')
         self.lbl_therm_channel.grid(column=0, row=0)
-        self.therm_channels = []
-        self.therm_chan_var = []
+        
         for i in range(8):
             var = tk.IntVar(value=0)
             chk_therm_channel = ttk.Checkbutton(self, text=f'Channel {i}', variable=var)
             chk_therm_channel.grid(column=0, row=1+i, sticky='w')
             self.therm_channels.append(chk_therm_channel)
             self.therm_chan_var.append(var)
+        
+        self.lbl_volt_channel = tk.Label(self, text='Voltage Channels')
+        self.lbl_volt_channel.grid(column=1, row=0, padx=10)
+
+        for j in range(4):
+            var = tk.IntVar(value=0)
+            chk_volt_channel = ttk.Checkbutton(self, text=f'Channel {j}', variable=var)
+            chk_volt_channel.grid(column=1, row=1+j, sticky='w', padx=10)
+            self.volt_channels.append(chk_volt_channel)
+            self.volt_chan_var.append(var)
 
         
 
