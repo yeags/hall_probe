@@ -15,10 +15,10 @@ class HallProbeApp(tk.Frame):
     def create_frames(self):
         self.zeiss_frame = ZeissControls(self)
         self.zeiss_frame.grid(column=0, row=0, sticky='w')
-        self.hallprobe_frame = HallProbe(self)
-        self.hallprobe_frame.grid(column=0, row=1, sticky='w')
+        self.daq_frame = DaqControls(self)
+        self.daq_frame.grid(column=0, row=1, sticky='w')
 
-class ZeissControls(tk.LabelFrame):
+class ZeissControls(ttk.LabelFrame):
     def __init__(self, parent, title='Zeiss CMM Controls', labelanchor='n'):
         super().__init__(parent, text=title, labelanchor='n')
         self.create_widgets()
@@ -61,14 +61,24 @@ class ZeissControls(tk.LabelFrame):
             self.lbl_conn_status['text'] = 'Already Disconnected'
 
 
-class HallProbe(tk.LabelFrame):
-    def __init__(self, parent, title='Hall Probe Controls'):
+class DaqControls(ttk.LabelFrame):
+    def __init__(self, parent, title='DAQ Controls'):
         super().__init__(parent, text=title, labelanchor='n')
         self.create_widgets()
 
     def create_widgets(self):
-        self.lbl_channel = tk.Label(self, text='Channel')
-        self.lbl_channel.grid(column=0, row=0)
+        self.lbl_therm_channel = tk.Label(self, text='Thermocouple Channels')
+        self.lbl_therm_channel.grid(column=0, row=0)
+        self.therm_channels = []
+        self.therm_chan_var = []
+        for i in range(8):
+            var = tk.IntVar(value=0)
+            chk_therm_channel = ttk.Checkbutton(self, text=f'Channel {i}', variable=var)
+            chk_therm_channel.grid(column=0, row=1+i, sticky='w')
+            self.therm_channels.append(chk_therm_channel)
+            self.therm_chan_var.append(var)
+
+        
 
 
 if __name__ == '__main__':
