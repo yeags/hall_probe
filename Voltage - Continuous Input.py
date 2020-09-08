@@ -11,7 +11,8 @@ from matplotlib.figure import Figure
 class voltageContinuousInput(tk.Frame):
 
     def __init__(self, master):
-        tk.Frame.__init__(self, master)
+        # tk.Frame.__init__(self, master)
+        super().__init__(master)
 
         #Configure root tk class
         self.master = master
@@ -84,7 +85,8 @@ class voltageContinuousInput(tk.Frame):
 class channelSettings(tk.LabelFrame):
 
     def __init__(self, parent, title):
-        tk.LabelFrame.__init__(self, parent, text=title, labelanchor='n')
+        # tk.LabelFrame.__init__(self, parent, text=title, labelanchor='n')
+        super().__init__(parent, text=title, labelanchor='n')
         self.parent = parent
         self.grid_columnconfigure(0, weight=1)
         self.xPadding = (30,30)
@@ -96,7 +98,7 @@ class channelSettings(tk.LabelFrame):
         self.physicalChannelLabel.grid(row=0,sticky='w', padx=self.xPadding, pady=(10,0))
 
         self.physicalChannelEntry = ttk.Entry(self)
-        self.physicalChannelEntry.insert(0, "Dev1/ai0")
+        self.physicalChannelEntry.insert(0, "FieldSensor/ai1")
         self.physicalChannelEntry.grid(row=1, sticky="ew", padx=self.xPadding)
 
         self.maxVoltageLabel = ttk.Label(self, text="Max Voltage")
@@ -116,7 +118,8 @@ class channelSettings(tk.LabelFrame):
 class inputSettings(tk.LabelFrame):
 
     def __init__(self, parent, title):
-        tk.LabelFrame.__init__(self, parent, text=title, labelanchor='n')
+        # tk.LabelFrame.__init__(self, parent, text=title, labelanchor='n')
+        super().__init__(parent, text=title, labelanchor='n')
         self.parent = parent
         self.xPadding = (30,30)
         self.create_widgets()
@@ -145,7 +148,8 @@ class inputSettings(tk.LabelFrame):
 class graphData(tk.Frame):
 
     def __init__(self, parent):
-        tk.Frame.__init__(self, parent)
+        # tk.Frame.__init__(self, parent)
+        super().__init__(parent)
         self.create_widgets()
 
     def create_widgets(self):
@@ -160,8 +164,8 @@ class graphData(tk.Frame):
 
 if __name__ == '__main__':
     #Creates the tk class and primary application "voltageContinuousInput"
-    root = tk.Tk()
-    app = voltageContinuousInput(root)
+    # root = tk.Tk()
+    app = voltageContinuousInput(tk.Tk())
 
     #start the application
     app.mainloop()
