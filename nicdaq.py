@@ -13,7 +13,24 @@ class DAQ(ni.task.Task):
     
     def __repr__(self):
         return 'NI cDAQ Task'
-    
+
+class Constants:
+    @staticmethod
+    def therm_types():
+        return {'B': ni.constants.ThermocoupleType.B, 'E': ni.constants.ThermocoupleType.E,
+                'J': ni.constants.ThermocoupleType.J, 'K': ni.constants.ThermocoupleType.K,
+                'N': ni.constants.ThermocoupleType.N, 'R': ni.constants.ThermocoupleType.R,
+                'S': ni.constants.ThermocoupleType.S, 'T': ni.constants.ThermocoupleType.T}
+    @staticmethod
+    def temp_units():
+        return {'C': ni.constants.TemperatureUnits.DEG_C,
+                'F': ni.constants.TemperatureUnits.DEG_F,
+                'K': ni.constants.TemperatureUnits.K}
+    @staticmethod
+    def voltage_units():
+        return {'V': ni.constants.VoltageUnits.VOLTS,
+                'mT': ni.constants.VoltageUnits.FROM_CUSTOM_SCALE}
+
 if __name__ == '__main__':
     print('Creating DAQmx Object...')
     cdaq = DAQ()

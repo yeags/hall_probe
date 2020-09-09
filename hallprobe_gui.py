@@ -1,7 +1,12 @@
 import tkinter as tk
 from tkinter import ttk
 from zeisscmm import CMM
-from nicdaq import DAQ
+from nicdaq import DAQ, Constants
+
+import matplotlib
+matplotlib.use("TkAgg")
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
 
 class HallProbeApp(tk.Frame):
     def __init__(self, master):
@@ -17,6 +22,8 @@ class HallProbeApp(tk.Frame):
         self.zeiss_frame.grid(column=0, row=0, sticky='w')
         self.daq_frame = DaqControls(self)
         self.daq_frame.grid(column=0, row=1, sticky='w')
+        self.plot_data_frame = PlotData(self)
+        self.plot_data_frame.grid(column=1, row=0, sticky='e')
 
 class ZeissControls(ttk.LabelFrame):
     def __init__(self, parent, title='Zeiss CMM Controls', labelanchor='n'):
@@ -68,13 +75,14 @@ class DaqControls(ttk.LabelFrame):
         self.therm_chan_var = []
         self.volt_channels = []
         self.volt_chan_var = []
+        self.therm_types = Constants.therm_types()
         self.create_widgets()
 
     def create_widgets(self):
         self.lbl_therm_channel = tk.Label(self, text='Thermocouple Channels')
         self.lbl_therm_channel.grid(column=0, row=0)
         
-        for i in range(8):
+        for i in range(8): # Create Thermocouple channel check buttons
             var = tk.IntVar(value=0)
             chk_therm_channel = ttk.Checkbutton(self, text=f'Channel {i}', variable=var)
             chk_therm_channel.grid(column=0, row=1+i, sticky='w')
@@ -84,14 +92,26 @@ class DaqControls(ttk.LabelFrame):
         self.lbl_volt_channel = tk.Label(self, text='Voltage Channels')
         self.lbl_volt_channel.grid(column=1, row=0, padx=10)
 
-        for j in range(4):
+        for j in range(4): # Create Voltage channel check buttons
             var = tk.IntVar(value=0)
             chk_volt_channel = ttk.Checkbutton(self, text=f'Channel {j}', variable=var)
             chk_volt_channel.grid(column=1, row=1+j, sticky='w', padx=10)
             self.volt_channels.append(chk_volt_channel)
             self.volt_chan_var.append(var)
-
         
+class PlotData(tk.Frame):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.create_widgets()
+    
+    def create_widgets(self):
+        # self.graphTitle = ttk.Label(self, text='')
+        self.fig = Figure(figsize=(7,5))
+        self.ax = self.fig.add_subplot(111)
+        self.ax.set_title('Vector Field Map')
+        self.graph = FigureCanvasTkAgg(self.fig, self)
+        self.graph.draw()
+        self.graph.get_tk_widget().pack()
 
 
 if __name__ == '__main__':
