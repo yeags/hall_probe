@@ -13,6 +13,7 @@ class HallProbeApp(tk.Frame):
         super().__init__(master)
         self.master = master
         self.master.title('Hall Probe Integration App')
+        self.master.iconbitmap(r'G:\My Drive\Python\hall_probe\magnet.ico')
         self.master.geometry('1200x850')
         self.create_frames()
         self.pack(side='left', padx=30, fill='both')
