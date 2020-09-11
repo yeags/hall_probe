@@ -85,7 +85,7 @@ class DaqControls(ttk.LabelFrame):
 class ThermocoupleControls(ttk.LabelFrame):
     def __init__(self, parent, title='Thermocouple Controls'):
         super().__init__(parent, text=title, labelanchor='n')
-        self.therm_channels = []
+        # self.therm_channels = []
         self.therm_chan_var = []
         self.radio_value_temp_units = tk.StringVar()
         self.therm_types = Constants.therm_types()
@@ -97,7 +97,7 @@ class ThermocoupleControls(ttk.LabelFrame):
             var = tk.IntVar(value=0)
             chk_therm_channel = ttk.Checkbutton(self, text=f'Channel {i}', variable=var)
             chk_therm_channel.grid(column=0, row=1+i, sticky='w')
-            self.therm_channels.append(chk_therm_channel)
+            # self.therm_channels.append(chk_therm_channel)
             self.therm_chan_var.append(var)
         self.therm_chan_var[0].set(1)
         self.therm_chan_var[1].set(1)
@@ -125,7 +125,7 @@ class ThermocoupleControls(ttk.LabelFrame):
 class VoltageControls(ttk.LabelFrame):
     def __init__(self, parent, title='Voltage Controls'):
         super().__init__(parent, text=title, labelanchor='n')
-        self.volt_channels = []
+        # self.volt_channels = []
         self.volt_chan_var = []
         self.create_frame()
 
@@ -133,11 +133,27 @@ class VoltageControls(ttk.LabelFrame):
         for j in range(4): # Create Voltage channel check buttons
             var = tk.IntVar(value=0)
             chk_volt_channel = ttk.Checkbutton(self, text=f'Channel {j}', variable=var)
-            chk_volt_channel.grid(column=1, row=1+j, sticky='w', padx=10)
-            self.volt_channels.append(chk_volt_channel)
+            chk_volt_channel.grid(column=0, row=1+j, columnspan=2, sticky='w', padx=10)
+            # self.volt_channels.append(chk_volt_channel)
             self.volt_chan_var.append(var)
         for i in range(3):
             self.volt_chan_var[i].set(1)
+        self.lbl_volt_min = tk.Label(self, text='V Min')
+        self.lbl_volt_max = tk.Label(self, text='V Max')
+        self.ent_volt_min = ttk.Entry(self, width=5)
+        self.ent_volt_max = ttk.Entry(self, width=5)
+        self.ent_volt_min.insert(0, '-5.0')
+        self.ent_volt_max.insert(0, '5.0')
+        self.lbl_volt_min.grid(column=0, row = 5)
+        self.lbl_volt_max.grid(column=1, row = 5)
+        self.ent_volt_min.grid(column=0, row=6)
+        self.ent_volt_max.grid(column=1, row=6)
+        self.lbl_volt_units = tk.Label(self, text='Units')
+        self.lbl_volt_units.grid(column=0, row=7, columnspan=2)
+        self.cbox_volt_units = ttk.Combobox(self, values=['V', 'mT'])
+        self.cbox_volt_units['state'] = 'readonly'
+        self.cbox_volt_units.current(0)
+        self.cbox_volt_units.grid(column=0, row=8, columnspan=2)
         
 
 class PlotData(tk.Frame):
