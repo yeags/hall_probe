@@ -2,10 +2,12 @@ import tkinter as tk
 from tkinter import ttk
 from zeisscmm import CMM
 from nicdaq import DAQ, Constants
+import numpy as np
 
 import matplotlib
 matplotlib.use("TkAgg")
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
 
 class HallProbeApp(tk.Frame):
@@ -20,13 +22,13 @@ class HallProbeApp(tk.Frame):
     
     def create_frames(self):
         self.zeiss_frame = ZeissControls(self)
-        self.zeiss_frame.grid(column=0, row=0, rowspan=2, sticky='n')
+        self.zeiss_frame.grid(column=0, row=0, sticky='n')
         self.daq_frame = DaqControls(self)
-        self.daq_frame.grid(column=0, row=1, rowspan=2, sticky='n')
+        self.daq_frame.grid(column=0, row=1, sticky='n')
         self.plot_data_frame = PlotData(self)
-        self.plot_data_frame.grid(column=1, row=0, sticky='e')
+        self.plot_data_frame.grid(column=1, row=0, sticky='n')
         self.plot_temperature_frame = PlotTemperature(self)
-        self.plot_temperature_frame.grid(column=1, row=1)
+        self.plot_temperature_frame.grid(column=1, row=1, sticky='s')
 
 class ZeissControls(ttk.LabelFrame):
     def __init__(self, parent, title='Zeiss CMM Controls', labelanchor='n'):
@@ -164,12 +166,16 @@ class PlotData(tk.Frame):
     def create_widgets(self):
         # self.graphTitle = ttk.Label(self, text='')
         self.fig = Figure(figsize=(8,4))
-        self.ax = self.fig.add_subplot(111)
+        self.ax = self.fig.add_subplot(111, projection='3d')
         self.ax.set_title('Vector Field Map')
-        self.graph = FigureCanvasTkAgg(self.fig, self)
+        t = np.arange(0, 3, .01)
+        self.ax.plot(t, 2 * np.sin(2 * np.pi * t))
+        self.graph = FigureCanvasTkAgg(self.fig, master=self)
         self.graph.draw()
-        self.graph.get_tk_widget().grid(padx=30, pady=10)
-        # self.graph.get_tk_widget().pack()
+        self.toolbar = NavigationToolbar2Tk(self.graph, self)
+        self.toolbar.update()
+        # self.graph.get_tk_widget().grid(padx=30, pady=10, sticky='n')
+        self.graph.get_tk_widget().pack()
 
 class PlotTemperature(tk.Frame):
     def __init__(self, parent):
@@ -183,7 +189,7 @@ class PlotTemperature(tk.Frame):
         self.ax.set_title('Magnet Temperature')
         self.graph = FigureCanvasTkAgg(self.fig, self)
         self.graph.draw()
-        self.graph.get_tk_widget().grid(padx=30, pady=10)
+        self.graph.get_tk_widget().grid(padx=30, pady=10, sticky='s')
         # self.graph.get_tk_widget().pack()
 
 if __name__ == '__main__':
