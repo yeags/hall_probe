@@ -16,9 +16,9 @@ class HallProbeApp(tk.Frame):
         self.master = master
         self.master.title('Hall Probe Integration App')
         self.master.iconbitmap(r'G:\My Drive\Python\hall_probe\magnet.ico')
-        self.master.geometry('1200x850')
+        self.master.geometry('1200x900')
         self.create_frames()
-        self.pack(side='left', padx=30, fill='both')
+        self.pack(side='left', padx=10, pady=10, fill='both')
     
     def create_frames(self):
         self.zeiss_frame = ZeissControls(self)
@@ -164,7 +164,6 @@ class PlotData(tk.Frame):
         self.create_widgets()
     
     def create_widgets(self):
-        # self.graphTitle = ttk.Label(self, text='')
         self.fig = Figure(figsize=(8,4))
         self.ax = self.fig.add_subplot(111, projection='3d')
         self.ax.set_title('Vector Field Map')
@@ -183,14 +182,15 @@ class PlotTemperature(tk.Frame):
         self.create_widgets()
     
     def create_widgets(self):
-        # self.graphTitle = ttk.Label(self, text='')
         self.fig = Figure(figsize=(8,4))
         self.ax = self.fig.add_subplot(111)
         self.ax.set_title('Magnet Temperature')
         self.graph = FigureCanvasTkAgg(self.fig, self)
         self.graph.draw()
-        self.graph.get_tk_widget().grid(padx=30, pady=10, sticky='s')
-        # self.graph.get_tk_widget().pack()
+        self.toolbar = NavigationToolbar2Tk(self.graph, self)
+        self.toolbar.update()
+        # self.graph.get_tk_widget().grid(padx=30, pady=10, sticky='s')
+        self.graph.get_tk_widget().pack()
 
 if __name__ == '__main__':
     app = HallProbeApp(tk.Tk())
