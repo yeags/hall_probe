@@ -18,40 +18,40 @@ class HallProbeApp(tk.Frame):
         self.master.iconbitmap(r'G:\My Drive\Python\hall_probe\magnet.ico')
         self.master.geometry('1200x900')
         self.create_frames()
-        self.pack(side='left', padx=10, pady=10, fill='both')
+        # self.grid(column=0, row=0)
     
     def create_frames(self):
         self.zeiss_frame = ZeissControls(self)
-        self.zeiss_frame.grid(column=0, row=0, sticky='n')
-        self.daq_frame = DaqControls(self)
-        self.daq_frame.grid(column=0, row=1, sticky='n')
+        # self.daq_frame = DaqControls(self)
         self.plot_data_frame = PlotData(self)
-        self.plot_data_frame.grid(column=1, row=0, sticky='n')
-        self.plot_temperature_frame = PlotTemperature(self)
-        self.plot_temperature_frame.grid(column=1, row=1, sticky='s')
+        # self.plot_temperature_frame = PlotTemperature(self)
+        self.zeiss_frame.grid(column=0, row=0, sticky='n')
+        # self.daq_frame.grid(column=0, row=1, sticky='n')
+        # self.plot_data_frame.grid(column=1, row=0, sticky='n')
+        # self.plot_temperature_frame.grid(column=1, row=1, sticky='s')
 
 class ZeissControls(ttk.LabelFrame):
     def __init__(self, parent, title='Zeiss CMM Controls', labelanchor='n'):
         super().__init__(parent, text=title, labelanchor='n')
-        self.grid(pady=30)
-        self.create_widgets() 
+        # self.grid(pady=30)
+        self.create_widgets()
     
     def create_widgets(self):
         self.lbl_ip = tk.Label(self, text='IP Address')
-        self.lbl_ip.grid(column=0, row=0, sticky='e')
         self.ent_ip = tk.Entry(self)
         self.ent_ip.insert(0, '192.4.1.200')
-        self.ent_ip.grid(column=1, row=0)
         self.lbl_port = tk.Label(self, text='Port')
-        self.lbl_port.grid(column=0, row=1, sticky='e')
         self.ent_port = tk.Entry(self)
         self.ent_port.insert(0, '4712')
-        self.ent_port.grid(column=1, row=1)
         self.btn_connect = tk.Button(self, text='Connect', command=self.connect_cmm)
-        self.btn_connect.grid(column=0, row=2)
         self.btn_disconnect = tk.Button(self, text='Disconnect', command=self.disconnect_cmm)
-        self.btn_disconnect.grid(column=1, row=2)
         self.lbl_conn_status = tk.Label(self, text='*Connection Status*')
+        self.lbl_ip.grid(column=0, row=0, sticky='e')
+        self.ent_ip.grid(column=1, row=0)
+        self.lbl_port.grid(column=0, row=1, sticky='e')
+        self.ent_port.grid(column=1, row=1)
+        self.btn_connect.grid(column=0, row=2)
+        self.btn_disconnect.grid(column=1, row=2)
         self.lbl_conn_status.grid(column=0, row=3, columnspan=2)
 
     def connect_cmm(self):
@@ -161,6 +161,7 @@ class VoltageControls(ttk.LabelFrame):
 class PlotData(tk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
+        self.parent = parent
         self.create_widgets()
     
     def create_widgets(self):
@@ -169,28 +170,34 @@ class PlotData(tk.Frame):
         self.ax.set_title('Vector Field Map')
         t = np.arange(0, 3, .01)
         self.ax.plot(t, 2 * np.sin(2 * np.pi * t))
-        self.graph = FigureCanvasTkAgg(self.fig, master=self)
+        self.graph = FigureCanvasTkAgg(self.fig, master=self.parent)
         self.graph.draw()
-        self.toolbar = NavigationToolbar2Tk(self.graph, self)
+        self.toolbar = NavigationToolbar2Tk(self.graph, self.parent)
         self.toolbar.update()
         # self.graph.get_tk_widget().grid(padx=30, pady=10, sticky='n')
-        self.graph.get_tk_widget().pack()
+        self.graph.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
 class PlotTemperature(tk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
+        self.parent = parent
         self.create_widgets()
     
     def create_widgets(self):
         self.fig = Figure(figsize=(8,4))
         self.ax = self.fig.add_subplot(111)
         self.ax.set_title('Magnet Temperature')
-        self.graph = FigureCanvasTkAgg(self.fig, self)
+        self.graph = FigureCanvasTkAgg(self.fig, self.parent)
         self.graph.draw()
-        self.toolbar = NavigationToolbar2Tk(self.graph, self)
+        self.toolbar = NavigationToolbar2Tk(self.graph, self.parent)
         self.toolbar.update()
         # self.graph.get_tk_widget().grid(padx=30, pady=10, sticky='s')
         self.graph.get_tk_widget().pack()
+
+class FieldFrame(tk.Frame):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.plot = PlotData(self)
 
 if __name__ == '__main__':
     app = HallProbeApp(tk.Tk())
