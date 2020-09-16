@@ -18,17 +18,17 @@ class HallProbeApp(tk.Frame):
         self.master.iconbitmap(r'G:\My Drive\Python\hall_probe\magnet.ico')
         self.master.geometry('1200x900')
         self.create_frames()
-        # self.grid(column=0, row=0)
     
     def create_frames(self):
         self.zeiss_frame = ZeissControls(self)
-        # self.daq_frame = DaqControls(self)
-        self.plot_data_frame = PlotData(self)
-        # self.plot_temperature_frame = PlotTemperature(self)
-        self.zeiss_frame.grid(column=0, row=0, sticky='n')
-        # self.daq_frame.grid(column=0, row=1, sticky='n')
-        # self.plot_data_frame.grid(column=1, row=0, sticky='n')
-        # self.plot_temperature_frame.grid(column=1, row=1, sticky='s')
+        self.daq_frame = DaqControls(self)
+        self.field_frame = FieldFrame(self)
+        self.temp_frame = TemperatureFrame(self)
+        self.pack()
+        self.zeiss_frame.grid(column=0, row=0)
+        self.daq_frame.grid(column=0, row=1)
+        self.field_frame.grid(column=1, row=0, pady=10)
+        self.temp_frame.grid(column=1, row=1)
 
 class ZeissControls(ttk.LabelFrame):
     def __init__(self, parent, title='Zeiss CMM Controls', labelanchor='n'):
@@ -158,24 +158,27 @@ class VoltageControls(ttk.LabelFrame):
         self.cbox_volt_units.grid(column=0, row=8, columnspan=2)
         
 
-class PlotData(tk.Frame):
+class PlotField(tk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
         self.parent = parent
-        self.create_widgets()
-    
-    def create_widgets(self):
+        self.create_plot()
+
+    def create_plot(self):
+        t = np.arange(0, 3, 0.01)
         self.fig = Figure(figsize=(8,4))
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self.parent)
+        self.canvas.draw()
         self.ax = self.fig.add_subplot(111, projection='3d')
         self.ax.set_title('Vector Field Map')
-        t = np.arange(0, 3, .01)
-        self.ax.plot(t, 2 * np.sin(2 * np.pi * t))
-        self.graph = FigureCanvasTkAgg(self.fig, master=self.parent)
-        self.graph.draw()
-        self.toolbar = NavigationToolbar2Tk(self.graph, self.parent)
+        self.ax.set_xlabel('x axis [mm]')
+        self.ax.set_ylabel('y axis [mm]')
+        self.ax.set_zlabel('z axis [mm]')
+        self.ax.plot(t, 2*np.sin(2*np.pi*t))
+        self.toolbar = NavigationToolbar2Tk(self.canvas, self.parent)
         self.toolbar.update()
-        # self.graph.get_tk_widget().grid(padx=30, pady=10, sticky='n')
-        self.graph.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        self.canvas.get_tk_widget().pack(side=tk.TOP,
+                                         fill=tk.BOTH, expand=1)
 
 class PlotTemperature(tk.Frame):
     def __init__(self, parent):
@@ -187,17 +190,23 @@ class PlotTemperature(tk.Frame):
         self.fig = Figure(figsize=(8,4))
         self.ax = self.fig.add_subplot(111)
         self.ax.set_title('Magnet Temperature')
+        self.ax.set_xlabel('Time [min]')
+        self.ax.set_ylabel('Temperature [C]')
         self.graph = FigureCanvasTkAgg(self.fig, self.parent)
         self.graph.draw()
         self.toolbar = NavigationToolbar2Tk(self.graph, self.parent)
         self.toolbar.update()
-        # self.graph.get_tk_widget().grid(padx=30, pady=10, sticky='s')
         self.graph.get_tk_widget().pack()
 
 class FieldFrame(tk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
-        self.plot = PlotData(self)
+        self.field_plot = PlotField(self)
+
+class TemperatureFrame(tk.Frame):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.temp_plot = PlotTemperature(self)
 
 if __name__ == '__main__':
     app = HallProbeApp(tk.Tk())
