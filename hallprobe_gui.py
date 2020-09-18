@@ -20,44 +20,56 @@ class HallProbeApp(tk.Frame):
         self.create_frames()
     
     def create_frames(self):
-        self.zeiss_frame = ZeissControls(self)
-        self.daq_frame = DaqControls(self)
-        self.field_frame = FieldFrame(self)
-        self.temp_frame = TemperatureFrame(self)
+        self.controls = ControlsFrame(self)
+        self.visuals = VisualsFrame(self)
         self.pack()
+        self.controls.grid(column=0, row=0)
+        self.visuals.grid(column=1, row=0)
+
+class ControlsFrame(tk.Frame):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.create_frames()
+    
+    def create_frames(self):
+        self.zeiss_frame = ZeissControls(self)
+        self.calibration_frame = CalibrationTools(self)
+        self.daq_frame = DaqControls(self)
         self.zeiss_frame.grid(column=0, row=0)
-        self.daq_frame.grid(column=0, row=1)
-        self.field_frame.grid(column=1, row=0, pady=10)
-        self.temp_frame.grid(column=1, row=1)
+        self.calibration_frame.grid(column=0, row=1)
+        self.daq_frame.grid(column=0, row=2)
+
+
+class VisualsFrame(tk.Frame):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.create_frames()
+
+    def create_frames(self):
+        self.field_plot = FieldFrame(self)
+        self.temp_plot = TemperatureFrame(self)
+        self.field_plot.grid(column=0, row=0)
+        self.temp_plot.grid(column=0, row=1)
 
 class ZeissControls(ttk.LabelFrame):
-    def __init__(self, parent, title='Zeiss CMM Controls', labelanchor='n'):
+    def __init__(self, parent, title='Zeiss CMM Controls'):
         super().__init__(parent, text=title, labelanchor='n')
         # self.grid(pady=30)
         self.create_widgets()
     
     def create_widgets(self):
-        self.lbl_ip = tk.Label(self, text='IP Address')
-        self.ent_ip = tk.Entry(self)
-        self.ent_ip.insert(0, '192.4.1.200')
-        self.lbl_port = tk.Label(self, text='Port')
-        self.ent_port = tk.Entry(self)
-        self.ent_port.insert(0, '4712')
-        self.btn_connect = tk.Button(self, text='Connect', command=self.connect_cmm)
-        self.btn_disconnect = tk.Button(self, text='Disconnect', command=self.disconnect_cmm)
+        self.btn_emerg_stop = ttk.Button(self, text='Emergency Stop', command=self.emergency_stop)
         self.lbl_conn_status = tk.Label(self, text='*Connection Status*')
-        self.lbl_ip.grid(column=0, row=0, sticky='e')
-        self.ent_ip.grid(column=1, row=0)
-        self.lbl_port.grid(column=0, row=1, sticky='e')
-        self.ent_port.grid(column=1, row=1)
-        self.btn_connect.grid(column=0, row=2)
-        self.btn_disconnect.grid(column=1, row=2)
-        self.lbl_conn_status.grid(column=0, row=3, columnspan=2)
+        self.btn_emerg_stop.grid(column=0, row=0)
+        self.lbl_conn_status.grid(column=0, row=1)
 
+    def emergency_stop(self):
+        pass
+
+    
     def connect_cmm(self):
         try:
-            self.zeiss = CMM(ip=self.ent_ip.get(), port=int(self.ent_port.get()))
-            self.btn_connect['state'] = 'disabled'
+            self.zeiss = CMM(ip='192.4.1.200', port=4712)
             self.lbl_conn_status['text'] = 'Connection Established'
         except ConnectionRefusedError:
             self.lbl_conn_status['text'] = 'Connection Refused'
@@ -67,10 +79,10 @@ class ZeissControls(ttk.LabelFrame):
     def disconnect_cmm(self):
         try:
             self.zeiss.close()
-            self.btn_connect['state'] = 'normal'
             self.lbl_conn_status['text'] = 'Disconnected'
         except AttributeError:
             self.lbl_conn_status['text'] = 'Already Disconnected'
+    
 
 
 class DaqControls(ttk.LabelFrame):
@@ -207,6 +219,15 @@ class TemperatureFrame(tk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
         self.temp_plot = PlotTemperature(self)
+
+class CalibrationTools(ttk.LabelFrame):
+    def __init__(self, parent):
+        super().__init__(parent, text='Calibration Tools', labelanchor='n')
+        self.create_widgets()
+
+    def create_widgets(self):
+        self.lbl_placeholder = tk.Label(self, text='Placeholder Label')
+        self.lbl_placeholder.grid(column=0, row=0)
 
 if __name__ == '__main__':
     app = HallProbeApp(tk.Tk())
