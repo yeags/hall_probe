@@ -32,12 +32,17 @@ class ControlsFrame(tk.Frame):
         self.create_frames()
     
     def create_frames(self):
+        self.magnet_info_frame = MagnetInformation(self)
         self.zeiss_frame = ZeissControls(self)
         self.calibration_frame = CalibrationTools(self)
         self.daq_frame = DaqControls(self)
-        self.zeiss_frame.grid(column=0, row=0)
-        self.calibration_frame.grid(column=0, row=1)
-        self.daq_frame.grid(column=0, row=2)
+        self.program_frame = ProgramControls(self)
+
+        self.magnet_info_frame.grid(column=0, row=0)
+        self.zeiss_frame.grid(column=0, row=1)
+        self.calibration_frame.grid(column=0, row=2)
+        self.daq_frame.grid(column=0, row=3)
+        self.program_frame.grid(column=0, row=4)
 
 
 class VisualsFrame(tk.Frame):
@@ -51,10 +56,26 @@ class VisualsFrame(tk.Frame):
         self.field_plot.grid(column=0, row=0)
         self.temp_plot.grid(column=0, row=1)
 
+class MagnetInformation(ttk.LabelFrame):
+    def __init__(self, parent, title='Magnet Information'):
+        super().__init__(parent, text=title, labelanchor='n')
+        self.create_widgets()
+
+    def create_widgets(self):
+        self.lbl_partnum = tk.Label(self, text='Part Number')
+        self.ent_partnum = ttk.Entry(self)
+        self.lbl_serial = tk.Label(self, text='Serial Number')
+        self.ent_serial = ttk.Entry(self)
+
+        self.lbl_partnum.grid(column=0, row=0, sticky='w', padx=5)
+        self.ent_partnum.grid(column=0, row=1, sticky='w', padx=5)
+        self.lbl_serial.grid(column=1, row=0, sticky='w', padx=5)
+        self.ent_serial.grid(column=1, row=1, sticky='w', padx=5)
+
 class ZeissControls(ttk.LabelFrame):
     def __init__(self, parent, title='Zeiss CMM Controls'):
         super().__init__(parent, text=title, labelanchor='n')
-        # self.grid(pady=30)
+        self.grid(pady=20)
         self.create_widgets()
     
     def create_widgets(self):
@@ -72,6 +93,15 @@ class ZeissControls(ttk.LabelFrame):
         self.ent_scan_length_x = ttk.Entry(self, width=9)
         self.lbl_scan_length_y = tk.Label(self, text='Y')
         self.ent_scan_length_y = ttk.Entry(self, width=9)
+        self.lbl_meas_interval = tk.Label(self, text='Measurement Interval')
+        self.ent_meas_interval = ttk.Entry(self, width=5, justify='right')
+        self.lbl_meas_interval_mm = tk.Label(self, text='mm')
+        self.ent_meas_interval.insert(0, '0.5')
+        self.lbl_scan_speed = tk.Label(self, text='Scan Speed')
+        self.ent_scan_speed = ttk.Entry(self, width=5, justify='right')
+        self.ent_scan_speed.insert(0, '5')
+        self.lbl_scan_speed_mms = tk.Label(self, text='mm/s')
+
         self.btn_emerg_stop.grid(column=0, row=0, columnspan=6)
         self.lbl_conn_status.grid(column=0, row=1, columnspan=6)
         self.lbl_start_pt.grid(column=0, row=2, columnspan=6)
@@ -86,6 +116,12 @@ class ZeissControls(ttk.LabelFrame):
         self.ent_scan_length_x.grid(column=1, row=5)
         self.lbl_scan_length_y.grid(column=2, row=5)
         self.ent_scan_length_y.grid(column=3, row=5)
+        self.lbl_meas_interval.grid(column=0, row=6, columnspan=4, sticky='w')
+        self.ent_meas_interval.grid(column=1, row=7, sticky='e')
+        self.lbl_meas_interval_mm.grid(column=2, row=7, columnspan=2, sticky='w')
+        self.lbl_scan_speed.grid(column=3, row=6, columnspan=4, sticky='e', padx=30)
+        self.ent_scan_speed.grid(column=4, row=7, sticky='e')
+        self.lbl_scan_speed_mms.grid(column=5, row=7, sticky='w')
 
     def emergency_stop(self):
         pass
@@ -201,7 +237,12 @@ class PlotField(tk.Frame):
         self.create_plot()
 
     def create_plot(self):
-        t = np.arange(0, 3, 0.01)
+        x, y, z = np.meshgrid(np.arange(-0.8, 1, 0.2),
+                              np.arange(-0.8, 1, 0.2),
+                              np.arange(-0.8, 1, 0.8))
+        u = np.sin(np.pi * x) * np.cos(np.pi * y) * np.cos(np.pi * z)
+        v = -np.cos(np.pi * x) * np.sin(np.pi * y) * np.cos(np.pi * z)
+        w = (np.sqrt(2.0 / 3.0) * np.cos(np.pi * x) * np.cos(np.pi * y) * np.sin(np.pi * z))
         self.fig = Figure(figsize=(8,4))
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.parent)
         self.canvas.draw()
@@ -210,7 +251,7 @@ class PlotField(tk.Frame):
         self.ax.set_xlabel('x axis [mm]')
         self.ax.set_ylabel('y axis [mm]')
         self.ax.set_zlabel('z axis [mm]')
-        self.ax.plot(t, 2*np.sin(2*np.pi*t))
+        self.ax.quiver(x, y, z, u, v, w, length=0.15, normalize=True)
         self.toolbar = NavigationToolbar2Tk(self.canvas, self.parent)
         self.toolbar.update()
         self.canvas.get_tk_widget().pack(side=tk.TOP,
@@ -228,8 +269,11 @@ class PlotTemperature(tk.Frame):
         self.ax.set_title('Magnet Temperature')
         self.ax.set_xlabel('Time [min]')
         self.ax.set_ylabel('Temperature [C]')
+        self.ax.grid()
         self.graph = FigureCanvasTkAgg(self.fig, self.parent)
         self.graph.draw()
+        self.ax.plot([1,2,3,4,5,6,7,8], [19.8, 19.9, 20, 20, 20.5, 20.7, 20.8, 21], label='channel 0')
+        self.ax.legend()
         self.toolbar = NavigationToolbar2Tk(self.graph, self.parent)
         self.toolbar.update()
         self.graph.get_tk_widget().pack()
@@ -252,6 +296,24 @@ class CalibrationTools(ttk.LabelFrame):
     def create_widgets(self):
         self.lbl_placeholder = tk.Label(self, text='Placeholder Label')
         self.lbl_placeholder.grid(column=0, row=0)
+
+class ProgramControls(ttk.LabelFrame):
+    def __init__(self, parent, title='Program Controls'):
+        super().__init__(parent, text=title, labelanchor='n')
+        self.create_widgets()
+
+    def create_widgets(self):
+        self.btn_load_alignment = ttk.Button(self, text='Load Alignment', command=self.load_alignment)
+        self.btn_start_meas = ttk.Button(self, text='Start Measurement', command=self.start_measurement)
+        self.btn_load_alignment.grid(column=0, row=0, padx=5, pady=5)
+        self.btn_start_meas.grid(column=1, row=0, padx=5, pady=5)
+    
+    def load_alignment(self):
+        self.alignment_file = tk.filedialog.askopenfilename(filetypes=[('Text Files', '*.txt'), ('All Files', '*.*')])
+        print(self.alignment_file)
+
+    def start_measurement(self):
+        pass
 
 if __name__ == '__main__':
     app = HallProbeApp(tk.Tk())
