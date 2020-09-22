@@ -247,6 +247,7 @@ class PlotField(tk.Frame):
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.parent)
         self.canvas.draw()
         self.ax = self.fig.add_subplot(111, projection='3d')
+        self.fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
         self.ax.set_title('Vector Field Map')
         self.ax.set_xlabel('x axis [mm]')
         self.ax.set_ylabel('y axis [mm]')
@@ -305,14 +306,24 @@ class ProgramControls(ttk.LabelFrame):
     def create_widgets(self):
         self.btn_load_alignment = ttk.Button(self, text='Load Alignment', command=self.load_alignment)
         self.btn_start_meas = ttk.Button(self, text='Start Measurement', command=self.start_measurement)
-        self.btn_load_alignment.grid(column=0, row=0, padx=5, pady=5)
-        self.btn_start_meas.grid(column=1, row=0, padx=5, pady=5)
+        self.btn_load_meas = ttk.Button(self, text='Load Measurement', command=self.load_measurement)
+        self.btn_save_meas = ttk.Button(self, text='Save Measurement', command=self.save_measurement)
+        self.btn_load_alignment.grid(column=0, row=0, padx=5, pady=5, sticky='e')
+        self.btn_start_meas.grid(column=1, row=0, padx=5, pady=5, sticky='w')
+        self.btn_load_meas.grid(column=0, row=1, padx=5, pady=5, sticky='e')
+        self.btn_save_meas.grid(column=1, row=1, padx=5, pady=5, sticky='w')
     
     def load_alignment(self):
         self.alignment_file = tk.filedialog.askopenfilename(filetypes=[('Text Files', '*.txt'), ('All Files', '*.*')])
         print(self.alignment_file)
 
     def start_measurement(self):
+        pass
+
+    def save_measurement(self):
+        self.save_file = tk.filedialog.asksaveasfilename(filetypes=[('Text Files', '*.txt'), ('CSV Files', '*.csv')])
+
+    def load_measurement(self):
         pass
 
 if __name__ == '__main__':
