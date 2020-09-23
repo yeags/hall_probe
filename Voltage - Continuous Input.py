@@ -4,7 +4,7 @@ from tkinter import ttk
 
 import matplotlib
 matplotlib.use("TkAgg")
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
 
 
@@ -53,7 +53,7 @@ class voltageContinuousInput(tk.Frame):
         #Create and start task
         self.task = nidaqmx.Task()
         self.task.ai_channels.add_ai_voltage_chan(physicalChannel, min_val=minVoltage, max_val=maxVoltage)
-        self.task.timing.cfg_samp_clk_timing(sampleRate,sample_mode=nidaqmx.constants.AcquisitionType.CONTINUOUS,samps_per_chan=self.numberOfSamples*3)
+        self.task.timing.cfg_samp_clk_timing(sampleRate,sample_mode=nidaqmx.constants.AcquisitionType.CONTINUOUS,samps_per_chan=self.numberOfSamples)
         self.task.start()
 
         #spin off call to check 
@@ -156,9 +156,12 @@ class graphData(tk.Frame):
         self.graphTitle = ttk.Label(self, text="Voltage Input")
         self.fig = Figure(figsize=(7,5), dpi=100)
         self.ax = self.fig.add_subplot(1,1,1)
+        self.ax.grid()
         self.ax.set_title("Acquired Data")
         self.graph = FigureCanvasTkAgg(self.fig, self)
         self.graph.draw()
+        self.toolbar = NavigationToolbar2Tk(self.graph, self)
+        self.toolbar.update()
         self.graph.get_tk_widget().pack()
 
 

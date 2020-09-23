@@ -23,8 +23,8 @@ class HallProbeApp(tk.Frame):
         self.controls = ControlsFrame(self)
         self.visuals = VisualsFrame(self)
         self.pack()
-        self.controls.grid(column=0, row=0)
-        self.visuals.grid(column=1, row=0)
+        self.controls.grid(column=0, row=0, padx=5, pady=5)
+        self.visuals.grid(column=1, row=0, padx=5, pady=5)
 
 class ControlsFrame(tk.Frame):
     def __init__(self, parent):
@@ -300,16 +300,19 @@ class CalibrationTools(ttk.LabelFrame):
 
 class ProgramControls(ttk.LabelFrame):
     def __init__(self, parent, title='Program Controls'):
+        self.parent_frame = parent
         super().__init__(parent, text=title, labelanchor='n')
         self.create_widgets()
 
     def create_widgets(self):
         self.btn_load_alignment = ttk.Button(self, text='Load Alignment', command=self.load_alignment)
         self.btn_start_meas = ttk.Button(self, text='Start Measurement', command=self.start_measurement)
+        self.btn_stop_meas = ttk.Button(self, text='Stop Measurement', command=self.stop_measurement, state='disabled')
         self.btn_load_meas = ttk.Button(self, text='Load Measurement', command=self.load_measurement)
         self.btn_save_meas = ttk.Button(self, text='Save Measurement', command=self.save_measurement)
         self.btn_load_alignment.grid(column=0, row=0, padx=5, pady=5, sticky='e')
         self.btn_start_meas.grid(column=1, row=0, padx=5, pady=5, sticky='w')
+        self.btn_stop_meas.grid(column=2, row=0, padx=5, pady=5, sticky='w')
         self.btn_load_meas.grid(column=0, row=1, padx=5, pady=5, sticky='e')
         self.btn_save_meas.grid(column=1, row=1, padx=5, pady=5, sticky='w')
     
@@ -318,7 +321,18 @@ class ProgramControls(ttk.LabelFrame):
         print(self.alignment_file)
 
     def start_measurement(self):
-        pass
+        self.parent_frame.zeiss_frame.connect_cmm()
+        self.btn_start_meas.configure(state='disabled')
+        self.btn_load_alignment.configure(state='disabled')
+        self.btn_load_meas.configure(state='disabled')
+        self.btn_save_meas.configure(state='disabled')
+        self.btn_stop_meas.configure(state='enabled')
+    
+    def stop_measurement(self):
+        self.parent_frame.zeiss_frame.zeiss.send('D99\r\n'.encode('ascii'))
+        self.parent_frame.zeiss_frame.disconnect_cmm()
+        self.btn_start_meas.configure(state='enabled')
+        self.btn_stop_meas.configure(state='disabled')
 
     def save_measurement(self):
         self.save_file = tk.filedialog.asksaveasfilename(filetypes=[('Text Files', '*.txt'), ('CSV Files', '*.csv')])
