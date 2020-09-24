@@ -3,6 +3,7 @@ from tkinter import ttk
 from zeisscmm import CMM
 from nicdaq import DAQ, Constants
 import numpy as np
+import multiprocessing as mp
 
 import matplotlib
 matplotlib.use("TkAgg")
@@ -12,8 +13,8 @@ from matplotlib.figure import Figure
 
 class HallProbeApp(tk.Frame):
     def __init__(self, master):
-        super().__init__(master)
         self.master = master
+        super().__init__(master)
         self.master.title('Hall Probe Integration App')
         self.master.iconbitmap(r'G:\My Drive\Python\hall_probe\magnet.ico')
         self.master.geometry('1200x900')
@@ -28,6 +29,7 @@ class HallProbeApp(tk.Frame):
 
 class ControlsFrame(tk.Frame):
     def __init__(self, parent):
+        self.parent_controls_frame = parent
         super().__init__(parent)
         self.create_frames()
     
@@ -47,6 +49,7 @@ class ControlsFrame(tk.Frame):
 
 class VisualsFrame(tk.Frame):
     def __init__(self, parent):
+        self.visuals_frame_parent = parent
         super().__init__(parent)
         self.create_frames()
 
@@ -232,8 +235,8 @@ class VoltageControls(ttk.LabelFrame):
 
 class PlotField(tk.Frame):
     def __init__(self, parent):
-        super().__init__(parent)
         self.parent = parent
+        super().__init__(parent)
         self.create_plot()
 
     def create_plot(self):
@@ -260,8 +263,8 @@ class PlotField(tk.Frame):
 
 class PlotTemperature(tk.Frame):
     def __init__(self, parent):
+        self.plot_temp_parent = parent
         super().__init__(parent)
-        self.parent = parent
         self.create_widgets()
     
     def create_widgets(self):
@@ -271,26 +274,30 @@ class PlotTemperature(tk.Frame):
         self.ax.set_xlabel('Time [min]')
         self.ax.set_ylabel('Temperature [C]')
         self.ax.grid()
-        self.graph = FigureCanvasTkAgg(self.fig, self.parent)
+        self.graph = FigureCanvasTkAgg(self.fig, self.plot_temp_parent)
         self.graph.draw()
+        print([i.get() for i in self.plot_temp_parent.temp_frame_parent.visuals_frame_parent.controls.daq_frame.therm_frame.therm_chan_var])
         self.ax.plot([1,2,3,4,5,6,7,8], [19.8, 19.9, 20, 20, 20.5, 20.7, 20.8, 21], label='channel 0')
         self.ax.legend()
-        self.toolbar = NavigationToolbar2Tk(self.graph, self.parent)
+        self.toolbar = NavigationToolbar2Tk(self.graph, self.plot_temp_parent)
         self.toolbar.update()
         self.graph.get_tk_widget().pack()
 
 class FieldFrame(tk.Frame):
     def __init__(self, parent):
+        self.field_frame_parent = parent
         super().__init__(parent)
         self.field_plot = PlotField(self)
 
 class TemperatureFrame(tk.Frame):
     def __init__(self, parent):
+        self.temp_frame_parent = parent
         super().__init__(parent)
         self.temp_plot = PlotTemperature(self)
 
 class CalibrationTools(ttk.LabelFrame):
     def __init__(self, parent):
+        self.calib_tools_parent = parent
         super().__init__(parent, text='Calibration Tools', labelanchor='n')
         self.create_widgets()
 
@@ -310,23 +317,26 @@ class ProgramControls(ttk.LabelFrame):
         self.btn_stop_meas = ttk.Button(self, text='Stop Measurement', command=self.stop_measurement, state='disabled')
         self.btn_load_meas = ttk.Button(self, text='Load Measurement', command=self.load_measurement)
         self.btn_save_meas = ttk.Button(self, text='Save Measurement', command=self.save_measurement)
+        self.lbl_controls_status = tk.Label(self, text='*Program Controls Status*')
         self.btn_load_alignment.grid(column=0, row=0, padx=5, pady=5, sticky='e')
         self.btn_start_meas.grid(column=1, row=0, padx=5, pady=5, sticky='w')
         self.btn_stop_meas.grid(column=2, row=0, padx=5, pady=5, sticky='w')
         self.btn_load_meas.grid(column=0, row=1, padx=5, pady=5, sticky='e')
         self.btn_save_meas.grid(column=1, row=1, padx=5, pady=5, sticky='w')
+        self.lbl_controls_status.grid(column=0, row=2, columnspan=3, padx=5, pady=5)
     
     def load_alignment(self):
         self.alignment_file = tk.filedialog.askopenfilename(filetypes=[('Text Files', '*.txt'), ('All Files', '*.*')])
-        print(self.alignment_file)
+        self.lbl_controls_status.configure(text=f'Loaded alignment file\n{self.alignment_file}')
 
     def start_measurement(self):
-        self.parent_frame.zeiss_frame.connect_cmm()
+        # self.parent_frame.zeiss_frame.connect_cmm()
         self.btn_start_meas.configure(state='disabled')
         self.btn_load_alignment.configure(state='disabled')
         self.btn_load_meas.configure(state='disabled')
         self.btn_save_meas.configure(state='disabled')
         self.btn_stop_meas.configure(state='enabled')
+        StartMeasurement(self)
     
     def stop_measurement(self):
         self.parent_frame.zeiss_frame.zeiss.send('D99\r\n'.encode('ascii'))
@@ -339,6 +349,21 @@ class ProgramControls(ttk.LabelFrame):
 
     def load_measurement(self):
         pass
+
+class StartMeasurement(tk.Frame):
+    def __init__(self, parent):
+        self.start_meas_parent = parent
+        super().__init__(parent)
+        self.mp_queue = mp.Queue()
+        self.mp_queue_status = mp.Queue()
+        self.start_meas_parent.parent_frame.zeiss_frame.connect_cmm()
+
+    def connect_cmm(self):
+        pass
+
+    def connect_daq(self):
+        self.nidaq = DAQ()
+
 
 if __name__ == '__main__':
     app = HallProbeApp(tk.Tk())

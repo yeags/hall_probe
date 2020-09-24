@@ -11,6 +11,15 @@ class DAQ(ni.task.Task):
         self.ai_channels.add_ai_voltage_chan('FieldSensor/ai0:2')
         self.timing.cfg_samp_clk_timing(1000, sample_mode=ni.constants.AcquisitionType.CONTINUOUS, samps_per_chan=2)
     
+    def add_voltage_channel(self, v_channels: list, v_min, v_max, units):
+        for each in v_channels:
+
+    def add_temperature_channel(self, temp_channels: list, type):
+        pass
+
+    def set_sampling(self, sample_rate: int, num_samples: int):
+        pass
+
     def __repr__(self):
         return 'NI cDAQ Task'
 
