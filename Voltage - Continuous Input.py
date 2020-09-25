@@ -11,7 +11,6 @@ from matplotlib.figure import Figure
 class voltageContinuousInput(tk.Frame):
 
     def __init__(self, master):
-        # tk.Frame.__init__(self, master)
         super().__init__(master)
 
         #Configure root tk class
@@ -85,7 +84,6 @@ class voltageContinuousInput(tk.Frame):
 class channelSettings(tk.LabelFrame):
 
     def __init__(self, parent, title):
-        # tk.LabelFrame.__init__(self, parent, text=title, labelanchor='n')
         super().__init__(parent, text=title, labelanchor='n')
         self.parent = parent
         self.grid_columnconfigure(0, weight=1)
@@ -118,7 +116,6 @@ class channelSettings(tk.LabelFrame):
 class inputSettings(tk.LabelFrame):
 
     def __init__(self, parent, title):
-        # tk.LabelFrame.__init__(self, parent, text=title, labelanchor='n')
         super().__init__(parent, text=title, labelanchor='n')
         self.parent = parent
         self.xPadding = (30,30)
@@ -148,7 +145,6 @@ class inputSettings(tk.LabelFrame):
 class graphData(tk.Frame):
 
     def __init__(self, parent):
-        # tk.Frame.__init__(self, parent)
         super().__init__(parent)
         self.create_widgets()
 
@@ -167,7 +163,6 @@ class graphData(tk.Frame):
 
 if __name__ == '__main__':
     #Creates the tk class and primary application "voltageContinuousInput"
-    # root = tk.Tk()
     app = voltageContinuousInput(tk.Tk())
 
     #start the application
