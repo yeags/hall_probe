@@ -47,6 +47,9 @@ class Constants:
     def voltage_units():
         return {'V': ni.constants.VoltageUnits.VOLTS,
                 'mT': ni.constants.VoltageUnits.FROM_CUSTOM_SCALE}
+    @staticmethod
+    def continuous():
+        return ni.constants.AcquisitionType.CONTINUOUS
 
 if __name__ == '__main__':
     print('Creating DAQmx Object...')

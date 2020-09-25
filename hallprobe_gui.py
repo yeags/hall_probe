@@ -46,7 +46,6 @@ class ControlsFrame(tk.Frame):
         self.daq_frame.grid(column=0, row=3)
         self.program_frame.grid(column=0, row=4)
 
-
 class VisualsFrame(tk.Frame):
     def __init__(self, parent):
         self.visuals_frame_parent = parent
@@ -130,7 +129,6 @@ class ZeissControls(ttk.LabelFrame):
 
     def emergency_stop(self):
         pass
-
     
     def connect_cmm(self):
         try:
@@ -148,8 +146,6 @@ class ZeissControls(ttk.LabelFrame):
         except AttributeError:
             self.lbl_conn_status['text'] = 'Already Disconnected'
     
-
-
 class DaqControls(ttk.LabelFrame):
     def __init__(self, parent, title='DAQ Controls'):
         super().__init__(parent, text=title, labelanchor='n')
@@ -382,10 +378,9 @@ class StartMeasurement(tk.Frame):
         self.mp_queue_status = mp.Queue()
 
     def connect_cmm(self):
-        self.start_meas_parent.program_controls_parent.zeiss_frame.connect_cmm()
-        
+        self.start_meas_parent.program_controls_parent.zeiss_frame.connect_cmm() 
 
-    def connect_daq(self):
+    def configure_daq(self):
         self.nidaq = DAQ()
         self.nidaq.add_temperature_channel([i.get() for i in self.start_meas_parent.program_controls_parent.daq_frame.therm_frame.therm_chan_var],
                                            self.start_meas_parent.program_controls_parent.daq_frame.therm_frame.temp_units)
@@ -393,6 +388,9 @@ class StartMeasurement(tk.Frame):
                                        float(self.start_meas_parent.program_controls_parent.daq_frame.volt_frame.ent_volt_min.get()),
                                        float(self.start_meas_parent.program_controls_parent.daq_frame.volt_frame.ent_volt_max.get()),
                                        Constants.voltage_units()[self.start_meas_parent.program_controls_parent.daq_frame.volt_frame.cbox_volt_units.get()])
+        self.nidaq.timing.cfg_samp_clk_timing(int(self.start_meas_parent.program_controls_parent.daq_frame.sampling_frame.ent_sampling_rate.get()),
+                                              sample_mode=Constants.continuous(),
+                                              samps_per_chan=self.start_meas_parent.program_controls_parent.daq_frame.sampling_frame.ent_num_samples.get())
 
 if __name__ == '__main__':
     app = HallProbeApp(tk.Tk())
