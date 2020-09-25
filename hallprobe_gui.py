@@ -61,6 +61,7 @@ class VisualsFrame(tk.Frame):
 
 class MagnetInformation(ttk.LabelFrame):
     def __init__(self, parent, title='Magnet Information'):
+        self.magnet_info_parent = parent
         super().__init__(parent, text=title, labelanchor='n')
         self.create_widgets()
 
@@ -77,6 +78,7 @@ class MagnetInformation(ttk.LabelFrame):
 
 class ZeissControls(ttk.LabelFrame):
     def __init__(self, parent, title='Zeiss CMM Controls'):
+        self.zeiss_controls_parent = parent
         super().__init__(parent, text=title, labelanchor='n')
         self.grid(pady=20)
         self.create_widgets()
@@ -201,6 +203,7 @@ class ThermocoupleControls(ttk.LabelFrame):
 
 class VoltageControls(ttk.LabelFrame):
     def __init__(self, parent, title='Voltage Controls'):
+        self.voltage_controls_parent = parent
         super().__init__(parent, text=title, labelanchor='n')
         # self.volt_channels = []
         self.volt_chan_var = []
@@ -235,7 +238,7 @@ class VoltageControls(ttk.LabelFrame):
 
 class PlotField(tk.Frame):
     def __init__(self, parent):
-        self.parent = parent
+        self.plotfield_parent = parent
         super().__init__(parent)
         self.create_plot()
 
@@ -247,7 +250,7 @@ class PlotField(tk.Frame):
         v = -np.cos(np.pi * x) * np.sin(np.pi * y) * np.cos(np.pi * z)
         w = (np.sqrt(2.0 / 3.0) * np.cos(np.pi * x) * np.cos(np.pi * y) * np.sin(np.pi * z))
         self.fig = Figure(figsize=(8,4))
-        self.canvas = FigureCanvasTkAgg(self.fig, master=self.parent)
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self.plotfield_parent)
         self.canvas.draw()
         self.ax = self.fig.add_subplot(111, projection='3d')
         self.fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
@@ -256,7 +259,7 @@ class PlotField(tk.Frame):
         self.ax.set_ylabel('y axis [mm]')
         self.ax.set_zlabel('z axis [mm]')
         self.ax.quiver(x, y, z, u, v, w, length=0.15, normalize=True)
-        self.toolbar = NavigationToolbar2Tk(self.canvas, self.parent)
+        self.toolbar = NavigationToolbar2Tk(self.canvas, self.plotfield_parent)
         self.toolbar.update()
         self.canvas.get_tk_widget().pack(side=tk.TOP,
                                          fill=tk.BOTH, expand=1)
@@ -307,7 +310,7 @@ class CalibrationTools(ttk.LabelFrame):
 
 class ProgramControls(ttk.LabelFrame):
     def __init__(self, parent, title='Program Controls'):
-        self.parent_frame = parent
+        self.program_controls_parent = parent
         super().__init__(parent, text=title, labelanchor='n')
         self.create_widgets()
 
@@ -330,7 +333,6 @@ class ProgramControls(ttk.LabelFrame):
         self.lbl_controls_status.configure(text=f'Loaded alignment file\n{self.alignment_file}')
 
     def start_measurement(self):
-        # self.parent_frame.zeiss_frame.connect_cmm()
         self.btn_start_meas.configure(state='disabled')
         self.btn_load_alignment.configure(state='disabled')
         self.btn_load_meas.configure(state='disabled')
@@ -339,8 +341,8 @@ class ProgramControls(ttk.LabelFrame):
         StartMeasurement(self)
     
     def stop_measurement(self):
-        self.parent_frame.zeiss_frame.zeiss.send('D99\r\n'.encode('ascii'))
-        self.parent_frame.zeiss_frame.disconnect_cmm()
+        self.program_controls_parent.zeiss_frame.zeiss.send('D99\r\n'.encode('ascii'))
+        self.program_controls_parent.zeiss_frame.disconnect_cmm()
         self.btn_start_meas.configure(state='enabled')
         self.btn_stop_meas.configure(state='disabled')
 
@@ -356,14 +358,19 @@ class StartMeasurement(tk.Frame):
         super().__init__(parent)
         self.mp_queue = mp.Queue()
         self.mp_queue_status = mp.Queue()
-        self.start_meas_parent.parent_frame.zeiss_frame.connect_cmm()
 
     def connect_cmm(self):
-        pass
+        self.start_meas_parent.program_controls_parent.zeiss_frame.connect_cmm()
+        
 
     def connect_daq(self):
         self.nidaq = DAQ()
-
+        self.nidaq.add_temperature_channel(self.start_meas_parent.program_controls_parent.daq_frame.therm_frame.therm_chan_var,
+                                           self.start_meas_parent.program_controls_parent.daq_frame.therm_frame.temp_units)
+        self.nidaq.add_voltage_channel(self.start_meas_parent.program_controls_parent.daq_frame.volt_frame.volt_chan_var,
+                                       float(self.start_meas_parent.program_controls_parent.daq_frame.volt_frame.ent_volt_min.get()),
+                                       float(self.start_meas_parent.program_controls_parent.daq_frame.volt_frame.ent_volt_max.get()),
+                                       self.start_meas_parent.program_controls_parent.daq_frame.volt_frame.cbox_volt_units.get())
 
 if __name__ == '__main__':
     app = HallProbeApp(tk.Tk())
