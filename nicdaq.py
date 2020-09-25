@@ -3,22 +3,30 @@ from time import sleep
 
 class DAQ(ni.task.Task):
     '''
-    Creates an NI Task with pre-configured parameters.
+    Creates an NI Task
+    Takes input parameters from Hall Probe GUI
     '''
     def __init__(self):
         super().__init__(new_task_name='NI cDAQ')
-        self.ai_channels.add_ai_thrmcpl_chan('MagnetTemp/ai0:1', thermocouple_type=ni.constants.ThermocoupleType.K)
-        self.ai_channels.add_ai_voltage_chan('FieldSensor/ai0:2')
-        self.timing.cfg_samp_clk_timing(1000, sample_mode=ni.constants.AcquisitionType.CONTINUOUS, samps_per_chan=2)
     
-    def add_voltage_channel(self, v_channels: list, v_min, v_max, units):
-        for each in v_channels:
+    def add_voltage_channel(self, v_channels: list, v_min: float, v_max: float, units):
+        for channel in range(len(v_channels)):
+            if v_channels[channel]:
+                self.ai_channels.add_ai_voltage_chan(f'FieldSensor/ai{channel}',
+                                                     min_val=v_min,
+                                                     max_val=v_max,
+                                                     units=units)
 
     def add_temperature_channel(self, temp_channels: list, type):
-        pass
+        for channel in range(len(temp_channels)):
+            if temp_channels[channel]:
+                self.ai_channels.add_ai_thrmcpl_chan(f'MagnetTemp/ai{channel}',
+                                                     thermocouple_type=type)
 
     def set_sampling(self, sample_rate: int, num_samples: int):
-        pass
+        self.timing.cfg_samp_clk_timing(sample_rate,
+                                        sample_mode=ni.constants.AcquisitionType.CONTINUOUS,
+                                        samps_per_chan=num_samples)
 
     def __repr__(self):
         return 'NI cDAQ Task'
