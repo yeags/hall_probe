@@ -206,7 +206,7 @@ class VoltageControls(ttk.LabelFrame):
         # self.volt_channels = []
         self.volt_chan_var = []
         self.create_frame()
-        print('volt channels', [i.get() for i in self.volt_chan_var])
+        # print('volt channels', [i.get() for i in self.volt_chan_var])
 
     def create_frame(self):
         for j in range(4): # Create Voltage channel check buttons
@@ -249,9 +249,9 @@ class SamplingControls(ttk.LabelFrame):
         self.ent_sampling_rate.insert(0, '1000')
         self.ent_num_samples.insert(0, '100')
         self.lbl_sampling_rate.grid(column=0, row=0, padx=5, pady=5, sticky='w')
-        self.ent_sampling_rate.grid(column=0, row=1, padx=5, pady=5, sticky='w')
+        self.ent_sampling_rate.grid(column=0, row=1, padx=5, sticky='w')
         self.lbl_num_samples.grid(column=0, row=2, padx=5, pady=5, sticky='w')
-        self.ent_num_samples.grid(column=0, row=3, padx=5, pady=5, sticky='w')
+        self.ent_num_samples.grid(column=0, row=3, padx=5, pady=(0,5), sticky='w')
 
 class PlotField(tk.Frame):
     def __init__(self, parent):
@@ -288,11 +288,14 @@ class PlotTemperature(tk.Frame):
         self.create_widgets()
     
     def create_widgets(self):
+        '''
+        change to set graph labels at start of measurement
+        '''
         self.fig = Figure(figsize=(8,4))
         self.ax = self.fig.add_subplot(111)
         self.ax.set_title('Magnet Temperature')
         self.ax.set_xlabel('Time [min]')
-        self.ax.set_ylabel('Temperature [C]')
+        self.ax.set_ylabel(f'Temperature [{self.plot_temp_parent.temp_frame_parent.visuals_frame_parent.controls.daq_frame.therm_frame.radio_value_temp_units.get()}]')
         self.ax.grid()
         self.graph = FigureCanvasTkAgg(self.fig, self.plot_temp_parent)
         self.graph.draw()
@@ -351,6 +354,14 @@ class ProgramControls(ttk.LabelFrame):
             self.lbl_controls_status.configure(text=f'Loaded alignment file\n{self.alignment_file}')
 
     def start_measurement(self):
+        print('Thermocouple Channels', [i.get() for i in self.program_controls_parent.daq_frame.therm_frame.therm_chan_var])
+        print('Thermocouple Type', self.program_controls_parent.daq_frame.therm_frame.cbox_therm_type.get())
+        print('Temperature Units', self.program_controls_parent.daq_frame.therm_frame.radio_value_temp_units.get())
+        print('Voltage Channels', [i.get() for i in self.program_controls_parent.daq_frame.volt_frame.volt_chan_var])
+        print(f'V min: {self.program_controls_parent.daq_frame.volt_frame.ent_volt_min.get()}, V max: {self.program_controls_parent.daq_frame.volt_frame.ent_volt_max.get()}')
+        print('Voltage Units', self.program_controls_parent.daq_frame.volt_frame.cbox_volt_units.get())
+        print('Sampling Rate', self.program_controls_parent.daq_frame.sampling_frame.ent_sampling_rate.get())
+        print('Samps per chan', self.program_controls_parent.daq_frame.sampling_frame.ent_num_samples.get())
         self.btn_start_meas.configure(state='disabled')
         self.btn_load_alignment.configure(state='disabled')
         self.btn_load_meas.configure(state='disabled')
@@ -362,7 +373,10 @@ class ProgramControls(ttk.LabelFrame):
         self.program_controls_parent.zeiss_frame.zeiss.send('D99\r\n'.encode('ascii'))
         self.program_controls_parent.zeiss_frame.disconnect_cmm()
         self.btn_start_meas.configure(state='enabled')
+        self.btn_load_alignment.configure(state='enabled')
+        self.btn_load_meas.configure(state='enabled')
         self.btn_stop_meas.configure(state='disabled')
+        self.lbl_controls_status.configure(text='Measurement stopped')
 
     def save_measurement(self):
         self.save_file = tk.filedialog.asksaveasfilename(filetypes=[('Text Files', '*.txt'), ('CSV Files', '*.csv')])
@@ -376,15 +390,17 @@ class StartMeasurement(tk.Frame):
         super().__init__(parent)
         self.mp_queue = mp.Queue()
         self.mp_queue_status = mp.Queue()
+        self.start_meas_parent.lbl_controls_status.configure(text='Starting measurement...')
+        self.connect_cmm()
 
     def connect_cmm(self):
         self.start_meas_parent.program_controls_parent.zeiss_frame.connect_cmm() 
 
     def configure_daq(self):
         self.nidaq = DAQ()
-        self.nidaq.add_temperature_channel([i.get() for i in self.start_meas_parent.program_controls_parent.daq_frame.therm_frame.therm_chan_var],
+        self.nidaq.add_temperature_channels([i.get() for i in self.start_meas_parent.program_controls_parent.daq_frame.therm_frame.therm_chan_var],
                                            self.start_meas_parent.program_controls_parent.daq_frame.therm_frame.temp_units)
-        self.nidaq.add_voltage_channel([i.get() for i in self.start_meas_parent.program_controls_parent.daq_frame.volt_frame.volt_chan_var],
+        self.nidaq.add_voltage_channels([i.get() for i in self.start_meas_parent.program_controls_parent.daq_frame.volt_frame.volt_chan_var],
                                        float(self.start_meas_parent.program_controls_parent.daq_frame.volt_frame.ent_volt_min.get()),
                                        float(self.start_meas_parent.program_controls_parent.daq_frame.volt_frame.ent_volt_max.get()),
                                        Constants.voltage_units()[self.start_meas_parent.program_controls_parent.daq_frame.volt_frame.cbox_volt_units.get()])
