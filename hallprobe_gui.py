@@ -157,9 +157,11 @@ class DaqControls(ttk.LabelFrame):
 
     def create_widgets(self):
         self.therm_frame = ThermocoupleControls(self)
-        self.therm_frame.grid(column=0, row=0, padx=10, pady=10, sticky='n')
         self.volt_frame = VoltageControls(self)
+        self.sampling_frame = SamplingControls(self)
+        self.therm_frame.grid(column=0, row=0, rowspan=2, padx=10, pady=10, sticky='n')
         self.volt_frame.grid(column=1, row=0, padx=10, pady=10, sticky='n')
+        self.sampling_frame.grid(column=1, row=1, rowspan=2, padx=10, pady=10, sticky='n')
 
 class ThermocoupleControls(ttk.LabelFrame):
     def __init__(self, parent, title='Thermocouple Controls'):
@@ -208,6 +210,7 @@ class VoltageControls(ttk.LabelFrame):
         # self.volt_channels = []
         self.volt_chan_var = []
         self.create_frame()
+        print('volt channels', [i.get() for i in self.volt_chan_var])
 
     def create_frame(self):
         for j in range(4): # Create Voltage channel check buttons
@@ -233,8 +236,26 @@ class VoltageControls(ttk.LabelFrame):
         self.cbox_volt_units = ttk.Combobox(self, values=['V', 'mT'])
         self.cbox_volt_units['state'] = 'readonly'
         self.cbox_volt_units.current(0)
+        # print('V units', self.cbox_volt_units.get())
         self.cbox_volt_units.grid(column=0, row=8, columnspan=2)
         
+class SamplingControls(ttk.LabelFrame):
+    def __init__(self, parent):
+        self.sampling_controls_parent = parent
+        super().__init__(parent, text='Sampling Parameters', labelanchor='n')
+        self.create_widgets()
+
+    def create_widgets(self):
+        self.lbl_sampling_rate = tk.Label(self, text='Sampling Rate')
+        self.lbl_num_samples = tk.Label(self, text='Samples per Channel')
+        self.ent_sampling_rate = ttk.Entry(self)
+        self.ent_num_samples = ttk.Entry(self)
+        self.ent_sampling_rate.insert(0, '1000')
+        self.ent_num_samples.insert(0, '100')
+        self.lbl_sampling_rate.grid(column=0, row=0, padx=5, pady=5, sticky='w')
+        self.ent_sampling_rate.grid(column=0, row=1, padx=5, pady=5, sticky='w')
+        self.lbl_num_samples.grid(column=0, row=2, padx=5, pady=5, sticky='w')
+        self.ent_num_samples.grid(column=0, row=3, padx=5, pady=5, sticky='w')
 
 class PlotField(tk.Frame):
     def __init__(self, parent):
@@ -279,7 +300,7 @@ class PlotTemperature(tk.Frame):
         self.ax.grid()
         self.graph = FigureCanvasTkAgg(self.fig, self.plot_temp_parent)
         self.graph.draw()
-        print([i.get() for i in self.plot_temp_parent.temp_frame_parent.visuals_frame_parent.controls.daq_frame.therm_frame.therm_chan_var])
+        # print([i.get() for i in self.plot_temp_parent.temp_frame_parent.visuals_frame_parent.controls.daq_frame.therm_frame.therm_chan_var])
         self.ax.plot([1,2,3,4,5,6,7,8], [19.8, 19.9, 20, 20, 20.5, 20.7, 20.8, 21], label='channel 0')
         self.ax.legend()
         self.toolbar = NavigationToolbar2Tk(self.graph, self.plot_temp_parent)
@@ -330,7 +351,8 @@ class ProgramControls(ttk.LabelFrame):
     
     def load_alignment(self):
         self.alignment_file = tk.filedialog.askopenfilename(filetypes=[('Text Files', '*.txt'), ('All Files', '*.*')])
-        self.lbl_controls_status.configure(text=f'Loaded alignment file\n{self.alignment_file}')
+        if self.alignment_file != '':
+            self.lbl_controls_status.configure(text=f'Loaded alignment file\n{self.alignment_file}')
 
     def start_measurement(self):
         self.btn_start_meas.configure(state='disabled')
@@ -365,12 +387,12 @@ class StartMeasurement(tk.Frame):
 
     def connect_daq(self):
         self.nidaq = DAQ()
-        self.nidaq.add_temperature_channel(self.start_meas_parent.program_controls_parent.daq_frame.therm_frame.therm_chan_var,
+        self.nidaq.add_temperature_channel([i.get() for i in self.start_meas_parent.program_controls_parent.daq_frame.therm_frame.therm_chan_var],
                                            self.start_meas_parent.program_controls_parent.daq_frame.therm_frame.temp_units)
-        self.nidaq.add_voltage_channel(self.start_meas_parent.program_controls_parent.daq_frame.volt_frame.volt_chan_var,
+        self.nidaq.add_voltage_channel([i.get() for i in self.start_meas_parent.program_controls_parent.daq_frame.volt_frame.volt_chan_var],
                                        float(self.start_meas_parent.program_controls_parent.daq_frame.volt_frame.ent_volt_min.get()),
                                        float(self.start_meas_parent.program_controls_parent.daq_frame.volt_frame.ent_volt_max.get()),
-                                       self.start_meas_parent.program_controls_parent.daq_frame.volt_frame.cbox_volt_units.get())
+                                       Constants.voltage_units()[self.start_meas_parent.program_controls_parent.daq_frame.volt_frame.cbox_volt_units.get()])
 
 if __name__ == '__main__':
     app = HallProbeApp(tk.Tk())
