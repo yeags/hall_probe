@@ -9,7 +9,7 @@ class DAQ(ni.task.Task):
     def __init__(self):
         super().__init__(new_task_name='NI cDAQ')
     
-    def add_voltage_channel(self, v_channels: list, v_min: float, v_max: float, units):
+    def add_voltage_channels(self, v_channels: list, v_min: float, v_max: float, units):
         for channel in range(len(v_channels)):
             if v_channels[channel]:
                 self.ai_channels.add_ai_voltage_chan(f'FieldSensor/ai{channel}',
@@ -17,7 +17,7 @@ class DAQ(ni.task.Task):
                                                      max_val=v_max,
                                                      units=units)
 
-    def add_temperature_channel(self, temp_channels: list, type):
+    def add_temperature_channels(self, temp_channels: list, type):
         for channel in range(len(temp_channels)):
             if temp_channels[channel]:
                 self.ai_channels.add_ai_thrmcpl_chan(f'MagnetTemp/ai{channel}',
