@@ -362,14 +362,15 @@ class ProgramControls(ttk.LabelFrame):
             self.lbl_controls_status.configure(text=f'Loaded alignment file\n{self.alignment_file}')
 
     def start_measurement(self):
-        print('Thermocouple Channels', [i.get() for i in self.program_controls_parent.daq_frame.therm_frame.therm_chan_var])
-        print('Thermocouple Type', self.program_controls_parent.daq_frame.therm_frame.cbox_therm_type.get())
-        print('Temperature Units', self.program_controls_parent.daq_frame.therm_frame.radio_value_temp_units.get())
-        print('Voltage Channels', [i.get() for i in self.program_controls_parent.daq_frame.volt_frame.volt_chan_var])
-        print(f'V min: {self.program_controls_parent.daq_frame.volt_frame.ent_volt_min.get()}, V max: {self.program_controls_parent.daq_frame.volt_frame.ent_volt_max.get()}')
-        print('Voltage Units', self.program_controls_parent.daq_frame.volt_frame.cbox_volt_units.get())
-        print('Sampling Rate', self.program_controls_parent.daq_frame.sampling_frame.ent_sampling_rate.get())
-        print('Samps per chan', self.program_controls_parent.daq_frame.sampling_frame.ent_num_samples.get())
+        print('Thermocouple Channels:', [i.get() for i in self.program_controls_parent.daq_frame.therm_frame.therm_chan_var])
+        print('Thermocouple Type:', self.program_controls_parent.daq_frame.therm_frame.cbox_therm_type.get())
+        print('Temperature Units:', self.program_controls_parent.daq_frame.therm_frame.radio_value_temp_units.get())
+        print('Voltage Channels:', [i.get() for i in self.program_controls_parent.daq_frame.volt_frame.volt_chan_var])
+        print(f'V min: {self.program_controls_parent.daq_frame.volt_frame.ent_volt_min.get()}, \
+              V max: {self.program_controls_parent.daq_frame.volt_frame.ent_volt_max.get()}')
+        print('Voltage Units:', self.program_controls_parent.daq_frame.volt_frame.cbox_volt_units.get())
+        print('Sampling Rate:', self.program_controls_parent.daq_frame.sampling_frame.ent_sampling_rate.get())
+        print('Samps per chan:', self.program_controls_parent.daq_frame.sampling_frame.ent_num_samples.get())
         self.btn_start_meas.configure(state='disabled')
         self.btn_load_alignment.configure(state='disabled')
         self.btn_load_meas.configure(state='disabled')
@@ -400,6 +401,7 @@ class StartMeasurement(tk.Frame):
         self.mp_queue_status = mp.Queue()
         self.start_meas_parent.lbl_controls_status.configure(text='Starting measurement...')
         self.connect_cmm()
+        self.configure_daq()
 
     def connect_cmm(self):
         self.start_meas_parent.program_controls_parent.zeiss_frame.connect_cmm() 
