@@ -11,6 +11,8 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
 
+from tooltip import ToolTip
+
 class HallProbeApp(tk.Frame):
     def __init__(self, master):
         self.master = master
@@ -98,10 +100,12 @@ class ZeissControls(ttk.LabelFrame):
         self.lbl_scan_length_y = tk.Label(self, text='Y')
         self.ent_scan_length_y = ttk.Entry(self, width=9)
         self.lbl_meas_interval = tk.Label(self, text='Measurement Interval')
+        self.lbl_meas_interval.tooltip = ToolTip(self.lbl_meas_interval, 'Default value 0.5mm')
         self.ent_meas_interval = ttk.Entry(self, width=5, justify='right')
         self.lbl_meas_interval_mm = tk.Label(self, text='mm')
         self.ent_meas_interval.insert(0, '0.5')
         self.lbl_scan_speed = tk.Label(self, text='Scan Speed')
+        self.lbl_scan_speed.tooltip = ToolTip(self.lbl_scan_speed, 'Default value 5 mm/s')
         self.ent_scan_speed = ttk.Entry(self, width=5, justify='right')
         self.ent_scan_speed.insert(0, '5')
         self.lbl_scan_speed_mms = tk.Label(self, text='mm/s')
@@ -218,7 +222,9 @@ class VoltageControls(ttk.LabelFrame):
         for i in range(3):
             self.volt_chan_var[i].set(1)
         self.lbl_volt_min = tk.Label(self, text='V Min')
+        self.lbl_volt_min.tooltip = ToolTip(self.lbl_volt_min, 'Default value -5.0 V')
         self.lbl_volt_max = tk.Label(self, text='V Max')
+        self.lbl_volt_max.tooltip = ToolTip(self.lbl_volt_max, 'Default value 5.0 V')
         self.ent_volt_min = ttk.Entry(self, width=5)
         self.ent_volt_max = ttk.Entry(self, width=5)
         self.ent_volt_min.insert(0, '-5.0')
@@ -243,7 +249,9 @@ class SamplingControls(ttk.LabelFrame):
 
     def create_widgets(self):
         self.lbl_sampling_rate = tk.Label(self, text='Sampling Rate')
+        self.lbl_sampling_rate.tooltip = ToolTip(self.lbl_sampling_rate, 'Default value 1000')
         self.lbl_num_samples = tk.Label(self, text='Samples per Channel')
+        self.lbl_num_samples.tooltip = ToolTip(self.lbl_num_samples, 'Default value 100')
         self.ent_sampling_rate = ttk.Entry(self)
         self.ent_num_samples = ttk.Entry(self)
         self.ent_sampling_rate.insert(0, '1000')
