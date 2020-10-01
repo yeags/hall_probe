@@ -4,6 +4,7 @@ from zeisscmm import CMM
 from nicdaq import DAQ, Constants
 import numpy as np
 import multiprocessing as mp
+from datetime import datetime
 
 import matplotlib
 matplotlib.use("TkAgg")
@@ -87,6 +88,7 @@ class ZeissControls(ttk.LabelFrame):
     def create_widgets(self):
         self.btn_emerg_stop = ttk.Button(self, text='Emergency Stop', command=self.emergency_stop)
         self.lbl_conn_status = tk.Label(self, text='*Connection Status*')
+        self.lbl_conn_status.config(relief='sunken')
         self.lbl_start_pt = tk.Label(self, text='Start Point')
         self.lbl_start_pt_x = tk.Label(self, text='X')
         self.ent_start_pt_x = ttk.Entry(self, width=9)
@@ -111,7 +113,7 @@ class ZeissControls(ttk.LabelFrame):
         self.lbl_scan_speed_mms = tk.Label(self, text='mm/s')
 
         self.btn_emerg_stop.grid(column=0, row=0, columnspan=6)
-        self.lbl_conn_status.grid(column=0, row=1, columnspan=6)
+        self.lbl_conn_status.grid(column=0, row=1, columnspan=6, padx=5, pady=5, sticky='ew')
         self.lbl_start_pt.grid(column=0, row=2, columnspan=6)
         self.lbl_start_pt_x.grid(column=0, row=3)
         self.ent_start_pt_x.grid(column=1, row=3)
@@ -349,12 +351,13 @@ class ProgramControls(ttk.LabelFrame):
         self.btn_load_meas = ttk.Button(self, text='Load Measurement', command=self.load_measurement)
         self.btn_save_meas = ttk.Button(self, text='Save Measurement', command=self.save_measurement)
         self.lbl_controls_status = tk.Label(self, text='*Program Controls Status*')
+        self.lbl_controls_status.config(relief='sunken')
         self.btn_load_alignment.grid(column=0, row=0, padx=5, pady=5, sticky='e')
         self.btn_start_meas.grid(column=1, row=0, padx=5, pady=5, sticky='w')
         self.btn_stop_meas.grid(column=2, row=0, padx=5, pady=5, sticky='w')
         self.btn_load_meas.grid(column=0, row=1, padx=5, pady=5, sticky='e')
         self.btn_save_meas.grid(column=1, row=1, padx=5, pady=5, sticky='w')
-        self.lbl_controls_status.grid(column=0, row=2, columnspan=3, padx=5, pady=5)
+        self.lbl_controls_status.grid(column=0, row=2, columnspan=3, padx=5, pady=5, sticky='ew')
     
     def load_alignment(self):
         self.alignment_file = tk.filedialog.askopenfilename(filetypes=[('Text Files', '*.txt'), ('All Files', '*.*')])
@@ -407,17 +410,23 @@ class StartMeasurement(tk.Frame):
         self.start_meas_parent.program_controls_parent.zeiss_frame.connect_cmm() 
 
     def configure_daq(self):
-        self.nidaq = DAQ()
-        self.nidaq.add_temperature_channels([i.get() for i in self.start_meas_parent.program_controls_parent.daq_frame.therm_frame.therm_chan_var],
-                                           self.start_meas_parent.program_controls_parent.daq_frame.therm_frame.temp_units)
-        self.nidaq.add_voltage_channels([i.get() for i in self.start_meas_parent.program_controls_parent.daq_frame.volt_frame.volt_chan_var],
+        self.temperature_task = DAQ('Thermocouples')
+        self.hallsensor_task = DAQ('HallSensor')
+        self.temperature_task.add_temperature_channels([i.get() for i in self.start_meas_parent.program_controls_parent.daq_frame.therm_frame.therm_chan_var], 
+                                                       self.start_meas_parent.program_controls_parent.daq_frame.therm_frame.cbox_therm_type.get(), 
+                                                       self.start_meas_parent.program_controls_parent.daq_frame.therm_frame.radio_value_temp_units)
+        self.hallsensor_task.add_voltage_channels([i.get() for i in self.start_meas_parent.program_controls_parent.daq_frame.volt_frame.volt_chan_var],
                                        float(self.start_meas_parent.program_controls_parent.daq_frame.volt_frame.ent_volt_min.get()),
                                        float(self.start_meas_parent.program_controls_parent.daq_frame.volt_frame.ent_volt_max.get()),
                                        Constants.voltage_units()[self.start_meas_parent.program_controls_parent.daq_frame.volt_frame.cbox_volt_units.get()])
-        self.nidaq.timing.cfg_samp_clk_timing(int(self.start_meas_parent.program_controls_parent.daq_frame.sampling_frame.ent_sampling_rate.get()),
-                                              sample_mode=Constants.continuous(),
-                                              samps_per_chan=self.start_meas_parent.program_controls_parent.daq_frame.sampling_frame.ent_num_samples.get())
-
+        self.hallsensor_task.set_sampling(int(self.start_meas_parent.program_controls_parent.daq_frame.sampling_frame.ent_sampling_rate.get()), \
+                                          int(self.start_meas_parent.program_controls_parent.daq_frame.sampling_frame.ent_num_samples.get()))
+    
+    def create_file(self):
+        self.datafile = open(f'{self.start_meas_parent.program_controls_parent.magnet_info_frame.ent_partnum.get()} - \
+                             SN{self.start_meas_parent.program_controls_parent.magnet_info_frame.ent_serial.get()} - ' + \
+                             datetime.now().strftime('%Y-%m-%d') + '.txt', 'w')
+        
 if __name__ == '__main__':
     app = HallProbeApp(tk.Tk())
     app.mainloop()
