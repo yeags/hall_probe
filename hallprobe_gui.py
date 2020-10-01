@@ -154,6 +154,7 @@ class ZeissControls(ttk.LabelFrame):
     
 class DaqControls(ttk.LabelFrame):
     def __init__(self, parent, title='DAQ Controls'):
+        self.daq_controls_parent = parent
         super().__init__(parent, text=title, labelanchor='n')
         self.create_widgets()
 
@@ -167,6 +168,7 @@ class DaqControls(ttk.LabelFrame):
 
 class ThermocoupleControls(ttk.LabelFrame):
     def __init__(self, parent, title='Thermocouple Controls'):
+        self.thermocouple_controls_parent = parent
         super().__init__(parent, text=title, labelanchor='n')
         # self.therm_channels = []
         self.therm_chan_var = []
