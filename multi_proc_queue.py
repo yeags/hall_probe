@@ -8,14 +8,14 @@ def sleep(duration, get_now=perf_counter):
     while now < end:
         now = get_now()
 
-def f(x, status):
+def f(x, status): 
     while True:
         if x.empty():
             x.put(randint(1, 20))
-        if status.empty() == False:
+        elif status.empty() == False:
             break
         sleep(0.0125)
-
+    
 def g(x, status):
     for i in range(20):
         print(f'iteration {i}\tq size: {x.qsize()}\tcontents: {x.get()}')

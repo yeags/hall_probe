@@ -4,14 +4,13 @@ from tkinter import ttk
 
 import matplotlib
 matplotlib.use("TkAgg")
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
 
 
 class voltageContinuousInput(tk.Frame):
 
     def __init__(self, master):
-        # tk.Frame.__init__(self, master)
         super().__init__(master)
 
         #Configure root tk class
@@ -53,7 +52,7 @@ class voltageContinuousInput(tk.Frame):
         #Create and start task
         self.task = nidaqmx.Task()
         self.task.ai_channels.add_ai_voltage_chan(physicalChannel, min_val=minVoltage, max_val=maxVoltage)
-        self.task.timing.cfg_samp_clk_timing(sampleRate,sample_mode=nidaqmx.constants.AcquisitionType.CONTINUOUS,samps_per_chan=self.numberOfSamples*3)
+        self.task.timing.cfg_samp_clk_timing(sampleRate,sample_mode=nidaqmx.constants.AcquisitionType.CONTINUOUS,samps_per_chan=self.numberOfSamples)
         self.task.start()
 
         #spin off call to check 
@@ -85,7 +84,6 @@ class voltageContinuousInput(tk.Frame):
 class channelSettings(tk.LabelFrame):
 
     def __init__(self, parent, title):
-        # tk.LabelFrame.__init__(self, parent, text=title, labelanchor='n')
         super().__init__(parent, text=title, labelanchor='n')
         self.parent = parent
         self.grid_columnconfigure(0, weight=1)
@@ -118,7 +116,6 @@ class channelSettings(tk.LabelFrame):
 class inputSettings(tk.LabelFrame):
 
     def __init__(self, parent, title):
-        # tk.LabelFrame.__init__(self, parent, text=title, labelanchor='n')
         super().__init__(parent, text=title, labelanchor='n')
         self.parent = parent
         self.xPadding = (30,30)
@@ -148,7 +145,6 @@ class inputSettings(tk.LabelFrame):
 class graphData(tk.Frame):
 
     def __init__(self, parent):
-        # tk.Frame.__init__(self, parent)
         super().__init__(parent)
         self.create_widgets()
 
@@ -156,15 +152,17 @@ class graphData(tk.Frame):
         self.graphTitle = ttk.Label(self, text="Voltage Input")
         self.fig = Figure(figsize=(7,5), dpi=100)
         self.ax = self.fig.add_subplot(1,1,1)
+        self.ax.grid()
         self.ax.set_title("Acquired Data")
         self.graph = FigureCanvasTkAgg(self.fig, self)
         self.graph.draw()
+        self.toolbar = NavigationToolbar2Tk(self.graph, self)
+        self.toolbar.update()
         self.graph.get_tk_widget().pack()
 
 
 if __name__ == '__main__':
     #Creates the tk class and primary application "voltageContinuousInput"
-    # root = tk.Tk()
     app = voltageContinuousInput(tk.Tk())
 
     #start the application
