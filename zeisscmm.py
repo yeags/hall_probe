@@ -1,3 +1,4 @@
+from time import sleep
 import socket
 
 class CMM(socket.socket):
@@ -28,7 +29,14 @@ class CMM(socket.socket):
         Double check to make sure speed command is G01 or G53!!!
         '''
         self.send(f'G01X{speed}Y{speed}Z{speed}\r\n'.encode('ascii'))
-
+    
+    def wait(self, delay):
+        while '@_' in self.get_status():
+            pass
+        while '@_' not in self.get_status():
+            pass
+        sleep(delay)
+    
     def goto_position(self, xyz):
         self.send(f'G02X{xyz[0]}Y{xyz[1]}Z{xyz[2]}\r\n'.encode('ascii'))
     

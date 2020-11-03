@@ -29,6 +29,10 @@ class HallProbeApp(tk.Frame):
         self.pack()
         self.controls.grid(column=0, row=0, padx=5, pady=5)
         self.visuals.grid(column=1, row=0, padx=5, pady=5)
+    
+    def update_graph_labels(self):
+        self.visuals.temp_plot.temp_frame_parent.temp_plot.update_labels()
+
 
 class ControlsFrame(tk.Frame):
     def __init__(self, parent):
@@ -154,6 +158,7 @@ class ZeissControls(ttk.LabelFrame):
     
 class DaqControls(ttk.LabelFrame):
     def __init__(self, parent, title='DAQ Controls'):
+        self.daq_controls_parent = parent
         super().__init__(parent, text=title, labelanchor='n')
         self.create_widgets()
 
@@ -167,6 +172,7 @@ class DaqControls(ttk.LabelFrame):
 
 class ThermocoupleControls(ttk.LabelFrame):
     def __init__(self, parent, title='Thermocouple Controls'):
+        self.thermocouple_controls_parent = parent
         super().__init__(parent, text=title, labelanchor='n')
         # self.therm_channels = []
         self.therm_chan_var = []
@@ -197,9 +203,12 @@ class ThermocoupleControls(ttk.LabelFrame):
         self.lbl_temp_units.grid(column=0, row=12)
         self.radio_frame = tk.Frame(self)
         self.radio_frame.grid(column=0, row=13, columnspan=3)
-        self.radio_btn_c = ttk.Radiobutton(self.radio_frame, text='C', variable=self.radio_value_temp_units, value='C')
-        self.radio_btn_f = ttk.Radiobutton(self.radio_frame, text='F', variable=self.radio_value_temp_units, value='F')
-        self.radio_btn_k = ttk.Radiobutton(self.radio_frame, text='K', variable=self.radio_value_temp_units, value='K')
+        self.radio_btn_c = ttk.Radiobutton(self.radio_frame, text='C', variable=self.radio_value_temp_units, value='C',
+                                           command=self.thermocouple_controls_parent.daq_controls_parent.parent_controls_frame.update_graph_labels)
+        self.radio_btn_f = ttk.Radiobutton(self.radio_frame, text='F', variable=self.radio_value_temp_units, value='F',
+                                           command=self.thermocouple_controls_parent.daq_controls_parent.parent_controls_frame.update_graph_labels)
+        self.radio_btn_k = ttk.Radiobutton(self.radio_frame, text='K', variable=self.radio_value_temp_units, value='K',
+                                           command=self.thermocouple_controls_parent.daq_controls_parent.parent_controls_frame.update_graph_labels)
         self.radio_value_temp_units.set('C')
         self.radio_btn_c.grid(column=0, row=0)
         self.radio_btn_f.grid(column=1, row=0, padx=10)
@@ -315,6 +324,8 @@ class PlotTemperature(tk.Frame):
         self.toolbar = NavigationToolbar2Tk(self.graph, self.plot_temp_parent)
         self.toolbar.update()
         self.graph.get_tk_widget().pack()
+    def update_ylabel(self):
+        self.ax.set_ylabel(f'Temperature [{self.plot_temp_parent.temp_frame_parent.visuals_frame_parent.controls.daq_frame.therm_frame.radio_value_temp_units.get()}]')
 
 class FieldFrame(tk.Frame):
     def __init__(self, parent):
@@ -327,6 +338,9 @@ class TemperatureFrame(tk.Frame):
         self.temp_frame_parent = parent
         super().__init__(parent)
         self.temp_plot = PlotTemperature(self)
+    
+    def update_labels(self):
+        self.temp_plot.update_ylabel()
 
 class CalibrationTools(ttk.LabelFrame):
     def __init__(self, parent):
