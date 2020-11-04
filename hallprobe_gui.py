@@ -326,6 +326,7 @@ class PlotTemperature(tk.Frame):
         self.graph.get_tk_widget().pack()
     def update_ylabel(self):
         self.ax.set_ylabel(f'Temperature [{self.plot_temp_parent.temp_frame_parent.visuals_frame_parent.controls.daq_frame.therm_frame.radio_value_temp_units.get()}]')
+        self.graph.draw()
 
 class FieldFrame(tk.Frame):
     def __init__(self, parent):
