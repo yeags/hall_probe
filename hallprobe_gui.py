@@ -78,9 +78,9 @@ class MagnetInformation(ttk.LabelFrame):
         self.ent_serial = ttk.Entry(self)
 
         self.lbl_partnum.grid(column=0, row=0, sticky='w', padx=5)
-        self.ent_partnum.grid(column=0, row=1, sticky='w', padx=5)
+        self.ent_partnum.grid(column=0, row=1, sticky='w', padx=5, pady=(0,5))
         self.lbl_serial.grid(column=1, row=0, sticky='w', padx=5)
-        self.ent_serial.grid(column=1, row=1, sticky='w', padx=5)
+        self.ent_serial.grid(column=1, row=1, sticky='w', padx=5, pady=(0,5))
 
 class ZeissControls(ttk.LabelFrame):
     def __init__(self, parent, title='Zeiss CMM Controls'):
@@ -314,7 +314,7 @@ class PlotTemperature(tk.Frame):
         self.ax = self.fig.add_subplot(111)
         self.ax.set_title('Magnet Temperature')
         self.ax.set_xlabel('Time [min]')
-        self.ax.set_ylabel(f'Temperature [{self.plot_temp_parent.temp_frame_parent.visuals_frame_parent.controls.daq_frame.therm_frame.radio_value_temp_units.get()}]')
+        self.ax.set_ylabel(f'Temperature [$^\circ${self.plot_temp_parent.temp_frame_parent.visuals_frame_parent.controls.daq_frame.therm_frame.radio_value_temp_units.get()}]')
         self.ax.grid()
         self.graph = FigureCanvasTkAgg(self.fig, self.plot_temp_parent)
         self.graph.draw()
@@ -325,7 +325,7 @@ class PlotTemperature(tk.Frame):
         self.toolbar.update()
         self.graph.get_tk_widget().pack()
     def update_ylabel(self):
-        self.ax.set_ylabel(f'Temperature [{self.plot_temp_parent.temp_frame_parent.visuals_frame_parent.controls.daq_frame.therm_frame.radio_value_temp_units.get()}]')
+        self.ax.set_ylabel(f'Temperature [$^\circ${self.plot_temp_parent.temp_frame_parent.visuals_frame_parent.controls.daq_frame.therm_frame.radio_value_temp_units.get()}]')
         self.graph.draw()
 
 class FieldFrame(tk.Frame):
