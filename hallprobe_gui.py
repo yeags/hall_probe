@@ -15,6 +15,9 @@ from matplotlib.figure import Figure
 from tooltip import ToolTip
 
 class HallProbeApp(tk.Frame):
+    '''
+    Master tk frame to place all containers in.
+    '''
     def __init__(self, master):
         self.master = master
         super().__init__(master)
@@ -35,6 +38,9 @@ class HallProbeApp(tk.Frame):
 
 
 class ControlsFrame(tk.Frame):
+    '''
+    Parent tk frame for inputs, parameters, and controls options.
+    '''
     def __init__(self, parent):
         self.parent_controls_frame = parent
         super().__init__(parent)
@@ -54,6 +60,9 @@ class ControlsFrame(tk.Frame):
         self.program_frame.grid(column=0, row=4)
 
 class VisualsFrame(tk.Frame):
+    '''
+    Parent tk frame for graphical plots.
+    '''
     def __init__(self, parent):
         self.visuals_frame_parent = parent
         super().__init__(parent)
@@ -66,6 +75,9 @@ class VisualsFrame(tk.Frame):
         self.temp_plot.grid(column=0, row=1)
 
 class MagnetInformation(ttk.LabelFrame):
+    '''
+    tk frame for part identification
+    '''
     def __init__(self, parent, title='Magnet Information'):
         self.magnet_info_parent = parent
         super().__init__(parent, text=title, labelanchor='n')
@@ -83,6 +95,10 @@ class MagnetInformation(ttk.LabelFrame):
         self.ent_serial.grid(column=1, row=1, sticky='w', padx=5, pady=(0,5))
 
 class ZeissControls(ttk.LabelFrame):
+    '''
+    tk frame for inputting CMM parameters such as
+    starting coordinate, scan length, speed, and measurement interval
+    '''
     def __init__(self, parent, title='Zeiss CMM Controls'):
         self.zeiss_controls_parent = parent
         super().__init__(parent, text=title, labelanchor='n')
@@ -157,6 +173,9 @@ class ZeissControls(ttk.LabelFrame):
             self.lbl_conn_status['text'] = 'Already Disconnected'
     
 class DaqControls(ttk.LabelFrame):
+    '''
+    Parent tk frame for NI cDAQ sensor module parameters.
+    '''
     def __init__(self, parent, title='DAQ Controls'):
         self.daq_controls_parent = parent
         super().__init__(parent, text=title, labelanchor='n')
@@ -171,6 +190,9 @@ class DaqControls(ttk.LabelFrame):
         self.sampling_frame.grid(column=1, row=1, rowspan=2, padx=10, pady=10, sticky='n')
 
 class ThermocoupleControls(ttk.LabelFrame):
+    '''
+    tk frame for NI cDAQ thermocouple module parameters
+    '''
     def __init__(self, parent, title='Thermocouple Controls'):
         self.thermocouple_controls_parent = parent
         super().__init__(parent, text=title, labelanchor='n')
@@ -215,6 +237,9 @@ class ThermocoupleControls(ttk.LabelFrame):
         self.radio_btn_k.grid(column=2, row=0)
 
 class VoltageControls(ttk.LabelFrame):
+    '''
+    tk frame for NI cDAQ voltage module parameters
+    '''
     def __init__(self, parent, title='Voltage Controls'):
         self.voltage_controls_parent = parent
         super().__init__(parent, text=title, labelanchor='n')
@@ -253,6 +278,9 @@ class VoltageControls(ttk.LabelFrame):
         self.cbox_volt_units.grid(column=0, row=8, columnspan=2)
         
 class SamplingControls(ttk.LabelFrame):
+    '''
+    tk frame for setting sampling configuration for NI cDAQ
+    '''
     def __init__(self, parent):
         self.sampling_controls_parent = parent
         super().__init__(parent, text='Sampling Parameters', labelanchor='n')
@@ -273,6 +301,9 @@ class SamplingControls(ttk.LabelFrame):
         self.ent_num_samples.grid(column=0, row=3, padx=5, pady=(0,5), sticky='w')
 
 class PlotField(tk.Frame):
+    '''
+    tk frame for plotting magnetic field data
+    '''
     def __init__(self, parent):
         self.plotfield_parent = parent
         super().__init__(parent)
@@ -301,6 +332,9 @@ class PlotField(tk.Frame):
                                          fill=tk.BOTH, expand=1)
 
 class PlotTemperature(tk.Frame):
+    '''
+    tk frame for plotting temperature sensor data
+    '''
     def __init__(self, parent):
         self.plot_temp_parent = parent
         super().__init__(parent)
@@ -329,12 +363,20 @@ class PlotTemperature(tk.Frame):
         self.graph.draw()
 
 class FieldFrame(tk.Frame):
+    '''
+    Parent tk frame for magnetic field plot.
+    This frame is used for gui placement only.
+    '''
     def __init__(self, parent):
         self.field_frame_parent = parent
         super().__init__(parent)
         self.field_plot = PlotField(self)
 
 class TemperatureFrame(tk.Frame):
+    '''
+    Parent tk frame for temperature plot.
+    This frame is used for gui placement only.
+    '''
     def __init__(self, parent):
         self.temp_frame_parent = parent
         super().__init__(parent)
@@ -344,6 +386,9 @@ class TemperatureFrame(tk.Frame):
         self.temp_plot.update_ylabel()
 
 class CalibrationTools(ttk.LabelFrame):
+    '''
+    tk frame for qualifying the hall sensor probe on the CMM.
+    '''
     def __init__(self, parent):
         self.calib_tools_parent = parent
         super().__init__(parent, text='Calibration Tools', labelanchor='n')
@@ -351,9 +396,14 @@ class CalibrationTools(ttk.LabelFrame):
 
     def create_widgets(self):
         self.lbl_placeholder = tk.Label(self, text='Placeholder Label')
-        self.lbl_placeholder.grid(column=0, row=0)
+        self.lbl_placeholder.grid(column=0, row=0, padx=5, pady=5)
 
 class ProgramControls(ttk.LabelFrame):
+    '''
+    Parent tk frame for main program controls such as:
+    loading magnet alignment, start/stop measurement,
+    saving a measurement and loading a previously saved measurement
+    '''
     def __init__(self, parent, title='Program Controls'):
         self.program_controls_parent = parent
         super().__init__(parent, text=title, labelanchor='n')
@@ -412,6 +462,10 @@ class ProgramControls(ttk.LabelFrame):
         pass
 
 class StartMeasurement(tk.Frame):
+    '''
+    Empty tk frame used for starting a measurement session based off
+    set parameters and loaded magnet alignment.
+    '''
     def __init__(self, parent):
         self.start_meas_parent = parent
         super().__init__(parent)
