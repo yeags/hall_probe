@@ -3,8 +3,8 @@ from tkinter import ttk
 from zeisscmm import CMM
 from nicdaq import DAQ, Constants
 import numpy as np
-import multiprocessing as mp
 from datetime import datetime
+import threading
 
 import matplotlib
 matplotlib.use("TkAgg")
@@ -21,7 +21,7 @@ class HallProbeApp(tk.Frame):
     def __init__(self, master):
         self.master = master
         super().__init__(master)
-        self.master.title('Hall Probe Integration App')
+        self.master.title('Hall Probe CMM Program')
         self.master.iconbitmap('magnet.ico')
         self.master.geometry('1200x900')
         self.create_frames()
@@ -352,7 +352,6 @@ class PlotTemperature(tk.Frame):
         self.ax.grid()
         self.graph = FigureCanvasTkAgg(self.fig, self.plot_temp_parent)
         self.graph.draw()
-        # print([i.get() for i in self.plot_temp_parent.temp_frame_parent.visuals_frame_parent.controls.daq_frame.therm_frame.therm_chan_var])
         self.ax.plot([1,2,3,4,5,6,7,8], [19.8, 19.9, 20, 20, 20.5, 20.7, 20.8, 21], label='channel 0')
         self.ax.legend()
         self.toolbar = NavigationToolbar2Tk(self.graph, self.plot_temp_parent)
@@ -469,8 +468,6 @@ class StartMeasurement(tk.Frame):
     def __init__(self, parent):
         self.start_meas_parent = parent
         super().__init__(parent)
-        self.mp_queue = mp.Queue()
-        self.mp_queue_status = mp.Queue()
         self.start_meas_parent.lbl_controls_status.configure(text='Starting measurement...')
         self.connect_cmm()
         self.configure_daq()
