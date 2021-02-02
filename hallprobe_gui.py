@@ -23,8 +23,9 @@ class HallProbeApp(tk.Frame):
         super().__init__(master)
         self.master.title('Hall Probe CMM Program')
         self.master.iconbitmap('magnet.ico')
-        self.master.geometry('1200x900')
+        self.master.geometry('1200x950')
         self.daq_tasks = cDAQ(self)
+        self.cmm = CMM()
         self.create_frames()
     
     def create_frames(self):
@@ -36,10 +37,15 @@ class HallProbeApp(tk.Frame):
     
     def update_graph_labels(self):
         self.visuals.temp_plot.temp_frame_parent.temp_plot.update_labels()
+    
+    def on_closing(self):
+        if tk.messagebox.askokcancel('Quit', 'Do you want to quit?'):
+            self.cmm.close()
+            self.master.destroy()
 
 class cDAQ(tk.Frame):
     def __init__(self, parent):
-        self.parent_cdaq = parent
+        self.cdaq_parent = parent
         super().__init__(parent)
         self.create_tasks()
     
@@ -55,7 +61,7 @@ class ControlsFrame(tk.Frame):
     Parent tk frame for inputs, parameters, and controls options.
     '''
     def __init__(self, parent):
-        self.parent_controls_frame = parent
+        self.controls_frame_parent = parent
         super().__init__(parent)
         self.create_frames()
     
@@ -239,11 +245,11 @@ class ThermocoupleControls(ttk.LabelFrame):
         self.radio_frame = tk.Frame(self)
         self.radio_frame.grid(column=0, row=13, columnspan=3)
         self.radio_btn_c = ttk.Radiobutton(self.radio_frame, text='C', variable=self.radio_value_temp_units, value='C',
-                                           command=self.thermocouple_controls_parent.daq_controls_parent.parent_controls_frame.update_graph_labels)
+                                           command=self.thermocouple_controls_parent.daq_controls_parent.controls_frame_parent.update_graph_labels)
         self.radio_btn_f = ttk.Radiobutton(self.radio_frame, text='F', variable=self.radio_value_temp_units, value='F',
-                                           command=self.thermocouple_controls_parent.daq_controls_parent.parent_controls_frame.update_graph_labels)
+                                           command=self.thermocouple_controls_parent.daq_controls_parent.controls_frame_parent.update_graph_labels)
         self.radio_btn_k = ttk.Radiobutton(self.radio_frame, text='K', variable=self.radio_value_temp_units, value='K',
-                                           command=self.thermocouple_controls_parent.daq_controls_parent.parent_controls_frame.update_graph_labels)
+                                           command=self.thermocouple_controls_parent.daq_controls_parent.controls_frame_parent.update_graph_labels)
         self.radio_value_temp_units.set('C')
         self.radio_btn_c.grid(column=0, row=0)
         self.radio_btn_f.grid(column=1, row=0, padx=10)
@@ -258,13 +264,14 @@ class VoltageControls(ttk.LabelFrame):
         super().__init__(parent, text=title, labelanchor='n')
         # self.volt_channels = []
         self.volt_chan_var = []
+        self.volt_chan_lbl = [' | ± x', ' | ± y', ' | ± z', ' | temp']
         self.create_frame()
         # print('volt channels', [i.get() for i in self.volt_chan_var])
 
     def create_frame(self):
         for j in range(4): # Create Voltage channel check buttons
             var = tk.IntVar(value=0)
-            chk_volt_channel = ttk.Checkbutton(self, text=f'Channel {j}', variable=var)
+            chk_volt_channel = ttk.Checkbutton(self, text=f'Channel {j} {self.volt_chan_lbl[j]}', variable=var)
             chk_volt_channel.grid(column=0, row=1+j, columnspan=2, sticky='w', padx=10)
             # self.volt_channels.append(chk_volt_channel)
             self.volt_chan_var.append(var)
@@ -404,11 +411,40 @@ class CalibrationTools(ttk.LabelFrame):
     def __init__(self, parent):
         self.calib_tools_parent = parent
         super().__init__(parent, text='Calibration Tools', labelanchor='n')
+        self.radio_power_val = tk.IntVar(value=0)
+        self.radio_fsv_val = tk.IntVar(value=0)
+        self.radio_range_val = tk.IntVar(value=2)
         self.create_widgets()
 
     def create_widgets(self):
-        self.lbl_placeholder = tk.Label(self, text='Placeholder Label')
-        self.lbl_placeholder.grid(column=0, row=0, padx=5, pady=5)
+        # power widgets
+        self.lblframe_power = ttk.LabelFrame(self, text='Power', labelanchor='n')
+        self.radio_btn_power_on = ttk.Radiobutton(self.lblframe_power, text='On', variable=self.radio_power_val, value=1)
+        self.radio_btn_power_off = ttk.Radiobutton(self.lblframe_power, text='Off', variable=self.radio_power_val, value=0)
+        # sensitivity widgets
+        self.lblframe_range = ttk.LabelFrame(self, text='Probe Range', labelanchor='n')
+        self.radio_btn_range_100mt = ttk.Radiobutton(self.lblframe_range, text='100 mT', variable=self.radio_range_val, value=0)
+        self.radio_btn_range_500mt = ttk.Radiobutton(self.lblframe_range, text='500 mT', variable=self.radio_range_val, value=1)
+        self.radio_btn_range_2t = ttk.Radiobutton(self.lblframe_range, text='2 T', variable=self.radio_range_val, value=2)
+        self.radio_btn_range_20t = ttk.Radiobutton(self.lblframe_range, text='20 T', variable=self.radio_range_val, value=3)
+        # fsv widgets
+        self.lblframe_fsv = ttk.LabelFrame(self, text='FSV Current', labelanchor='n')
+        self.radio_btn_fsv_on = ttk.Radiobutton(self.lblframe_fsv, text='On', variable=self.radio_fsv_val, value=1)
+        self.radio_btn_fsv_off = ttk.Radiobutton(self.lblframe_fsv, text='Off', variable=self.radio_fsv_val, value=0)
+        # place power frame
+        self.lblframe_power.grid(column=0, row=0, padx=5, pady=5, sticky='n')
+        self.radio_btn_power_on.grid(column=0, row=0)
+        self.radio_btn_power_off.grid(column=0, row=1)
+        # place sensitivity frame
+        self.lblframe_range.grid(column=1, row=0, padx=5, pady=5, sticky='n')
+        self.radio_btn_range_100mt.grid(column=0, row=0, sticky='w')
+        self.radio_btn_range_500mt.grid(column=0, row=1, sticky='w')
+        self.radio_btn_range_2t.grid(column=0, row=2, sticky='w')
+        self.radio_btn_range_20t.grid(column=0, row=3, sticky='w')
+        # place fsv frame
+        self.lblframe_fsv.grid(column=2, row=0, padx=5, pady=5, sticky='n')
+        self.radio_btn_fsv_on.grid(column=0, row=0)
+        self.radio_btn_fsv_off.grid(column=0, row=1)
 
 class ProgramControls(ttk.LabelFrame):
     '''
@@ -482,11 +518,11 @@ class StartMeasurement(tk.Frame):
         self.start_meas_parent = parent
         super().__init__(parent)
         self.start_meas_parent.lbl_controls_status.configure(text='Starting measurement...')
-        self.connect_cmm()
+        self.configure_cmm()
         self.configure_daq()
 
-    def connect_cmm(self):
-        self.start_meas_parent.program_controls_parent.zeiss_frame.connect_cmm() 
+    def configure_cmm(self):
+        self.start_meas_parent.program_controls_parent.parent_controls_frame.cmm.cnc_on()
 
     def configure_daq(self):
         self.temperature_task = DAQ('Thermocouples')
@@ -508,4 +544,5 @@ class StartMeasurement(tk.Frame):
         
 if __name__ == '__main__':
     app = HallProbeApp(tk.Tk())
-    app.mainloop()
+    app.master.protocol('WM_DELETE_WINDOW', app.on_closing)
+    app.master.mainloop()
