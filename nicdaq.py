@@ -10,13 +10,20 @@ class DAQ(ni.task.Task):
         self.task_name = task_name
         super().__init__(new_task_name=task_name)
     
-    def add_voltage_channels(self, v_channels: list, v_min: float, v_max: float, units):
+    def add_voltage_channels(self, v_channels: list, aiv_min: float, aiv_max: float, units):
         for channel in range(len(v_channels)):
             if v_channels[channel]:
                 self.ai_channels.add_ai_voltage_chan(f'FieldSensor/ai{channel}',
-                                                     min_val=v_min,
-                                                     max_val=v_max,
+                                                     min_val=aiv_min,
+                                                     max_val=aiv_max,
                                                      units=units)
+    
+    def add_analog_out_channels(self, ao_channels: list, aov_min: float, aov_max: float):
+        for channel in range(len(ao_channels)):
+            if ao_channels[channel]:
+                self.ao_channels.add_ao_voltage_chan(f'AnalogOut/ao{channel}',
+                                                     min_val=aov_min,
+                                                     max_val=aov_max)
 
     def add_temperature_channels(self, temp_channels: list, type, units):
         for channel in range(len(temp_channels)):

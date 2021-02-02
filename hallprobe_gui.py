@@ -24,6 +24,7 @@ class HallProbeApp(tk.Frame):
         self.master.title('Hall Probe CMM Program')
         self.master.iconbitmap('magnet.ico')
         self.master.geometry('1200x900')
+        self.daq_tasks = cDAQ(self)
         self.create_frames()
     
     def create_frames(self):
@@ -35,6 +36,18 @@ class HallProbeApp(tk.Frame):
     
     def update_graph_labels(self):
         self.visuals.temp_plot.temp_frame_parent.temp_plot.update_labels()
+
+class cDAQ(tk.Frame):
+    def __init__(self, parent):
+        self.parent_cdaq = parent
+        super().__init__(parent)
+        self.create_tasks()
+    
+    def create_tasks(self):
+        self.cdaq_hallprobe = DAQ('HallProbe')
+        self.cdaq_power_relay = DAQ('PowerRelay')
+        self.cdaq_fsv = DAQ('FSV')
+        self.cdaq_hall_sensitivity = DAQ('HallSensitivity')
 
 
 class ControlsFrame(tk.Frame):
