@@ -1,10 +1,12 @@
 import tkinter as tk
 from tkinter import ttk
 from zeisscmm import CMM
+import nidaqmx as ni
 from nicdaq import DAQ, Constants
 import numpy as np
 from datetime import datetime
 import threading
+import calibration
 
 import matplotlib
 matplotlib.use("TkAgg")
@@ -40,20 +42,43 @@ class HallProbeApp(tk.Frame):
     
     def on_closing(self):
         if tk.messagebox.askokcancel('Quit', 'Do you want to quit?'):
-            self.cmm.close()
+            try:
+                # self.daq_tasks.cdaq_fsv.write(cDAQ.FSV_OFF)
+                # self.daq_tasks.cdaq_hall_sensitivity.write(cDAQ.RANGE_OFF)
+                # self.daq_tasks.cdaq_power_relay.write(cDAQ.POWER_OFF)
+                # self.daq_tasks.cdaq_hallprobe.close()
+                self.cmm.close()
+            except:
+                self.master.destroy()
             self.master.destroy()
 
 class cDAQ(tk.Frame):
+    POWER_ON = 1.3
+    POWER_OFF = 0.0
+    FSV_OFF = 0.0
+    FSV_PLUS = 5.0
+    FSV_MINUS = -5.0
+    RANGE_2T = [5.0, 0.0]
+    RANGE_100MT = [0.0, 0.0]
+    RANGE_OFF = [0.0, 0.0] # Same as RANGE_100MT.  Simply used for turning off analog output voltage
     def __init__(self, parent):
         self.cdaq_parent = parent
         super().__init__(parent)
         self.create_tasks()
+        self.configure_tasks()
     
     def create_tasks(self):
         self.cdaq_hallprobe = DAQ('HallProbe')
+        self.cdaq_magnet_temp = DAQ('MagnetTemp')
         self.cdaq_power_relay = DAQ('PowerRelay')
         self.cdaq_fsv = DAQ('FSV')
         self.cdaq_hall_sensitivity = DAQ('HallSensitivity')
+    def configure_tasks(self):
+        self.cdaq_hallprobe.ai_channels.add_ai_voltage_chan('FieldSensor/ai0:3')
+        self.cdaq_hallprobe.timing.cfg_samp_clk_timing(1000, sample_mode=ni.constants.AcquisitionType.CONTINUOUS, samps_per_chan=100)
+        self.cdaq_power_relay.ao_channels.add_ao_voltage_chan('AnalogOut/ao0')
+        self.cdaq_fsv.ao_channels.add_ao_voltage_chan('AnalogOut/ao3')
+        self.cdaq_hall_sensitivity.ao_channels.add_ao_voltage_chan('AnalogOut/ao1:2')
 
 
 class ControlsFrame(tk.Frame):
@@ -165,12 +190,12 @@ class ZeissControls(ttk.LabelFrame):
         self.ent_scan_length_x.grid(column=1, row=5)
         self.lbl_scan_length_y.grid(column=2, row=5)
         self.ent_scan_length_y.grid(column=3, row=5)
-        self.lbl_meas_interval.grid(column=0, row=6, columnspan=4, sticky='w')
-        self.ent_meas_interval.grid(column=1, row=7, sticky='e')
-        self.lbl_meas_interval_mm.grid(column=2, row=7, columnspan=2, sticky='w')
-        self.lbl_scan_speed.grid(column=3, row=6, columnspan=4, sticky='e', padx=30)
-        self.ent_scan_speed.grid(column=4, row=7, sticky='e')
-        self.lbl_scan_speed_mms.grid(column=5, row=7, sticky='w')
+        # self.lbl_meas_interval.grid(column=0, row=6, columnspan=4, sticky='w')
+        # self.ent_meas_interval.grid(column=1, row=7, sticky='e')
+        # self.lbl_meas_interval_mm.grid(column=2, row=7, columnspan=2, sticky='w')
+        # self.lbl_scan_speed.grid(column=3, row=6, columnspan=4, sticky='e', padx=30)
+        # self.ent_scan_speed.grid(column=4, row=7, sticky='e')
+        # self.lbl_scan_speed_mms.grid(column=5, row=7, sticky='w')
 
     def emergency_stop(self):
         pass
