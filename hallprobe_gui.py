@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from zeisscmm import CMM
 import nidaqmx as ni
-from nicdaq import DAQ, Constants
+from nicdaq import HallDAQ, Constants
 import numpy as np
 from datetime import datetime
 import threading
@@ -26,7 +26,7 @@ class HallProbeApp(tk.Frame):
         self.master.title('Hall Probe CMM Program')
         self.master.iconbitmap('magnet.ico')
         self.master.geometry('1200x950')
-        self.daq_tasks = cDAQ(self)
+        self.daq_tasks = HallDAQ()
         self.cmm = CMM()
         self.create_frames()
     
@@ -51,35 +51,6 @@ class HallProbeApp(tk.Frame):
             except:
                 self.master.destroy()
             self.master.destroy()
-
-class cDAQ(tk.Frame):
-    POWER_ON = 1.3
-    POWER_OFF = 0.0
-    FSV_OFF = 0.0
-    FSV_PLUS = 5.0
-    FSV_MINUS = -5.0
-    RANGE_2T = [5.0, 0.0]
-    RANGE_100MT = [0.0, 0.0]
-    RANGE_OFF = [0.0, 0.0] # Same as RANGE_100MT.  Simply used for turning off analog output voltage
-    def __init__(self, parent):
-        self.cdaq_parent = parent
-        super().__init__(parent)
-        self.create_tasks()
-        self.configure_tasks()
-    
-    def create_tasks(self):
-        self.cdaq_hallprobe = DAQ('HallProbe')
-        self.cdaq_magnet_temp = DAQ('MagnetTemp')
-        self.cdaq_power_relay = DAQ('PowerRelay')
-        self.cdaq_fsv = DAQ('FSV')
-        self.cdaq_hall_sensitivity = DAQ('HallSensitivity')
-    def configure_tasks(self):
-        self.cdaq_hallprobe.ai_channels.add_ai_voltage_chan('FieldSensor/ai0:3')
-        self.cdaq_hallprobe.timing.cfg_samp_clk_timing(1000, sample_mode=ni.constants.AcquisitionType.CONTINUOUS, samps_per_chan=100)
-        self.cdaq_power_relay.ao_channels.add_ao_voltage_chan('AnalogOut/ao0')
-        self.cdaq_fsv.ao_channels.add_ao_voltage_chan('AnalogOut/ao3')
-        self.cdaq_hall_sensitivity.ao_channels.add_ao_voltage_chan('AnalogOut/ao1:2')
-
 
 class ControlsFrame(tk.Frame):
     '''
@@ -542,30 +513,6 @@ class StartMeasurement(tk.Frame):
     def __init__(self, parent):
         self.start_meas_parent = parent
         super().__init__(parent)
-        self.start_meas_parent.lbl_controls_status.configure(text='Starting measurement...')
-        self.configure_cmm()
-        self.configure_daq()
-
-    def configure_cmm(self):
-        self.start_meas_parent.program_controls_parent.parent_controls_frame.cmm.cnc_on()
-
-    def configure_daq(self):
-        self.temperature_task = DAQ('Thermocouples')
-        self.hallsensor_task = DAQ('HallSensor')
-        self.temperature_task.add_temperature_channels([i.get() for i in self.start_meas_parent.program_controls_parent.daq_frame.therm_frame.therm_chan_var], 
-                                                       self.start_meas_parent.program_controls_parent.daq_frame.therm_frame.cbox_therm_type.get(), 
-                                                       self.start_meas_parent.program_controls_parent.daq_frame.therm_frame.radio_value_temp_units)
-        self.hallsensor_task.add_voltage_channels([i.get() for i in self.start_meas_parent.program_controls_parent.daq_frame.volt_frame.volt_chan_var],
-                                       float(self.start_meas_parent.program_controls_parent.daq_frame.volt_frame.ent_volt_min.get()),
-                                       float(self.start_meas_parent.program_controls_parent.daq_frame.volt_frame.ent_volt_max.get()),
-                                       Constants.voltage_units()[self.start_meas_parent.program_controls_parent.daq_frame.volt_frame.cbox_volt_units.get()])
-        self.hallsensor_task.set_sampling(int(self.start_meas_parent.program_controls_parent.daq_frame.sampling_frame.ent_sampling_rate.get()), \
-                                          int(self.start_meas_parent.program_controls_parent.daq_frame.sampling_frame.ent_num_samples.get()))
-    
-    def create_file(self):
-        self.datafile = open(f'{self.start_meas_parent.program_controls_parent.magnet_info_frame.ent_partnum.get()} - \
-                             SN{self.start_meas_parent.program_controls_parent.magnet_info_frame.ent_serial.get()} - ' + \
-                             datetime.now().strftime('%Y-%m-%d') + '.txt', 'w')
         
 if __name__ == '__main__':
     app = HallProbeApp(tk.Tk())

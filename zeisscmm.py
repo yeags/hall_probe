@@ -13,11 +13,7 @@ class CMM(socket.socket):
         self.cnc_status = False
         self.speed = None
         self.position = None
-        self.mcs = np.array([[1,0,0],
-                             [0,1,0],
-                             [0,0,1]])
-        self.pcs_rotation = None
-        self.pcs_offset = None
+        self.get_status()
     
     def __repr__(self):
         return 'Zeiss CMM Object'
@@ -25,6 +21,7 @@ class CMM(socket.socket):
     def get_status(self):
         self.send('D16\r\n\x01'.encode('ascii'))
         self.status = self.recv(1024).decode('ascii')
+        return self.status
     
     def cnc_on(self):
         self.send('D01\r\n'.encode('ascii'))
@@ -37,6 +34,7 @@ class CMM(socket.socket):
         '''
         speed in mm/s (int or float)
         '''
+        self.speed = speed
         self.send(f'G53X{speed}Y{speed}Z{speed}\r\n'.encode('ascii'))
     
     def wait(self, delay):
@@ -79,7 +77,7 @@ def scan_area(start_point, x_length, y_length, grid=0.5):
 
 def scan_volume(start_point, x_length, y_length, z_length, grid=0.5):
     '''
-    function returns a (z_grid, waypoints, xyz columns) array which is a stack of planes along z
+    function returns a (z index, waypoints, xyz columns) array which is a stack of planes along z
     '''
     end_point = start_point + [x_length, y_length, z_length]
     num_waypoints = 4*y_length + 2
@@ -102,15 +100,39 @@ def scan_volume(start_point, x_length, y_length, z_length, grid=0.5):
     
     return volume
 
-def mcs(xyz_array, translation, rotation):
-    pass
+def transform_points(xyz_array, translation, rotation, inverse=False):
+    '''
+    xyz_array is a 2d or 3d numpy array of coordinate values
+    translation is a (3,) array
+    rotation is a (3,3) array
+    use inverse=True to go from mcs to pcs coordinates
+    '''
+    xyz_array_copy = xyz_array.copy()
+    if not inverse:
+        if xyz_array.ndim == 2:
+            for i, point in enumerate(xyz_array):
+                xyz_array_copy[i] = rotation@point + translation
 
-def pcs(xyz_array, translation, rotation):
-    pass
+        elif xyz_array.ndim == 3:
+            for i, height in enumerate(xyz_array):
+                for j, point in enumerate(height):
+                    xyz_array_copy[i, j] = rotation@point + translation
+
+    else:
+        if xyz_array.ndim == 2:
+            for i, point in enumerate(xyz_array):
+                xyz_array_copy[i] = np.linalg.inv(rotation)@(point - translation)
+
+        elif xyz_array.ndim == 3:
+            for i, height in enumerate(xyz_array):
+                for j, point in enumerate(height):
+                    xyz_array_copy[i, j] = np.linalg.inv(rotation)@(point - translation)
+    return xyz_array_copy
 
 if __name__ == '__main__':
-    a = CMM()
-    print(a)
-    a.get_status()
-    print(a.status)
-    a.close()
+    with CMM() as test:
+        print(test)
+        test.get_status()
+        print(test.status)
+        test.get_position()
+        print(test.position)

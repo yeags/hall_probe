@@ -1,7 +1,7 @@
 import nidaqmx as ni
 from time import sleep
 
-class DAQ(ni.task.Task):
+class DAQTask(ni.task.Task):
     '''
     Creates an NI Task
     Takes input parameters from Hall Probe GUI
@@ -41,6 +41,42 @@ class DAQ(ni.task.Task):
     def __repr__(self):
         return f'NI cDAQ Task: {self.task_name}'
 
+class HallDAQ:
+    POWER_ON = 1.3
+    POWER_OFF = 0.0
+    FSV_OFF = 0.0
+    FSV_PLUS = 5.0
+    FSV_MINUS = -5.0
+    RANGE_2T = [5.0, 0.0]
+    RANGE_100MT = [0.0, 0.0]
+    RANGE_OFF = [0.0, 0.0] # Same as RANGE_100MT.  Simply used for turning off analog output voltage
+    def __init__(self):
+        self.__create_tasks__()
+        self.__configure_tasks__()
+    
+    def __create_tasks__(self):
+        self.cdaq_hallprobe = DAQTask('HallProbe')
+        self.cdaq_magnet_temp = DAQTask('MagnetTemp')
+        self.cdaq_power_relay = DAQTask('PowerRelay')
+        self.cdaq_fsv = DAQTask('FSV')
+        self.cdaq_hall_sensitivity = DAQTask('HallSensitivity')
+    def __configure_tasks__(self):
+        self.cdaq_hallprobe.ai_channels.add_ai_voltage_chan('FieldSensor/ai0:3')
+        self.cdaq_hallprobe.timing.cfg_samp_clk_timing(1000, sample_mode=ni.constants.AcquisitionType.CONTINUOUS, samps_per_chan=100)
+        self.cdaq_power_relay.ao_channels.add_ao_voltage_chan('AnalogOut/ao0')
+        self.cdaq_fsv.ao_channels.add_ao_voltage_chan('AnalogOut/ao3')
+        self.cdaq_hall_sensitivity.ao_channels.add_ao_voltage_chan('AnalogOut/ao1:2')
+        # add magnet temp configuration when known and not using gui for input selection
+    def read_hall_sensor(self):
+        samples_available = self.cdaq_hallprobe._in_stream.avail_samp_per_chan
+        while samples_available < 100:
+            pass
+        sample = self.cdaq_hallprobe.read(samples_available)
+        return sample
+        
+    def read_magnet_temp(self):
+        pass
+
 class Constants:
     @staticmethod
     def therm_types():
@@ -63,7 +99,7 @@ class Constants:
 
 if __name__ == '__main__':
     print('Creating DAQmx Object...')
-    cdaq = DAQ('new task')
+    cdaq = DAQTask('new task')
     print(cdaq, 'Sleeping...')
     sleep(5)
     print('Closing DAQmx Object...')

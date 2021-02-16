@@ -1,4 +1,4 @@
-from nicdaq import DAQ
+from nicdaq import DAQTask
 from time import perf_counter
 import multiprocessing as mp
 
@@ -9,7 +9,7 @@ def sleep(duration, get_now=perf_counter):
         pass
 
 if __name__ == '__main__':
-    daq = DAQ()
+    daq = DAQTask('new task')
     print(daq)
     sleep(1)
     daq.close()
