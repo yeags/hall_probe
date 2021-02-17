@@ -25,9 +25,7 @@ class HallProbeApp(tk.Frame):
         super().__init__(master)
         self.master.title('Hall Probe CMM Program')
         self.master.iconbitmap('magnet.ico')
-        self.master.geometry('1200x950')
-        self.daq_tasks = HallDAQ()
-        self.cmm = CMM()
+        self.master.geometry('1350x900')
         self.create_frames()
     
     def create_frames(self):
@@ -42,14 +40,6 @@ class HallProbeApp(tk.Frame):
     
     def on_closing(self):
         if tk.messagebox.askokcancel('Quit', 'Do you want to quit?'):
-            try:
-                # self.daq_tasks.cdaq_fsv.write(cDAQ.FSV_OFF)
-                # self.daq_tasks.cdaq_hall_sensitivity.write(cDAQ.RANGE_OFF)
-                # self.daq_tasks.cdaq_power_relay.write(cDAQ.POWER_OFF)
-                # self.daq_tasks.cdaq_hallprobe.close()
-                self.cmm.close()
-            except:
-                self.master.destroy()
             self.master.destroy()
 
 class ControlsFrame(tk.Frame):
@@ -64,14 +54,12 @@ class ControlsFrame(tk.Frame):
     def create_frames(self):
         self.magnet_info_frame = MagnetInformation(self)
         self.zeiss_frame = ZeissControls(self)
-        self.calibration_frame = CalibrationTools(self)
-        self.daq_frame = DaqControls(self)
+        self.calibration_frame = ProbeQualification(self)
         self.program_frame = ProgramControls(self)
 
         self.magnet_info_frame.grid(column=0, row=0)
         self.zeiss_frame.grid(column=0, row=1)
         self.calibration_frame.grid(column=0, row=2)
-        self.daq_frame.grid(column=0, row=3)
         self.program_frame.grid(column=0, row=4)
 
 class VisualsFrame(tk.Frame):
@@ -136,16 +124,8 @@ class ZeissControls(ttk.LabelFrame):
         self.ent_scan_length_x = ttk.Entry(self, width=9)
         self.lbl_scan_length_y = tk.Label(self, text='Y')
         self.ent_scan_length_y = ttk.Entry(self, width=9)
-        self.lbl_meas_interval = tk.Label(self, text='Measurement Interval')
-        self.lbl_meas_interval.tooltip = ToolTip(self.lbl_meas_interval, 'Default value 0.5mm')
-        self.ent_meas_interval = ttk.Entry(self, width=5, justify='right')
-        self.lbl_meas_interval_mm = tk.Label(self, text='mm')
-        self.ent_meas_interval.insert(0, '0.5')
-        self.lbl_scan_speed = tk.Label(self, text='Scan Speed')
-        self.lbl_scan_speed.tooltip = ToolTip(self.lbl_scan_speed, 'Default value 5 mm/s')
-        self.ent_scan_speed = ttk.Entry(self, width=5, justify='right')
-        self.ent_scan_speed.insert(0, '5')
-        self.lbl_scan_speed_mms = tk.Label(self, text='mm/s')
+        self.lbl_scan_length_z = ttk.Label(self, text='Z')
+        self.ent_scan_length_z = ttk.Entry(self, width=9)
 
         self.btn_emerg_stop.grid(column=0, row=0, columnspan=6)
         self.lbl_conn_status.grid(column=0, row=1, columnspan=6, padx=5, pady=5, sticky='ew')
@@ -161,12 +141,8 @@ class ZeissControls(ttk.LabelFrame):
         self.ent_scan_length_x.grid(column=1, row=5)
         self.lbl_scan_length_y.grid(column=2, row=5)
         self.ent_scan_length_y.grid(column=3, row=5)
-        # self.lbl_meas_interval.grid(column=0, row=6, columnspan=4, sticky='w')
-        # self.ent_meas_interval.grid(column=1, row=7, sticky='e')
-        # self.lbl_meas_interval_mm.grid(column=2, row=7, columnspan=2, sticky='w')
-        # self.lbl_scan_speed.grid(column=3, row=6, columnspan=4, sticky='e', padx=30)
-        # self.ent_scan_speed.grid(column=4, row=7, sticky='e')
-        # self.lbl_scan_speed_mms.grid(column=5, row=7, sticky='w')
+        self.lbl_scan_length_z.grid(column=4, row=5)
+        self.ent_scan_length_z.grid(column=5, row=5)
 
     def emergency_stop(self):
         pass
@@ -186,135 +162,7 @@ class ZeissControls(ttk.LabelFrame):
             self.lbl_conn_status['text'] = 'Disconnected'
         except AttributeError:
             self.lbl_conn_status['text'] = 'Already Disconnected'
-    
-class DaqControls(ttk.LabelFrame):
-    '''
-    Parent tk frame for NI cDAQ sensor module parameters.
-    '''
-    def __init__(self, parent, title='DAQ Controls'):
-        self.daq_controls_parent = parent
-        super().__init__(parent, text=title, labelanchor='n')
-        self.create_widgets()
 
-    def create_widgets(self):
-        self.therm_frame = ThermocoupleControls(self)
-        self.volt_frame = VoltageControls(self)
-        self.sampling_frame = SamplingControls(self)
-        self.therm_frame.grid(column=0, row=0, rowspan=2, padx=10, pady=10, sticky='n')
-        self.volt_frame.grid(column=1, row=0, padx=10, pady=10, sticky='n')
-        self.sampling_frame.grid(column=1, row=1, rowspan=2, padx=10, pady=10, sticky='n')
-
-class ThermocoupleControls(ttk.LabelFrame):
-    '''
-    tk frame for NI cDAQ thermocouple module parameters
-    '''
-    def __init__(self, parent, title='Thermocouple Controls'):
-        self.thermocouple_controls_parent = parent
-        super().__init__(parent, text=title, labelanchor='n')
-        # self.therm_channels = []
-        self.therm_chan_var = []
-        self.radio_value_temp_units = tk.StringVar()
-        self.therm_types = Constants.therm_types()
-        self.temp_units = Constants.temp_units()
-        self.create_frame()
-
-    def create_frame(self):
-        for i in range(8): # Create Thermocouple channel check buttons
-            var = tk.IntVar(value=0)
-            chk_therm_channel = ttk.Checkbutton(self, text=f'Channel {i}', variable=var)
-            chk_therm_channel.grid(column=0, row=1+i, sticky='w')
-            # self.therm_channels.append(chk_therm_channel)
-            self.therm_chan_var.append(var)
-        self.therm_chan_var[0].set(1)
-        self.therm_chan_var[1].set(1)
-
-        self.therm_separator = ttk.Separator(self, orient=tk.HORIZONTAL)
-        self.therm_separator.grid(column=0, row=9, sticky='ew')
-        self.lbl_therm_type = tk.Label(self, text='Thermocouple Type')
-        self.lbl_therm_type.grid(column=0, row=10)
-        self.cbox_therm_type = ttk.Combobox(self, values=[i for i in self.therm_types.keys()])
-        self.cbox_therm_type['state'] = 'readonly'
-        self.cbox_therm_type.grid(column=0, row=11)
-        self.cbox_therm_type.current(3)
-        self.lbl_temp_units = tk.Label(self, text='Units')
-        self.lbl_temp_units.grid(column=0, row=12)
-        self.radio_frame = tk.Frame(self)
-        self.radio_frame.grid(column=0, row=13, columnspan=3)
-        self.radio_btn_c = ttk.Radiobutton(self.radio_frame, text='C', variable=self.radio_value_temp_units, value='C',
-                                           command=self.thermocouple_controls_parent.daq_controls_parent.controls_frame_parent.update_graph_labels)
-        self.radio_btn_f = ttk.Radiobutton(self.radio_frame, text='F', variable=self.radio_value_temp_units, value='F',
-                                           command=self.thermocouple_controls_parent.daq_controls_parent.controls_frame_parent.update_graph_labels)
-        self.radio_btn_k = ttk.Radiobutton(self.radio_frame, text='K', variable=self.radio_value_temp_units, value='K',
-                                           command=self.thermocouple_controls_parent.daq_controls_parent.controls_frame_parent.update_graph_labels)
-        self.radio_value_temp_units.set('C')
-        self.radio_btn_c.grid(column=0, row=0)
-        self.radio_btn_f.grid(column=1, row=0, padx=10)
-        self.radio_btn_k.grid(column=2, row=0)
-
-class VoltageControls(ttk.LabelFrame):
-    '''
-    tk frame for NI cDAQ voltage module parameters
-    '''
-    def __init__(self, parent, title='Voltage Controls'):
-        self.voltage_controls_parent = parent
-        super().__init__(parent, text=title, labelanchor='n')
-        # self.volt_channels = []
-        self.volt_chan_var = []
-        self.volt_chan_lbl = [' | ± x', ' | ± y', ' | ± z', ' | temp']
-        self.create_frame()
-        # print('volt channels', [i.get() for i in self.volt_chan_var])
-
-    def create_frame(self):
-        for j in range(4): # Create Voltage channel check buttons
-            var = tk.IntVar(value=0)
-            chk_volt_channel = ttk.Checkbutton(self, text=f'Channel {j} {self.volt_chan_lbl[j]}', variable=var)
-            chk_volt_channel.grid(column=0, row=1+j, columnspan=2, sticky='w', padx=10)
-            # self.volt_channels.append(chk_volt_channel)
-            self.volt_chan_var.append(var)
-        for i in range(3):
-            self.volt_chan_var[i].set(1)
-        self.lbl_volt_min = tk.Label(self, text='V Min')
-        self.lbl_volt_min.tooltip = ToolTip(self.lbl_volt_min, 'Default value -5.0 V')
-        self.lbl_volt_max = tk.Label(self, text='V Max')
-        self.lbl_volt_max.tooltip = ToolTip(self.lbl_volt_max, 'Default value 5.0 V')
-        self.ent_volt_min = ttk.Entry(self, width=5)
-        self.ent_volt_max = ttk.Entry(self, width=5)
-        self.ent_volt_min.insert(0, '-5.0')
-        self.ent_volt_max.insert(0, '5.0')
-        self.lbl_volt_min.grid(column=0, row = 5)
-        self.lbl_volt_max.grid(column=1, row = 5)
-        self.ent_volt_min.grid(column=0, row=6)
-        self.ent_volt_max.grid(column=1, row=6)
-        self.lbl_volt_units = tk.Label(self, text='Units')
-        self.lbl_volt_units.grid(column=0, row=7, columnspan=2)
-        self.cbox_volt_units = ttk.Combobox(self, values=['V', 'mT'])
-        self.cbox_volt_units['state'] = 'readonly'
-        self.cbox_volt_units.current(0)
-        # print('V units', self.cbox_volt_units.get())
-        self.cbox_volt_units.grid(column=0, row=8, columnspan=2)
-        
-class SamplingControls(ttk.LabelFrame):
-    '''
-    tk frame for setting sampling configuration for NI cDAQ
-    '''
-    def __init__(self, parent):
-        self.sampling_controls_parent = parent
-        super().__init__(parent, text='Sampling Parameters', labelanchor='n')
-        self.create_widgets()
-
-    def create_widgets(self):
-        self.lbl_sampling_rate = tk.Label(self, text='Sampling Rate')
-        self.lbl_sampling_rate.tooltip = ToolTip(self.lbl_sampling_rate, 'Default value 1000')
-        self.lbl_num_samples = tk.Label(self, text='Samples per Channel')
-        self.lbl_num_samples.tooltip = ToolTip(self.lbl_num_samples, 'Default value 100')
-        self.ent_sampling_rate = ttk.Entry(self)
-        self.ent_num_samples = ttk.Entry(self)
-        self.ent_sampling_rate.insert(0, '1000')
-        self.ent_num_samples.insert(0, '100')
-        self.lbl_sampling_rate.grid(column=0, row=0, padx=5, pady=5, sticky='w')
-        self.ent_sampling_rate.grid(column=0, row=1, padx=5, sticky='w')
-        self.lbl_num_samples.grid(column=0, row=2, padx=5, pady=5, sticky='w')
-        self.ent_num_samples.grid(column=0, row=3, padx=5, pady=(0,5), sticky='w')
 
 class PlotField(tk.Frame):
     '''
@@ -364,7 +212,7 @@ class PlotTemperature(tk.Frame):
         self.ax = self.fig.add_subplot(111)
         self.ax.set_title('Magnet Temperature')
         self.ax.set_xlabel('Time [min]')
-        self.ax.set_ylabel(f'Temperature [$^\circ${self.plot_temp_parent.temp_frame_parent.visuals_frame_parent.controls.daq_frame.therm_frame.radio_value_temp_units.get()}]')
+        self.ax.set_ylabel(r'Temperature [$^\circ$C]')
         self.ax.grid()
         self.graph = FigureCanvasTkAgg(self.fig, self.plot_temp_parent)
         self.graph.draw()
@@ -373,9 +221,6 @@ class PlotTemperature(tk.Frame):
         self.toolbar = NavigationToolbar2Tk(self.graph, self.plot_temp_parent)
         self.toolbar.update()
         self.graph.get_tk_widget().pack()
-    def update_ylabel(self):
-        self.ax.set_ylabel(f'Temperature [$^\circ${self.plot_temp_parent.temp_frame_parent.visuals_frame_parent.controls.daq_frame.therm_frame.radio_value_temp_units.get()}]')
-        self.graph.draw()
 
 class FieldFrame(tk.Frame):
     '''
@@ -396,51 +241,59 @@ class TemperatureFrame(tk.Frame):
         self.temp_frame_parent = parent
         super().__init__(parent)
         self.temp_plot = PlotTemperature(self)
-    
-    def update_labels(self):
-        self.temp_plot.update_ylabel()
 
-class CalibrationTools(ttk.LabelFrame):
+class ProbeQualification(ttk.LabelFrame):
     '''
     tk frame for qualifying the hall sensor probe on the CMM.
     '''
     def __init__(self, parent):
         self.calib_tools_parent = parent
-        super().__init__(parent, text='Calibration Tools', labelanchor='n')
-        self.radio_power_val = tk.IntVar(value=0)
-        self.radio_fsv_val = tk.IntVar(value=0)
-        self.radio_range_val = tk.IntVar(value=2)
+        super().__init__(parent, text='Hall Sensor Qualification', labelanchor='n')
+        self.fsv_filepath = tk.StringVar()
+        self.cube_filepath = tk.StringVar()
+        self.zero_gauss_filepath = tk.StringVar()
+        self.probe_calib_filepath = tk.StringVar()
         self.create_widgets()
 
     def create_widgets(self):
-        # power widgets
-        self.lblframe_power = ttk.LabelFrame(self, text='Power', labelanchor='n')
-        self.radio_btn_power_on = ttk.Radiobutton(self.lblframe_power, text='On', variable=self.radio_power_val, value=1)
-        self.radio_btn_power_off = ttk.Radiobutton(self.lblframe_power, text='Off', variable=self.radio_power_val, value=0)
-        # sensitivity widgets
-        self.lblframe_range = ttk.LabelFrame(self, text='Probe Range', labelanchor='n')
-        self.radio_btn_range_100mt = ttk.Radiobutton(self.lblframe_range, text='100 mT', variable=self.radio_range_val, value=0)
-        self.radio_btn_range_500mt = ttk.Radiobutton(self.lblframe_range, text='500 mT', variable=self.radio_range_val, value=1)
-        self.radio_btn_range_2t = ttk.Radiobutton(self.lblframe_range, text='2 T', variable=self.radio_range_val, value=2)
-        self.radio_btn_range_20t = ttk.Radiobutton(self.lblframe_range, text='20 T', variable=self.radio_range_val, value=3)
-        # fsv widgets
-        self.lblframe_fsv = ttk.LabelFrame(self, text='FSV Current', labelanchor='n')
-        self.radio_btn_fsv_on = ttk.Radiobutton(self.lblframe_fsv, text='On', variable=self.radio_fsv_val, value=1)
-        self.radio_btn_fsv_off = ttk.Radiobutton(self.lblframe_fsv, text='Off', variable=self.radio_fsv_val, value=0)
-        # place power frame
-        self.lblframe_power.grid(column=0, row=0, padx=5, pady=5, sticky='n')
-        self.radio_btn_power_on.grid(column=0, row=0)
-        self.radio_btn_power_off.grid(column=0, row=1)
-        # place sensitivity frame
-        self.lblframe_range.grid(column=1, row=0, padx=5, pady=5, sticky='n')
-        self.radio_btn_range_100mt.grid(column=0, row=0, sticky='w')
-        self.radio_btn_range_500mt.grid(column=0, row=1, sticky='w')
-        self.radio_btn_range_2t.grid(column=0, row=2, sticky='w')
-        self.radio_btn_range_20t.grid(column=0, row=3, sticky='w')
-        # place fsv frame
-        self.lblframe_fsv.grid(column=2, row=0, padx=5, pady=5, sticky='n')
-        self.radio_btn_fsv_on.grid(column=0, row=0)
-        self.radio_btn_fsv_off.grid(column=0, row=1)
+        self.btn_load_fsv = ttk.Button(self, text='Load FSV Alignment',
+                                       command=lambda: self.load_filepath(self.fsv_filepath, enable=self.btn_run_fsv))
+        self.btn_run_fsv = ttk.Button(self, text='Run FSV Qualification',
+                                      command=self.run_fsv, state='disabled')
+        self.btn_load_cube = ttk.Button(self, text='Load Cube Alignment',
+                                        command=lambda: self.load_filepath(self.cube_filepath, enable=self.btn_run_cube), state='disabled')
+        self.btn_run_cube = ttk.Button(self, text='Run Cube Qualification',
+                                       command=self.run_cube, state='disabled')
+        self.btn_load_zero_gauss = ttk.Button(self, text='Load Zero Gauss Alignment',
+                                              command=lambda: self.load_filepath(self.zero_gauss_filepath, enable=self.btn_run_zero_gauss), state='disabled')
+        self.btn_run_zero_gauss = ttk.Button(self, text='Run Zero Gauss Alignment',
+                                             command=self.run_zero_gauss, state='disabled')
+        self.btn_load_probe_calib = ttk.Button(self, text='Load Probe Calibration',
+                                               command=lambda: self.load_filepath(self.probe_calib_filepath))
+        self.lbl_instructions = ttk.Label(self, text='Qualification Instructions')
+        self.txt_instructions = tk.Text(self, wrap=tk.WORD, height=11, width=40, state='disabled')
+
+        self.btn_load_fsv.grid(column=0, row=0, sticky='w', padx=5, pady=(5,0))
+        self.btn_run_fsv.grid(column=0, row=1, sticky='w', padx=5, pady=(5,0))
+        self.btn_load_cube.grid(column=0, row=2, sticky='w', padx=5, pady=(5,0))
+        self.btn_run_cube.grid(column=0, row=3, sticky='w', padx=5, pady=(5,0))
+        self.btn_load_zero_gauss.grid(column=0, row=4, sticky='w', padx=5, pady=(5,0))
+        self.btn_run_zero_gauss.grid(column=0, row=5, sticky='w', padx=5, pady=(5,0))
+        self.btn_load_probe_calib.grid(column=0, row=6, sticky='w', padx=5, pady=(5))
+        self.lbl_instructions.grid(column=1, row=0, sticky='w', padx=5, pady=(5,0))
+        self.txt_instructions.grid(column=1, row=1, rowspan=7, sticky='nw', padx=5, pady=(0,5))
+
+    def load_filepath(self, filepath, enable=None):
+        filepath = tk.filedialog.askopenfilename(filetypes=[('Text Files', '*.txt'), ('All Files', '*.*')])
+        if enable != None:
+            enable.configure(state='enabled')
+    
+    def run_fsv(self):
+        self.btn_load_cube.configure(state='enabled')
+    def run_cube(self):
+        self.btn_load_zero_gauss.configure(state='enabled')
+    def run_zero_gauss(self):
+        pass
 
 class ProgramControls(ttk.LabelFrame):
     '''
@@ -474,15 +327,6 @@ class ProgramControls(ttk.LabelFrame):
             self.lbl_controls_status.configure(text=f'Loaded alignment file\n{self.alignment_file}')
 
     def start_measurement(self):
-        print('Thermocouple Channels:', [i.get() for i in self.program_controls_parent.daq_frame.therm_frame.therm_chan_var])
-        print('Thermocouple Type:', self.program_controls_parent.daq_frame.therm_frame.cbox_therm_type.get())
-        print('Temperature Units:', self.program_controls_parent.daq_frame.therm_frame.radio_value_temp_units.get())
-        print('Voltage Channels:', [i.get() for i in self.program_controls_parent.daq_frame.volt_frame.volt_chan_var])
-        print(f'V min: {self.program_controls_parent.daq_frame.volt_frame.ent_volt_min.get()}, \
-              V max: {self.program_controls_parent.daq_frame.volt_frame.ent_volt_max.get()}')
-        print('Voltage Units:', self.program_controls_parent.daq_frame.volt_frame.cbox_volt_units.get())
-        print('Sampling Rate:', self.program_controls_parent.daq_frame.sampling_frame.ent_sampling_rate.get())
-        print('Samps per chan:', self.program_controls_parent.daq_frame.sampling_frame.ent_num_samples.get())
         self.btn_start_meas.configure(state='disabled')
         self.btn_load_alignment.configure(state='disabled')
         self.btn_load_meas.configure(state='disabled')

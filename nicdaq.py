@@ -60,6 +60,7 @@ class HallDAQ:
         self.cdaq_power_relay = DAQTask('PowerRelay')
         self.cdaq_fsv = DAQTask('FSV')
         self.cdaq_hall_sensitivity = DAQTask('HallSensitivity')
+    
     def __configure_tasks__(self):
         self.cdaq_hallprobe.ai_channels.add_ai_voltage_chan('FieldSensor/ai0:3')
         self.cdaq_hallprobe.timing.cfg_samp_clk_timing(1000, sample_mode=ni.constants.AcquisitionType.CONTINUOUS, samps_per_chan=100)
@@ -67,11 +68,11 @@ class HallDAQ:
         self.cdaq_fsv.ao_channels.add_ao_voltage_chan('AnalogOut/ao3')
         self.cdaq_hall_sensitivity.ao_channels.add_ao_voltage_chan('AnalogOut/ao1:2')
         # add magnet temp configuration when known and not using gui for input selection
+    
     def read_hall_sensor(self):
-        samples_available = self.cdaq_hallprobe._in_stream.avail_samp_per_chan
-        while samples_available < 100:
+        while self.cdaq_hallprobe._in_stream.avail_samp_per_chan < 100:
             pass
-        sample = self.cdaq_hallprobe.read(samples_available)
+        sample = self.cdaq_hallprobe.read(self.cdaq_hallprobe._in_stream.avail_samp_per_chan)
         return sample
         
     def read_magnet_temp(self):
