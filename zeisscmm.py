@@ -12,7 +12,7 @@ class CMM(socket.socket):
         self.connect((ip, port))
         self.cnc_status = False
         self.speed = None
-        self.position = None
+        # self.position = None
         self.get_status()
     
     def __repr__(self):
@@ -53,7 +53,8 @@ class CMM(socket.socket):
     def get_position(self):
         self.send('D84\r\n\x01'.encode('ascii'))
         position_str = self.recv(1024).decode('ascii')
-        self.position = np.array([float(i) for i in re.findall(r'[+-]\d+\.\d+', position_str)])
+        # self.position = np.array([float(i) for i in re.findall(r'[+-]\d+\.\d+', position_str)])
+        return np.array([float(i) for i in re.findall(r'[+-]\d+\.\d+', position_str)])
 
 
 def scan_area(start_point, x_length, y_length, grid=0.5):
@@ -109,7 +110,10 @@ def transform_points(xyz_array, translation, rotation, inverse=False):
     '''
     xyz_array_copy = xyz_array.copy()
     if not inverse:
-        if xyz_array.ndim == 2:
+        if xyz_array.ndim == 1:
+            xyz_array_copy = rotation@xyz_array + translation
+        
+        elif xyz_array.ndim == 2:
             for i, point in enumerate(xyz_array):
                 xyz_array_copy[i] = rotation@point + translation
 
@@ -119,7 +123,10 @@ def transform_points(xyz_array, translation, rotation, inverse=False):
                     xyz_array_copy[i, j] = rotation@point + translation
 
     else:
-        if xyz_array.ndim == 2:
+        if xyz_array.ndim == 1:
+            xyz_array_copy = np.linalg.inv(rotation)@(xyz_array - translation)
+        
+        elif xyz_array.ndim == 2:
             for i, point in enumerate(xyz_array):
                 xyz_array_copy[i] = np.linalg.inv(rotation)@(point - translation)
 

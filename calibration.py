@@ -47,9 +47,10 @@ def calib_data(calib_coeffs, sensor_data, sensitivity=5):
     '''
     if sensor_data.shape != (4,):
         sensor_data = clean_raw_data(sensor_data)
-
     Bxyz = sensor_data[:3]
     temp_v = calib_coeffs[0, 0, 6]*sensor_data[3] + calib_coeffs[0, 0, 5]
+    
+    # k values are a (3,) array (x_coeff, y_coeff, z_coeff)
     if sensitivity == 5:
         k1 = calib_coeffs[:, 2, 0]
         k2 = calib_coeffs[:, 2, 1]
@@ -57,16 +58,17 @@ def calib_data(calib_coeffs, sensor_data, sensitivity=5):
         k4 = calib_coeffs[:, 2, 3]
         k5 = calib_coeffs[:, 2, 4]
     elif sensitivity == 100:
-        k1 = calib_coeffs[:, 0, 0]
-        k2 = calib_coeffs[:, 0, 1]
-        k3 = calib_coeffs[:, 0, 2]
-        k4 = calib_coeffs[:, 0, 3]
-        k5 = calib_coeffs[:, 0, 4]
+        k1 = calib_coeffs[0, 0, 0]
+        k2 = calib_coeffs[0, 0, 1]
+        k3 = calib_coeffs[0, 0, 2]
+        k4 = calib_coeffs[0, 0, 3]
+        k5 = calib_coeffs[0, 0, 4]
     else:
         print('Invalid sensitivity value')
     xyz_prime = k1 + Bxyz
     xyz_dbl_prime = k2 * xyz_prime**3 + xyz_prime
     xyz_cal_mT = (2 * (k5 * (xyz_dbl_prime + xyz_dbl_prime * k3 * temp_v + k4 * temp_v)) / sensitivity) * 1000
+
     return xyz_cal_mT
 
 if __name__ == "__main__":
