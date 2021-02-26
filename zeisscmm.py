@@ -81,7 +81,7 @@ def scan_volume(start_point, x_length, y_length, z_length, grid=0.5):
     function returns a (z index, waypoints, xyz columns) array which is a stack of planes along z
     '''
     end_point = start_point + [x_length, y_length, z_length]
-    num_waypoints = 4*y_length + 2
+    num_waypoints = int(2*(1/grid)*y_length + 2)
     num_y_patterns = int((num_waypoints-2)/4)
     x_pattern = np.tile(np.array([end_point[0], end_point[0], start_point[0], start_point[0]]), num_y_patterns)
     x = x_pattern.copy()
@@ -93,9 +93,9 @@ def scan_volume(start_point, x_length, y_length, z_length, grid=0.5):
     xyz_wp = np.array([x, y, z_wp]).T
     z = np.arange(start_point[2], end_point[2]+grid, grid)
     volume = np.zeros((z.shape[0], x.shape[0], 3))
+    new_z = xyz_wp.copy()
 
     for h in range(volume.shape[0]):
-        new_z = xyz_wp.copy()
         new_z[:, 2] = z[h]
         volume[h] = new_z
     

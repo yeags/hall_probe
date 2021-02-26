@@ -89,4 +89,21 @@ class HallDAQ:
         self.hall_sensitivity.close()
 
 if __name__ == '__main__':
-    pass
+    from time import sleep
+    daq = HallDAQ()
+    print('Powering on daq...')
+    daq.power_on()
+    print('Powered on.  Set to 2 T range.')
+    print('Starting task...')
+    daq.start_hallsensor_task()
+    sleep(0.05)
+    print('Reading from hall sensor...')
+    data = daq.read_hallsensor()
+    print(data)
+    print(f' Array shape: {data.shape}')
+    print('Stopping task')
+    daq.stop_hallsensor_task()
+    print('Power off')
+    daq.power_off()
+    print('Closing task')
+    daq.close_tasks()

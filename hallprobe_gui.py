@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from zeisscmm import CMM
 import nidaqmx as ni
-from nicdaq import HallDAQ, Constants
+from nicdaq import HallDAQ
 import numpy as np
 from datetime import datetime
 import threading
