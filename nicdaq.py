@@ -16,6 +16,8 @@ class HallDAQ:
         self.power_status = False
         self.fsv_status = False
         self.sensitivity_status = False
+        self.hs_task_status = False
+        self.mag_temp_task_status = False
 
         self.__create_tasks__()
         self.__configure_tasks__()
@@ -29,11 +31,16 @@ class HallDAQ:
     
     def __configure_tasks__(self):
         self.hallsensor.ai_channels.add_ai_voltage_chan('FieldSensor/ai0:3')
-        self.hallsensor.timing.cfg_samp_clk_timing(self.RATE, sample_mode=ni.constants.AcquisitionType.CONTINUOUS, samps_per_chan=self.SAMPLES_CHAN)
+        self.hallsensor.timing.cfg_samp_clk_timing(self.RATE, sample_mode=ni.constants.AcquisitionType.CONTINUOUS,
+                                                   samps_per_chan=self.SAMPLES_CHAN)
         self.power_relay.ao_channels.add_ao_voltage_chan('AnalogOut/ao0')
         self.fsv.ao_channels.add_ao_voltage_chan('AnalogOut/ao3')
         self.hall_sensitivity.ao_channels.add_ao_voltage_chan('AnalogOut/ao1:2')
-        # add magnet temp configuration when known and not using gui for input selection
+        self.magnet_temp.ai_channels.add_ai_thrmcpl_chan('MagnetTemp/ai0:7',
+                                                         units=ni.constants.TemperatureUnits.DEG_C,
+                                                         thermocouple_type=ni.constants.ThermocoupleType.K)
+        self.magnet_temp.timing.cfg_samp_clk_timing(self.RATE, sample_mode=ni.constants.AcquisitionType.CONTINUOUS,
+                                                    samps_per_chan=self.SAMPLES_CHAN)
     
     def power_on(self, sensitivity=RANGE_2T):
         if self.power_status:
@@ -58,10 +65,32 @@ class HallDAQ:
             pass
 
     def start_hallsensor_task(self):
-        self.hallsensor.start()
+        if self.hs_task_status:
+            pass
+        else:
+            self.hallsensor.start()
+            self.hs_task_status = True
     
     def stop_hallsensor_task(self):
-        self.hallsensor.stop()
+        if self.hs_task_status:
+            self.hallsensor.stop()
+            self.hs_task_status = False
+        else:
+            pass
+
+    def start_magnet_temp_task(self):
+        if self.mag_temp_task_status:
+            pass
+        else:
+            self.magnet_temp.start()
+            self.mag_temp_task_status = True
+
+    def stop_magnet_temp_task(self):
+        if self.mag_temp_task_status:
+            self.magnet_temp.stop()
+            self.mag_temp_task_status = False
+        else:
+            pass
 
     def fsv_on(self):
         # uncomment write command when fsv tool is fixed
@@ -79,7 +108,10 @@ class HallDAQ:
         return sample
         
     def read_magnet_temp(self):
-        pass
+        while self.magnet_temp._in_stream.avail_samp_per_chan < self.SAMPLES_CHAN:
+            pass
+        sample = np.array(self.magnet_temp.read(self.magnet_temp._in_stream.avail_samp_per_chan)).T
+        return sample
 
     def close_tasks(self):
         self.hallsensor.close()

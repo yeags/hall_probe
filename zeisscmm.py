@@ -57,7 +57,7 @@ class CMM(socket.socket):
         return np.array([float(i) for i in re.findall(r'[+-]\d+\.\d+', position_str)])
 
 
-def scan_area(start_point, x_length, y_length, grid=0.5):
+def generate_scan_area(start_point, x_length, y_length, grid=0.5):
     '''
     start_point is a (3,) numpy array consisting of xyz coordinate
     function returns an (n, 3) array of waypoints for hall probe scanning a single plane
@@ -76,7 +76,7 @@ def scan_area(start_point, x_length, y_length, grid=0.5):
     
     return xyz
 
-def scan_volume(start_point, x_length, y_length, z_length, grid=0.5):
+def generate_scan_volume(start_point, x_length, y_length, z_length, grid=0.5):
     '''
     function returns a (z index, waypoints, xyz columns) array which is a stack of planes along z
     '''
