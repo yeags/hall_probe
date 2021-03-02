@@ -48,7 +48,7 @@ def parse_dataset(raw_dataset):
         cmm_xyz.append(xyz) # creates list of (3,) np arrays
         hall_data.append(Bxyz) # creates list of (n, 4) np arrays
     for i in hall_data:
-        hall_cleaned.append(calibration.clean_raw_data(i)) # creates list of (3,) np arrays
+        hall_cleaned.append(calibration.remove_outliers(i)) # creates list of (3,) np arrays
     return np.append(cmm_xyz, hall_cleaned, axis=1) # Returns (n, 7) np array
 
 def graph_data(cleaned_data):
@@ -73,12 +73,12 @@ if __name__ == '__main__':
     daq.power_on()
     input('Move probe to start point')
     start_position = zeisscmm.transform_points(cmm.get_position(), T, R, inverse=True)
-    waypoints_pcs = zeisscmm.scan_volume(start_position, 50, 60, 2, grid=1)
+    waypoints_pcs = zeisscmm.generate_scan_volume(start_position, 50, 60, 2, grid=1)
     waypoints_mcs = zeisscmm.transform_points(waypoints_pcs, T, R)
-    print('waypoints_pcs')
-    print(waypoints_pcs)
-    print('waypoints_mcs')
-    print(waypoints_mcs)
+    # print('waypoints_pcs')
+    # print(waypoints_pcs)
+    # print('waypoints_mcs')
+    # print(waypoints_mcs)
     dataset = move_cmm(cmm, daq, waypoints_mcs)
     clean_data = parse_dataset(dataset)
     np.savetxt('scan_data.txt', clean_data, header='x y z Bx By Bz TempV', encoding='utf-8')

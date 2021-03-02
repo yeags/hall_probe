@@ -2,18 +2,30 @@ import numpy as np
 import re
 import os
 
-def clean_raw_data(sensor_raw, outlier_factor = 2):
+def remove_outliers(sensor_data, stdev=2, iterations=1):
     '''
-    sensor_raw is an (n, 4) numpy array (Bx, By, Bz, Temp_out) of raw analog input reading
+    sensor_data is an (n, m) numpy array of 
+        raw or calibrated hall sensor or temperature sensor data
     raw_filt detects outliers and replaces them with their respective mean value
-    function returns a (4,) numpy array of recalculated mean values
+    function returns a (m,) numpy array of recalculated mean values
     '''
-    raw_mean = np.mean(sensor_raw, axis=0)
-    raw_stdev = np.std(sensor_raw, axis=0, ddof=1)
-    raw_filt = (sensor_raw > -outlier_factor*raw_stdev+raw_mean) & (sensor_raw < outlier_factor*raw_stdev+raw_mean)
-    raw_cleaned = np.where(raw_filt, sensor_raw, raw_mean)
+    raw_mean = np.mean(sensor_data, axis=0)
+    raw_stdev = np.std(sensor_data, axis=0, ddof=1)
+    raw_filt = (sensor_data > -stdev*raw_stdev+raw_mean) & (sensor_data < stdev*raw_stdev+raw_mean)
+    raw_cleaned = np.where(raw_filt, sensor_data, raw_mean)
+    # print('iteration 1')
+    if iterations > 1:
+        for iteration in range(iterations-1):
+            # print(f'iteration {iteration+2}')
+            raw_mean = np.mean(raw_cleaned, axis=0)
+            raw_stdev = np.std(raw_cleaned, axis=0, ddof=1)
+            raw_filt = (raw_cleaned > -stdev*raw_stdev+raw_mean) & (raw_cleaned < stdev*raw_stdev+raw_mean)
+            raw_cleaned = np.where(raw_filt, raw_cleaned, raw_mean)
     return np.mean(raw_cleaned, axis=0)
 
+def average_sample(sensor_data):
+    data = np.mean(sensor_data, axis=0)
+    return data
 
 def get_xyz_calib_values(path: str):
     '''
@@ -25,13 +37,15 @@ def get_xyz_calib_values(path: str):
     files_dict = {}
     for i in files:
         with open(f'{path}/{i}', 'r') as contents:
-            files_dict[i] = contents.read()
+            files_dict[i[:-4]] = contents.read()
     coeffs_re = re.compile(r'\d+\.\d{7}')
     coeffs_dict = {}
     for i, j in files_dict.items():
         coeffs_dict[i] = re.findall(coeffs_re, j)
         coeffs_dict[i] = np.array(coeffs_dict[i]).astype('float').reshape((3,7))
-    xyz_coeffs = np.array([i for i in coeffs_dict.values()])
+    xyz_coeffs = np.array((coeffs_dict['CalibrationX'],
+                           coeffs_dict['CalibrationY'],
+                           coeffs_dict['CalibrationZ']))
     return xyz_coeffs
 
 def calib_data(calib_coeffs, sensor_data, sensitivity=5):
@@ -40,15 +54,12 @@ def calib_data(calib_coeffs, sensor_data, sensitivity=5):
         calib_coeffs is a (3,3,7) numpy array of calibration coefficients
         sensitivity is the volts per tesla of the probe.  Use only either 5 (2 T range) or 100 (100 mT range)
         default range is 2 T
-        sensor_data should be a (4,) numpy array (Bx, By, Bz, Temperature(in volts))
-        sensor_data can either be cleaned or raw data.  Must have shape (n, 4) for raw data.
+        sensor_data should be a (n, 4) numpy array (Bx, By, Bz, Temperature(in volts))
     Returns:
-        function returns calibrated hall sensor readings (Bx,By,Bz)
+        function returns (n, 3) calibrated hall sensor readings (Bx,By,Bz) in mT
     '''
-    if sensor_data.shape != (4,):
-        sensor_data = clean_raw_data(sensor_data)
-    Bxyz = sensor_data[:3]
-    temp_v = calib_coeffs[0, 0, 6]*sensor_data[3] + calib_coeffs[0, 0, 5]
+    Bxyz = sensor_data[:, :-1]
+    temp_v = calib_coeffs[0, 0, 6]*sensor_data[0, 3] + calib_coeffs[0, 0, 5]
     
     # k values are a (3,) array (x_coeff, y_coeff, z_coeff)
     if sensitivity == 5:
@@ -81,3 +92,10 @@ if __name__ == "__main__":
     print('z coefficients\n', calib_coeffs[2])
     print('k1\n', calib_coeffs[:, 2, 0])
     print('k1\n', calib_coeffs[:, 2, 0].shape)
+    scan_data = np.genfromtxt('scan_data.txt', delimiter=' ', skip_header=1)
+    print('scan_data shape:', scan_data.shape)
+    sensor_data = scan_data[:, 3:]
+    print('sensor_data shape:', sensor_data.shape)
+    sensor_calib = calib_data(calib_coeffs, sensor_data)
+    print('uncalibrated data:\n', sensor_data[:10])
+    print('calibrated data:\n', sensor_calib[:10])

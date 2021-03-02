@@ -15,23 +15,23 @@ z = data[:, 2]
 Bx = data[:, 3]
 By = data[:, 4]
 Bz = data[:, 5]
-print(np.array((Bx, By, Bz)).T.shape)
+# print(np.array((Bx, By, Bz)).T.shape)
 B_norm = np.linalg.norm(np.array((Bx, By, Bz)).T, axis=1)
 B_norm_cmap = B_norm/B_norm.max()
-print('B norm:\n', B_norm[:10])
+# print('B norm:\n', B_norm[:10])
 Bx_hat = Bx/B_norm
 By_hat = By/B_norm
 Bz_hat = Bz/B_norm
-print('Bx_hat:\n', Bx_hat[:10])
+# print('Bx_hat:\n', Bx_hat[:10])
 
 data_pcs = np.array([x, y, z, Bx_hat, By_hat, Bz_hat]).T
 data_pcs = data_pcs[(data_pcs[:, 0] > -5.) & (data_pcs[:, 0] < 25.)]
-print(data_pcs.shape)
+# print(data_pcs.shape)
 
 start = 0
 end = -1
 
-print(data_pcs[start:end])
+# print(data_pcs[start:end])
 '''
 fig = plt.figure(figsize=(16,8))
 ax = fig.gca(projection='3d')
