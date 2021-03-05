@@ -7,9 +7,9 @@ class HallDAQ:
     FSV_OFF = 0.0
     FSV_PLUS = 5.0
     FSV_MINUS = -5.0
-    RANGE_2T = [5.0, 0.0]
-    RANGE_100MT = [0.0, 0.0]
-    RANGE_OFF = [0.0, 0.0] # Same as RANGE_100MT.  Simply used for turning off analog output voltage
+    SENSOR_RANGE = {'2T': [5.0, 0.0],
+                    '100MT': [0.0, 0.0],
+                    'OFF': [0.0, 0.0]}
     RATE = 1000
     SAMPLES_CHAN = 100
     def __init__(self):
@@ -42,17 +42,17 @@ class HallDAQ:
         self.magnet_temp.timing.cfg_samp_clk_timing(self.RATE, sample_mode=ni.constants.AcquisitionType.CONTINUOUS,
                                                     samps_per_chan=self.SAMPLES_CHAN)
     
-    def power_on(self, sensitivity=RANGE_2T):
+    def power_on(self, sensitivity='2T'):
         if self.power_status:
             pass
         else:
             self.power_relay.write(self.POWER_ON)
-            self.hall_sensitivity.write(sensitivity)
+            self.hall_sensitivity.write(self.SENSOR_RANGE[sensitivity.upper().replace(' ', '')])
             self.power_status = True
 
     def power_off(self):
         if self.power_status:
-            self.hall_sensitivity.write(self.RANGE_OFF)
+            self.hall_sensitivity.write(self.SENSOR_RANGE['OFF'])
             self.power_relay.write(self.POWER_OFF)
             self.power_status = False
         else:
@@ -60,7 +60,7 @@ class HallDAQ:
     
     def change_sensitivity(self, sensitivity=None):
         if sensitivity is not None:
-            self.hall_sensitivity.write(sensitivity)
+            self.hall_sensitivity.write(self.SENSOR_RANGE[sensitivity.upper().replace(' ', '')])
         else:
             pass
 

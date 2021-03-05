@@ -1,12 +1,11 @@
 from nicdaq import HallDAQ
 import zeisscmm
 import numpy as np
-from datetime import datetime
+from time import time
 import threading
 from calibration import remove_outliers, average_sample
 
 class HallProbe:
-    DT_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
     def __init__(self):
         self.halldaq = HallDAQ()
         self.cmm = zeisscmm.CMM()
@@ -25,7 +24,7 @@ class HallProbe:
         self.halldaq.power_on()
         self.halldaq.start_hallsensor_task()
         self.halldaq.start_magnet_temp_task()
-        dt = datetime.now().strftime(self.DT_FORMAT)
+        dt = time()
         current_pos = self.cmm.get_position()
         hs_raw = self.halldaq.read_hallsensor()
         mt_raw = self.halldaq.read_magnet_temp()
@@ -50,7 +49,7 @@ class HallProbe:
         try:
             self.cmm.goto_position(end_point)
             while np.linalg.norm(current_pos - end_point) > 0.012:
-                dt_list.append(datetime.now().strftime(self.DT_FORMAT))
+                dt_list.append(time())
                 xyz_list.append(self.cmm.get_position())
                 hs_list.append(self.halldaq.read_hallsensor())
                 mt_list.append(self.halldaq.read_magnet_temp())
@@ -89,7 +88,7 @@ class HallProbe:
                 self.cmm.goto_position(point)
                 current_pos = self.cmm.get_position()
                 while np.linalg.norm(current_pos - point) > 0.012:
-                    dt_list.append(datetime.now().strftime(self.DT_FORMAT))
+                    dt_list.append(time())
                     xyz_list.append(self.cmm.get_position())
                     hs_list.append(self.halldaq.read_hallsensor())
                     mt_list.append(self.halldaq.read_magnet_temp())
