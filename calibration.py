@@ -59,7 +59,7 @@ def calib_data(calib_coeffs, sensor_data, sensitivity=5):
         function returns (n, 3) calibrated hall sensor readings (Bx,By,Bz) in mT
     '''
     Bxyz = sensor_data[:, :-1]
-    temp_v = calib_coeffs[0, 0, 6]*sensor_data[0, 3] + calib_coeffs[0, 0, 5]
+    temp_v = calib_coeffs[0, 0, 6] * (sensor_data[0, 3] + calib_coeffs[0, 0, 5])
     
     # k values are a (3,) array (x_coeff, y_coeff, z_coeff)
     if sensitivity == 5:
