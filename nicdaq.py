@@ -1,63 +1,143 @@
 import nidaqmx as ni
-from time import sleep
+import numpy as np
 
-class DAQ(ni.task.Task):
-    '''
-    Creates an NI Task
-    Takes input parameters from Hall Probe GUI
-    '''
-    def __init__(self, task_name: str):
-        self.task_name = task_name
-        super().__init__(new_task_name=task_name)
+class HallDAQ:
+    POWER_ON = 1.3
+    POWER_OFF = 0.0
+    FSV_OFF = 0.0
+    FSV_PLUS = 5.0
+    FSV_MINUS = -5.0
+    SENSOR_RANGE = {'2T': [5.0, 0.0],
+                    '100MT': [0.0, 0.0],
+                    'OFF': [0.0, 0.0]}
+    RATE = 1000
+    SAMPLES_CHAN = 100
+    def __init__(self):
+        self.power_status = False
+        self.fsv_status = False
+        self.sensitivity_status = False
+        self.hs_task_status = False
+        self.mag_temp_task_status = False
+
+        self.__create_tasks__()
+        self.__configure_tasks__()
     
-    def add_voltage_channels(self, v_channels: list, v_min: float, v_max: float, units):
-        for channel in range(len(v_channels)):
-            if v_channels[channel]:
-                self.ai_channels.add_ai_voltage_chan(f'FieldSensor/ai{channel}',
-                                                     min_val=v_min,
-                                                     max_val=v_max,
-                                                     units=units)
+    def __create_tasks__(self):
+        self.hallsensor = ni.Task('HallSensor')
+        self.magnet_temp = ni.Task('MagnetTemp')
+        self.power_relay = ni.Task('PowerRelay')
+        self.fsv = ni.Task('FSV')
+        self.hall_sensitivity = ni.Task('HallSensitivity')
+    
+    def __configure_tasks__(self):
+        self.hallsensor.ai_channels.add_ai_voltage_chan('FieldSensor/ai0:3')
+        self.hallsensor.timing.cfg_samp_clk_timing(self.RATE, sample_mode=ni.constants.AcquisitionType.CONTINUOUS,
+                                                   samps_per_chan=self.SAMPLES_CHAN)
+        self.power_relay.ao_channels.add_ao_voltage_chan('AnalogOut/ao0')
+        self.fsv.ao_channels.add_ao_voltage_chan('AnalogOut/ao3')
+        self.hall_sensitivity.ao_channels.add_ao_voltage_chan('AnalogOut/ao1:2')
+        self.magnet_temp.ai_channels.add_ai_thrmcpl_chan('MagnetTemp/ai0:7',
+                                                         units=ni.constants.TemperatureUnits.DEG_C,
+                                                         thermocouple_type=ni.constants.ThermocoupleType.K)
+        self.magnet_temp.timing.cfg_samp_clk_timing(self.RATE, sample_mode=ni.constants.AcquisitionType.CONTINUOUS,
+                                                    samps_per_chan=self.SAMPLES_CHAN)
+    
+    def power_on(self, sensitivity='2T'):
+        if self.power_status:
+            pass
+        else:
+            self.power_relay.write(self.POWER_ON)
+            self.hall_sensitivity.write(self.SENSOR_RANGE[sensitivity.upper().replace(' ', '')])
+            self.power_status = True
 
-    def add_temperature_channels(self, temp_channels: list, type, units):
-        for channel in range(len(temp_channels)):
-            if temp_channels[channel]:
-                self.ai_channels.add_ai_thrmcpl_chan(f'MagnetTemp/ai{channel}',
-                                                     thermocouple_type=Constants.therm_types()[type], 
-                                                     units=Constants.temp_units()[units])
-        self.ai_channels.all.ai_adc_timing_mode = ni.constants.ADCTimingMode.HIGH_SPEED
-        self.timing.samp_timing_type = ni.constants.SampleTimingType.ON_DEMAND
+    def power_off(self):
+        if self.power_status:
+            self.hall_sensitivity.write(self.SENSOR_RANGE['OFF'])
+            self.power_relay.write(self.POWER_OFF)
+            self.power_status = False
+        else:
+            pass
+    
+    def change_sensitivity(self, sensitivity=None):
+        if sensitivity is not None:
+            self.hall_sensitivity.write(self.SENSOR_RANGE[sensitivity.upper().replace(' ', '')])
+        else:
+            pass
 
-    def set_sampling(self, sample_rate: int, num_samples: int):
-        self.timing.cfg_samp_clk_timing(sample_rate,
-                                        sample_mode=ni.constants.AcquisitionType.CONTINUOUS,
-                                        samps_per_chan=num_samples)
-    def __repr__(self):
-        return f'NI cDAQ Task: {self.task_name}'
+    def start_hallsensor_task(self):
+        if self.hs_task_status:
+            pass
+        else:
+            self.hallsensor.start()
+            self.hs_task_status = True
+    
+    def stop_hallsensor_task(self):
+        if self.hs_task_status:
+            self.hallsensor.stop()
+            self.hs_task_status = False
+        else:
+            pass
 
-class Constants:
-    @staticmethod
-    def therm_types():
-        return {'B': ni.constants.ThermocoupleType.B, 'E': ni.constants.ThermocoupleType.E,
-                'J': ni.constants.ThermocoupleType.J, 'K': ni.constants.ThermocoupleType.K,
-                'N': ni.constants.ThermocoupleType.N, 'R': ni.constants.ThermocoupleType.R,
-                'S': ni.constants.ThermocoupleType.S, 'T': ni.constants.ThermocoupleType.T}
-    @staticmethod
-    def temp_units():
-        return {'C': ni.constants.TemperatureUnits.DEG_C,
-                'F': ni.constants.TemperatureUnits.DEG_F,
-                'K': ni.constants.TemperatureUnits.K}
-    @staticmethod
-    def voltage_units():
-        return {'V': ni.constants.VoltageUnits.VOLTS,
-                'mT': ni.constants.VoltageUnits.FROM_CUSTOM_SCALE}
-    @staticmethod
-    def continuous():
-        return ni.constants.AcquisitionType.CONTINUOUS
+    def start_magnet_temp_task(self):
+        if self.mag_temp_task_status:
+            pass
+        else:
+            self.magnet_temp.start()
+            self.mag_temp_task_status = True
+
+    def stop_magnet_temp_task(self):
+        if self.mag_temp_task_status:
+            self.magnet_temp.stop()
+            self.mag_temp_task_status = False
+        else:
+            pass
+
+    def fsv_on(self):
+        # uncomment write command when fsv tool is fixed
+        # self.fsv.write(5)
+        pass
+    def fsv_off(self):
+        # uncomment write command when fsv tool is fixed
+        # self.fsv.write(0)
+        pass
+
+    def read_hallsensor(self):
+        while self.hallsensor._in_stream.avail_samp_per_chan < self.SAMPLES_CHAN:
+            pass
+        sample = np.array(self.hallsensor.read(self.hallsensor._in_stream.avail_samp_per_chan)).T
+        return sample
+        
+    def read_magnet_temp(self):
+        while self.magnet_temp._in_stream.avail_samp_per_chan < self.SAMPLES_CHAN:
+            pass
+        sample = np.array(self.magnet_temp.read(self.magnet_temp._in_stream.avail_samp_per_chan)).T
+        return sample
+
+    def close_tasks(self):
+        self.hallsensor.close()
+        self.fsv.close()
+        self.magnet_temp.close()
+        self.power_relay.close()
+        self.hall_sensitivity.close()
 
 if __name__ == '__main__':
-    print('Creating DAQmx Object...')
-    cdaq = DAQ('new task')
-    print(cdaq, 'Sleeping...')
-    sleep(5)
-    print('Closing DAQmx Object...')
-    cdaq.close()
+    from time import sleep
+    daq = HallDAQ()
+    print('Powering on daq...')
+    daq.power_on()
+    print('Powered on.  Set to 2 T range.')
+    print('Starting task...')
+    daq.start_hallsensor_task()
+    # sleep(2)
+    print('Reading from hall sensor...')
+    data = daq.read_hallsensor()
+    print('Saving data as "sample_data.txt"')
+    np.savetxt('sample_data.txt', data, fmt='%.6f')
+    print(data)
+    print(f' Array shape: {data.shape}')
+    print('Stopping task')
+    daq.stop_hallsensor_task()
+    print('Power off')
+    daq.power_off()
+    print('Closing task')
+    daq.close_tasks()

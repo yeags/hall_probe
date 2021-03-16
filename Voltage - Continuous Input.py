@@ -96,7 +96,7 @@ class channelSettings(tk.LabelFrame):
         self.physicalChannelLabel.grid(row=0,sticky='w', padx=self.xPadding, pady=(10,0))
 
         self.physicalChannelEntry = ttk.Entry(self)
-        self.physicalChannelEntry.insert(0, "FieldSensor/ai1")
+        self.physicalChannelEntry.insert(0, "FieldSensor/ai2")
         self.physicalChannelEntry.grid(row=1, sticky="ew", padx=self.xPadding)
 
         self.maxVoltageLabel = ttk.Label(self, text="Max Voltage")
