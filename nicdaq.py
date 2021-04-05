@@ -10,14 +10,15 @@ class HallDAQ:
     SENSOR_RANGE = {'2T': [5.0, 0.0],
                     '100MT': [0.0, 0.0],
                     'OFF': [0.0, 0.0]}
-    RATE = 1000
-    SAMPLES_CHAN = 100
-    def __init__(self):
+    
+    def __init__(self, rate, samps_per_chan):
         self.power_status = False
         self.fsv_status = False
         self.sensitivity_status = False
         self.hs_task_status = False
         self.mag_temp_task_status = False
+        self.RATE = rate
+        self.SAMPLES_CHAN = samps_per_chan
 
         self.__create_tasks__()
         self.__configure_tasks__()
@@ -42,7 +43,35 @@ class HallDAQ:
         self.magnet_temp.timing.cfg_samp_clk_timing(self.RATE, sample_mode=ni.constants.AcquisitionType.CONTINUOUS,
                                                     samps_per_chan=self.SAMPLES_CHAN)
     
+    def change_sensitivity(self, sensitivity=None):
+        if sensitivity is not None:
+            self.hall_sensitivity.write(self.SENSOR_RANGE[sensitivity.upper().replace(' ', '')])
+        else:
+            pass
+    
+    def close_tasks(self):
+        self.hallsensor.close()
+        self.fsv.close()
+        self.magnet_temp.close()
+        self.power_relay.close()
+        self.hall_sensitivity.close()
+
+    def fsv_on(self):
+        # uncomment write command when fsv tool is fixed
+        # self.fsv.write(5)
+        pass
+    def fsv_off(self):
+        # uncomment write command when fsv tool is fixed
+        # self.fsv.write(0)
+        pass
+
     def power_on(self, sensitivity='2T'):
+        '''
+        Use the following keywords for sensitivity selection:
+        '2T'
+        '100MT'
+        'OFF'
+        '''
         if self.power_status:
             pass
         else:
@@ -57,12 +86,18 @@ class HallDAQ:
             self.power_status = False
         else:
             pass
-    
-    def change_sensitivity(self, sensitivity=None):
-        if sensitivity is not None:
-            self.hall_sensitivity.write(self.SENSOR_RANGE[sensitivity.upper().replace(' ', '')])
-        else:
+
+    def read_hallsensor(self):
+        while self.hallsensor._in_stream.avail_samp_per_chan < self.SAMPLES_CHAN:
             pass
+        sample = np.array(self.hallsensor.read(self.hallsensor._in_stream.avail_samp_per_chan)).T
+        return sample
+        
+    def read_magnet_temp(self):
+        while self.magnet_temp._in_stream.avail_samp_per_chan < self.SAMPLES_CHAN:
+            pass
+        sample = np.array(self.magnet_temp.read(self.magnet_temp._in_stream.avail_samp_per_chan)).T
+        return sample
 
     def start_hallsensor_task(self):
         if self.hs_task_status:
@@ -70,7 +105,7 @@ class HallDAQ:
         else:
             self.hallsensor.start()
             self.hs_task_status = True
-    
+
     def stop_hallsensor_task(self):
         if self.hs_task_status:
             self.hallsensor.stop()
@@ -91,38 +126,10 @@ class HallDAQ:
             self.mag_temp_task_status = False
         else:
             pass
-
-    def fsv_on(self):
-        # uncomment write command when fsv tool is fixed
-        # self.fsv.write(5)
-        pass
-    def fsv_off(self):
-        # uncomment write command when fsv tool is fixed
-        # self.fsv.write(0)
-        pass
-
-    def read_hallsensor(self):
-        while self.hallsensor._in_stream.avail_samp_per_chan < self.SAMPLES_CHAN:
-            pass
-        sample = np.array(self.hallsensor.read(self.hallsensor._in_stream.avail_samp_per_chan)).T
-        return sample
         
-    def read_magnet_temp(self):
-        while self.magnet_temp._in_stream.avail_samp_per_chan < self.SAMPLES_CHAN:
-            pass
-        sample = np.array(self.magnet_temp.read(self.magnet_temp._in_stream.avail_samp_per_chan)).T
-        return sample
-
-    def close_tasks(self):
-        self.hallsensor.close()
-        self.fsv.close()
-        self.magnet_temp.close()
-        self.power_relay.close()
-        self.hall_sensitivity.close()
-
 if __name__ == '__main__':
     from time import sleep
-    daq = HallDAQ()
+    daq = HallDAQ(1,1)
     print('Powering on daq...')
     daq.power_on()
     print('Powered on.  Set to 2 T range.')
