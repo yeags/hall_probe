@@ -1,5 +1,6 @@
 import nidaqmx as ni
 import numpy as np
+from time import sleep
 
 class HallDAQ:
     POWER_ON = 1.3
@@ -7,11 +8,16 @@ class HallDAQ:
     FSV_OFF = 0.0
     FSV_PLUS = 5.0
     FSV_MINUS = -5.0
-    SENSOR_RANGE = {'2T': [5.0, 0.0],
-                    '100MT': [0.0, 0.0],
-                    'OFF': [0.0, 0.0]}
+    SENSOR_RANGE = {'2T': 5,
+                    '100MT': 0,
+                    'OFF': 0}
     
-    def __init__(self, rate, samps_per_chan):
+    def __init__(self, rate, samps_per_chan, start_trigger=False, acquisition='finite'):
+        if acquisition.lower() == 'continuous':
+            self.acquisition_type = ni.constants.AcquisitionType.CONTINUOUS
+        elif acquisition.lower() == 'finite':
+            self.acquisition_type = ni.constants.AcquisitionType.FINITE
+        self.trigger_status = start_trigger
         self.power_status = False
         self.fsv_status = False
         self.sensitivity_status = False
@@ -29,14 +35,20 @@ class HallDAQ:
         self.power_relay = ni.Task('PowerRelay')
         self.fsv = ni.Task('FSV')
         self.hall_sensitivity = ni.Task('HallSensitivity')
+        self.trigger = ni.Task('StartTrigger')
     
     def __configure_tasks__(self):
         self.hallsensor.ai_channels.add_ai_voltage_chan('FieldSensor/ai0:3')
-        self.hallsensor.timing.cfg_samp_clk_timing(self.RATE, sample_mode=ni.constants.AcquisitionType.CONTINUOUS,
+        self.hallsensor.timing.cfg_samp_clk_timing(self.RATE, sample_mode=self.acquisition_type,
                                                    samps_per_chan=self.SAMPLES_CHAN)
         self.power_relay.ao_channels.add_ao_voltage_chan('AnalogOut/ao0')
-        self.fsv.ao_channels.add_ao_voltage_chan('AnalogOut/ao3')
-        self.hall_sensitivity.ao_channels.add_ao_voltage_chan('AnalogOut/ao1:2')
+        # self.fsv.ao_channels.add_ao_voltage_chan('AnalogOut/ao3')
+        if self.trigger_status:
+            self.trigger.ao_channels.add_ao_voltage_chan('AnalogOut/ao2')
+            self.hallsensor.triggers.start_trigger.cfg_dig_edge_start_trig('/MagnetcDAQ/PFI0')
+        else:
+            self.fsv.ao_channels.add_ao_voltage_chan('AnalogOut/ao3')
+        self.hall_sensitivity.ao_channels.add_ao_voltage_chan('AnalogOut/ao1')
         self.magnet_temp.ai_channels.add_ai_thrmcpl_chan('MagnetTemp/ai0:7',
                                                          units=ni.constants.TemperatureUnits.DEG_C,
                                                          thermocouple_type=ni.constants.ThermocoupleType.K)
@@ -55,28 +67,24 @@ class HallDAQ:
         self.magnet_temp.close()
         self.power_relay.close()
         self.hall_sensitivity.close()
+        self.trigger.close()
 
     def fsv_on(self):
-        # uncomment write command when fsv tool is fixed
-        # self.fsv.write(5)
+        self.fsv.write(5)
         pass
     def fsv_off(self):
-        # uncomment write command when fsv tool is fixed
-        # self.fsv.write(0)
+        self.fsv.write(0)
         pass
 
     def power_on(self, sensitivity='2T'):
         '''
-        Use the following keywords for sensitivity selection:
-        '2T'
-        '100MT'
-        'OFF'
+        2T range will always be used
         '''
         if self.power_status:
             pass
         else:
             self.power_relay.write(self.POWER_ON)
-            self.hall_sensitivity.write(self.SENSOR_RANGE[sensitivity.upper().replace(' ', '')])
+            self.hall_sensitivity.write(self.SENSOR_RANGE['2T'])
             self.power_status = True
 
     def power_off(self):
@@ -86,9 +94,14 @@ class HallDAQ:
             self.power_status = False
         else:
             pass
+    
+    def pulse(self):
+        self.trigger.write(5)
+        sleep(0.005)
+        self.trigger.write(0)
 
     def read_hallsensor(self):
-        while self.hallsensor._in_stream.avail_samp_per_chan < self.SAMPLES_CHAN:
+        while not self.hallsensor.is_task_done():
             pass
         sample = np.array(self.hallsensor.read(self.hallsensor._in_stream.avail_samp_per_chan)).T
         return sample
@@ -128,19 +141,28 @@ class HallDAQ:
             pass
         
 if __name__ == '__main__':
-    from time import sleep
-    daq = HallDAQ(1,1)
+    from time import perf_counter
+    daq = HallDAQ(1,5000, acquisition='finite')
     print('Powering on daq...')
     daq.power_on()
     print('Powered on.  Set to 2 T range.')
     print('Starting task...')
     daq.start_hallsensor_task()
-    # sleep(2)
+    # sleep(3)
+    # print('Sending trigger pulse.')
+    # daq.pulse()
+    print('Turning on FSV')
+    daq.fsv_on()
     print('Reading from hall sensor...')
+    start = perf_counter()
     data = daq.read_hallsensor()
+    end = perf_counter()
+    print('Turning off FSV')
+    daq.fsv_off()
+    print(f'Read {data.shape[0]} samples in {end - start} seconds')
     print('Saving data as "sample_data.txt"')
-    np.savetxt('sample_data.txt', data, fmt='%.6f')
-    print(data)
+    # np.savetxt('sample_data.txt', data, fmt='%.6f')
+    # print(data)
     print(f' Array shape: {data.shape}')
     print('Stopping task')
     daq.stop_hallsensor_task()
