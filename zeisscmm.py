@@ -53,7 +53,6 @@ class CMM(socket.socket):
     def get_position(self):
         self.send('D84\r\n\x01'.encode('ascii'))
         position_str = self.recv(1024).decode('ascii')
-        # self.position = np.array([float(i) for i in re.findall(r'[+-]\d+\.\d+', position_str)])
         return np.array([float(i) for i in re.findall(r'[+-]\d+\.\d+', position_str)])
 
 
