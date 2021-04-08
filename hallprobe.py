@@ -7,7 +7,7 @@ from calibration import remove_outliers, average_sample
 
 class HallProbe:
     def __init__(self):
-        self.halldaq = HallDAQ()
+        self.halldaq = HallDAQ(1,1)
         self.cmm = zeisscmm.CMM()
     
     def __repr__(self):
