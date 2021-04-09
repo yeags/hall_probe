@@ -46,8 +46,7 @@ class HallDAQ:
         if self.trigger_status:
             self.trigger.ao_channels.add_ao_voltage_chan('AnalogOut/ao2')
             self.hallsensor.triggers.start_trigger.cfg_dig_edge_start_trig('/MagnetcDAQ/PFI0')
-        else:
-            self.fsv.ao_channels.add_ao_voltage_chan('AnalogOut/ao3')
+        self.fsv.ao_channels.add_ao_voltage_chan('AnalogOut/ao3')
         self.hall_sensitivity.ao_channels.add_ao_voltage_chan('AnalogOut/ao1')
         self.magnet_temp.ai_channels.add_ai_thrmcpl_chan('MagnetTemp/ai0:7',
                                                          units=ni.constants.TemperatureUnits.DEG_C,
@@ -69,12 +68,14 @@ class HallDAQ:
         self.hall_sensitivity.close()
         self.trigger.close()
 
-    def fsv_on(self):
-        self.fsv.write(5)
-        pass
+    def fsv_on(self, v='positive'):
+        if v == 'positive'.lower():
+            self.fsv.write(5)
+        elif v == 'negative'.lower():
+            self.fsv.write(-5)
+    
     def fsv_off(self):
         self.fsv.write(0)
-        pass
 
     def power_on(self, sensitivity='2T'):
         '''
