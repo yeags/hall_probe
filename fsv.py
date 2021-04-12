@@ -70,10 +70,32 @@ class FSV:
         return (combined_p, combined_n)
 
     def by_routine(self):
-        current_pos = self.cmm.get_position()
+        half_length = np.array([0, 20, 0])
+        current_pos_fsv = self.mcs2fsv(self.cmm.get_position())
+        start_pos_mcs = self.fsv2mcs(current_pos_fsv - half_length)
+        end_pos_mcs = self.fsv2mcs(current_pos_fsv + half_length)
+        start_p, end_p, data_p = self.perform_scan(start_pos_mcs, end_pos_mcs)
+        x_p = np.linspace(start_p[1], end_p[1], data_p.shape[0])
+        sleep(1)
+        start_n, end_n, data_n = self.perform_scan(end_pos_mcs, start_pos_mcs, direction='negative')
+        x_n = np.linspace(start_n[1], end_n[1], data_n.shape[0])
+        combined_p = np.insert(data_p, 0, x_p, axis=1)
+        combined_n = np.insert(data_n, 0, x_n, axis=1)
+        return (combined_p, combined_n)
 
     def bz_routine(self):
-        current_pos = self.cmm.get_position()
+        half_length = np.array([0, 0, 20])
+        current_pos_fsv = self.mcs2fsv(self.cmm.get_position())
+        start_pos_mcs = self.fsv2mcs(current_pos_fsv - half_length)
+        end_pos_mcs = self.fsv2mcs(current_pos_fsv + half_length)
+        start_p, end_p, data_p = self.perform_scan(start_pos_mcs, end_pos_mcs)
+        x_p = np.linspace(start_p[2], end_p[2], data_p.shape[0])
+        sleep(1)
+        start_n, end_n, data_n = self.perform_scan(end_pos_mcs, start_pos_mcs, direction='negative')
+        x_n = np.linspace(start_n[2], end_n[2], data_n.shape[0])
+        combined_p = np.insert(data_p, 0, x_p, axis=1)
+        combined_n = np.insert(data_n, 0, x_n, axis=1)
+        return (combined_p, combined_n)
 
     def save_probe_offset(self):
         pass
@@ -85,8 +107,8 @@ class FSV:
 
 if __name__ == '__main__':
     test = FSV(r'D:\CMM Programs\FSV Calibration\fsv_alignment.txt', r'D:\CMM Programs\FSV Calibration\probe_offset.txt')
-    data_p, data_n = test.bx_routine()
+    data_p, data_n = test.bz_routine()
     print(data_p.shape, data_n.shape)
-    np.savetxt('bx_positive.txt', data_p, fmt='%.6f', delimiter=' ')
-    np.savetxt('bx_negative.txt', data_n, fmt='%.6f', delimiter=' ')
+    np.savetxt('bz_positive.txt', data_p, fmt='%.6f', delimiter=' ')
+    np.savetxt('bz_negative.txt', data_n, fmt='%.6f', delimiter=' ')
     test.shutdown()
