@@ -14,6 +14,22 @@ class FSV:
         self.cmm = zeisscmm.CMM()
         self.rotation, self.translation = self.import_fsv_alignment(fsv_filename)
         self.probe_offset = self.import_probe_offset(probe_offset_filename)
+    
+    def calc_offset(self, ax: np.ndarray, B_ax: np.ndarray, filter_cutoff=500):
+        '''
+        ax: CMM single axis data
+        B_ax: Hallsensor single axis data
+        filter_cutoff: integer value used for smoothing raw sensor data,
+            default set to 500
+        returns: offset value for the respective CMM axis
+        '''
+        ax_cutoff = ax[filter_cutoff:-filter_cutoff]
+        B_filtered = filter_data(B_ax, filter_cutoff)[filter_cutoff:-filter_cutoff]
+        combined_array = np.array([ax_cutoff, B_filtered]).T
+        array_min = combined_array[combined_array[:, 1] == combined_array[:, 1].min()][0,0]
+        array_max = combined_array[combined_array[:, 1] == combined_array[:, 1].max()][0,0]
+        offset = (array_max + array_min) / 2
+        return offset
 
     def import_fsv_alignment(self, filename: str):
         diff = np.genfromtxt(filename, delimiter=' ')
@@ -38,13 +54,13 @@ class FSV:
         self.cmm.cnc_on()
         self.cmm.set_speed(5)
         self.cmm.goto_position(start_pt)
-        while np.linalg.norm(start_pt - self.cmm.get_position()) > 0.012:
+        while np.linalg.norm(start_pt - self.cmm.get_position()) > 0.025:
             pass
         self.daq.fsv_on(v=direction)
         self.daq.start_hallsensor_task()
-        sleep(1)
+        sleep(1) # Allow time for task to start.
         self.cmm.goto_position(end_pt)
-        sleep(1)
+        sleep(1) # Allow time for CMM to finish accelerating
         self.daq.pulse()
         start_position = self.mcs2fsv(self.cmm.get_position())
         data = self.daq.read_hallsensor()
@@ -55,7 +71,7 @@ class FSV:
         self.cmm.cnc_off()
         return (start_position, end_position, data)
 
-    def bx_routine(self):
+    def run_x_routine(self):
         half_length = np.array([20, 0, 0])
         current_pos_fsv = self.mcs2fsv(self.cmm.get_position())
         start_pos_mcs = self.fsv2mcs(current_pos_fsv - half_length)
@@ -65,37 +81,46 @@ class FSV:
         sleep(1)
         start_n, end_n, data_n = self.perform_scan(end_pos_mcs, start_pos_mcs, direction='negative')
         x_n = np.linspace(start_n[0], end_n[0], data_n.shape[0])
-        combined_p = np.insert(data_p, 0, x_p, axis=1)
-        combined_n = np.insert(data_n, 0, x_n, axis=1)
-        return (combined_p, combined_n)
+        # combined_p = np.insert(data_p, 0, x_p, axis=1) # (x, Bx, By, Bz, Btemp)
+        # combined_n = np.insert(data_n, 0, x_n, axis=1) # (x, Bx, By, Bz, Btemp)
+        # return (combined_p, combined_n)
+        x_p_offset = self.calc_offset(x_p, data_p[:, 2])
+        x_n_offset = self.calc_offset(x_n, data_n[:, 2])
+        return (x_p_offset, x_n_offset)
 
-    def by_routine(self):
+    def run_y_routine(self):
         half_length = np.array([0, 20, 0])
         current_pos_fsv = self.mcs2fsv(self.cmm.get_position())
         start_pos_mcs = self.fsv2mcs(current_pos_fsv - half_length)
         end_pos_mcs = self.fsv2mcs(current_pos_fsv + half_length)
         start_p, end_p, data_p = self.perform_scan(start_pos_mcs, end_pos_mcs)
-        x_p = np.linspace(start_p[1], end_p[1], data_p.shape[0])
+        y_p = np.linspace(start_p[1], end_p[1], data_p.shape[0])
         sleep(1)
         start_n, end_n, data_n = self.perform_scan(end_pos_mcs, start_pos_mcs, direction='negative')
-        x_n = np.linspace(start_n[1], end_n[1], data_n.shape[0])
-        combined_p = np.insert(data_p, 0, x_p, axis=1)
-        combined_n = np.insert(data_n, 0, x_n, axis=1)
-        return (combined_p, combined_n)
+        y_n = np.linspace(start_n[1], end_n[1], data_n.shape[0])
+        # combined_p = np.insert(data_p, 0, y_p, axis=1) # (y, Bx, By, Bz, Btemp)
+        # combined_n = np.insert(data_n, 0, y_n, axis=1) # (y, Bx, By, Bz, Btemp)
+        # return (combined_p, combined_n)
+        y_p_offset = self.calc_offset(y_p, data_p[:, 2])
+        y_n_offset = self.calc_offset(y_n, data_n[:, 2])
+        return (y_p_offset, y_n_offset)
 
-    def bz_routine(self):
+    def run_z_routine(self):
         half_length = np.array([0, 0, 20])
         current_pos_fsv = self.mcs2fsv(self.cmm.get_position())
         start_pos_mcs = self.fsv2mcs(current_pos_fsv - half_length)
         end_pos_mcs = self.fsv2mcs(current_pos_fsv + half_length)
         start_p, end_p, data_p = self.perform_scan(start_pos_mcs, end_pos_mcs)
-        x_p = np.linspace(start_p[2], end_p[2], data_p.shape[0])
+        z_p = np.linspace(start_p[2], end_p[2], data_p.shape[0])
         sleep(1)
         start_n, end_n, data_n = self.perform_scan(end_pos_mcs, start_pos_mcs, direction='negative')
-        x_n = np.linspace(start_n[2], end_n[2], data_n.shape[0])
-        combined_p = np.insert(data_p, 0, x_p, axis=1)
-        combined_n = np.insert(data_n, 0, x_n, axis=1)
-        return (combined_p, combined_n)
+        z_n = np.linspace(start_n[2], end_n[2], data_n.shape[0])
+        # combined_p = np.insert(data_p, 0, z_p, axis=1) # (z, Bx, By, Bz, Btemp)
+        # combined_n = np.insert(data_n, 0, z_n, axis=1) # (z, Bx, By, Bz, Btemp)
+        # return (combined_p, combined_n)
+        z_p_offset = self.calc_offset(z_p, data_p[:, 0])
+        z_n_offset = self.calc_offset(z_n, data_n[:, 0])
+        return (z_p_offset, z_n_offset)
 
     def save_probe_offset(self):
         pass
@@ -107,8 +132,9 @@ class FSV:
 
 if __name__ == '__main__':
     test = FSV(r'D:\CMM Programs\FSV Calibration\fsv_alignment.txt', r'D:\CMM Programs\FSV Calibration\probe_offset.txt')
-    data_p, data_n = test.bz_routine()
-    print(data_p.shape, data_n.shape)
-    np.savetxt('bz_positive.txt', data_p, fmt='%.6f', delimiter=' ')
-    np.savetxt('bz_negative.txt', data_n, fmt='%.6f', delimiter=' ')
+    pos_offset, neg_offset = test.run_x_routine()
+    print(f'positive offset: {round(pos_offset, 3)}\nnegative offset: {round(neg_offset, 3)}')
+    print(f'offset difference: {round(pos_offset - neg_offset, 3)}')
+    # np.savetxt('bz_positive.txt', data_p, fmt='%.6f', delimiter=' ')
+    # np.savetxt('bz_negative.txt', data_n, fmt='%.6f', delimiter=' ')
     test.shutdown()
