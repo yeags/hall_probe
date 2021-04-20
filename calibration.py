@@ -42,19 +42,17 @@ def calib_data(calib_coeffs, sensor_data, sensitivity=5):
 
 def filter_data(data: np.ndarray, cutoff: int):
     '''
-    data: (n, 3) array of hallsensor readings (Bx, By, Bz)
+    data: (n,) array of single axis hallsensor data
     cutoff: integer value for level of filter smoothing
-    returns (n, 3) numpy array of filtered readings
+    returns (n,) numpy array of filtered sensor data
     '''
     x_delta = 1
     alpha = np.sqrt(np.log(2)/np.pi)
     x_lc = np.arange(-cutoff, cutoff + x_delta, x_delta)
     sx = (1/alpha*cutoff)*np.exp(-np.pi*(x_lc/(alpha*cutoff))**2)
     sx_norm = sx/np.sum(sx)
-    bx_filt = np.convolve(data[:, 0], sx_norm, mode='same')
-    by_filt = np.convolve(data[:, 1], sx_norm, mode='same')
-    bz_filt = np.convolve(data[:, 2], sx_norm, mode='same')
-    return np.array((bx_filt, by_filt, bz_filt)).T
+    filtered = np.convolve(data, sx_norm, mode='same')
+    return filtered
 
 def get_xyz_calib_values(path: str):
     '''
