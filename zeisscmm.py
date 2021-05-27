@@ -54,6 +54,18 @@ class CMM(socket.socket):
         self.send('D84\r\n\x01'.encode('ascii'))
         position_str = self.recv(1024).decode('ascii')
         return np.array([float(i) for i in re.findall(r'[+-]\d+\.\d+', position_str)])
+    
+    def get_positions(self):
+        self.send('D17\r\n\x01'.encode('ascii'))
+        position_str = self.recv(1024).decode('ascii')
+        position_np = np.array([float(i) for i in re.findall(r'[+-]\d*\.\d+', position_str)])
+        return (position_np[:3], position_np[4:])
+    
+    def get_lag_distance(self):
+        self.send('D19\r\n\x01'.encode('ascii'))
+        lag = self.recv(1024).decode('ascii')
+        lag_np = np.array([float(i) for i in re.findall(r'[-\+]\d*\.\d+', lag)][:3])
+        return lag_np
 
 
 def generate_scan_area(start_point, x_length, y_length, grid=0.5):
