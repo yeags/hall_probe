@@ -1,0 +1,5 @@
+﻿writeDiffCoordSysToFile("base", "mcs", "mcs.txt")
+if fileExists("mcs_export.txt"):
+	deleteFile("mcs_export.txt")
+endif
+addToFile("mcs_export.txt", getActual("mcs").x, " ", getActual("mcs").y, " ", getActual("mcs").z, " ", deg(getActual("mcs").euler1), " ", deg(getActual("mcs").euler2), " ", deg(getActual("mcs").euler4))
