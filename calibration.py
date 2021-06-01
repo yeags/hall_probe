@@ -75,7 +75,6 @@ def filter_data(data: np.ndarray, cutoff: int):
     filtered = np.convolve(data, sx_norm, mode='same')
     return filtered
 
-
 def fit_linear(x, y):
     x_m = np.mean(x)
     y_m = np.mean(y)
