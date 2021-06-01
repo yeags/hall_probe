@@ -81,7 +81,7 @@ class FSV:
         self.cmm.cnc_off()
         return (start_position, end_position, data)
 
-    def run_x_routine(self, length=20, speed=5):
+    def run_x_routine(self):
         half_length = np.array([20, 0, 0])
         current_pos_fsv = self.mcs2fsv(self.cmm.get_position())
         start_pos_mcs = self.fsv2mcs(current_pos_fsv - half_length)
@@ -96,8 +96,6 @@ class FSV:
         # Combine CMM and hallsensor data into one array
         combined_p = np.insert(data_p, 0, x_p, axis=1) # (x, Bx, By, Bz, Btemp)
         combined_n = np.insert(data_n, 0, x_n, axis=1) # (x, Bx, By, Bz, Btemp)
-        np.savetxt('x_pos_i.txt', combined_p, fmt='%.6f', delimiter=' ')
-        np.savetxt('x_neg_i.txt', combined_n, fmt='%.6f', delimiter=' ')
         data_pn_offset = self.calc_offset(combined_p[:, [0, 3]], combined_n[:, [0, 3]])
         return data_pn_offset
 
@@ -106,34 +104,34 @@ class FSV:
         current_pos_fsv = self.mcs2fsv(self.cmm.get_position())
         start_pos_mcs = self.fsv2mcs(current_pos_fsv - half_length)
         end_pos_mcs = self.fsv2mcs(current_pos_fsv + half_length)
+        # Scan +
         start_p, end_p, data_p = self.perform_scan(start_pos_mcs, end_pos_mcs)
         y_p = np.linspace(start_p[1], end_p[1], data_p.shape[0])
         sleep(1)
+        # Scan -
         start_n, end_n, data_n = self.perform_scan(end_pos_mcs, start_pos_mcs, direction='negative')
         y_n = np.linspace(start_n[1], end_n[1], data_n.shape[0])
-        # combined_p = np.insert(data_p, 0, y_p, axis=1) # (y, Bx, By, Bz, Btemp)
-        # combined_n = np.insert(data_n, 0, y_n, axis=1) # (y, Bx, By, Bz, Btemp)
-        # return (combined_p, combined_n)
-        y_p_offset = self.calc_offset(y_p, data_p[:, 2])
-        y_n_offset = self.calc_offset(y_n, data_n[:, 2])
-        return (y_p_offset, y_n_offset)
+        combined_p = np.insert(data_p, 0, y_p, axis=1) # (y, Bx, By, Bz, Btemp)
+        combined_n = np.insert(data_n, 0, y_n, axis=1) # (y, Bx, By, Bz, Btemp)
+        data_pn_offset = self.calc_offset(combined_p[:, [0, 3]], combined_n[:, [0, 3]])
+        return data_pn_offset
 
     def run_z_routine(self):
         half_length = np.array([0, 0, 20])
         current_pos_fsv = self.mcs2fsv(self.cmm.get_position())
         start_pos_mcs = self.fsv2mcs(current_pos_fsv - half_length)
         end_pos_mcs = self.fsv2mcs(current_pos_fsv + half_length)
+        # Scan +
         start_p, end_p, data_p = self.perform_scan(start_pos_mcs, end_pos_mcs)
         z_p = np.linspace(start_p[2], end_p[2], data_p.shape[0])
         sleep(1)
+        # Scan -
         start_n, end_n, data_n = self.perform_scan(end_pos_mcs, start_pos_mcs, direction='negative')
         z_n = np.linspace(start_n[2], end_n[2], data_n.shape[0])
-        # combined_p = np.insert(data_p, 0, z_p, axis=1) # (z, Bx, By, Bz, Btemp)
-        # combined_n = np.insert(data_n, 0, z_n, axis=1) # (z, Bx, By, Bz, Btemp)
-        # return (combined_p, combined_n)
-        z_p_offset = self.calc_offset(z_p, data_p[:, 0])
-        z_n_offset = self.calc_offset(z_n, data_n[:, 0])
-        return (z_p_offset, z_n_offset)
+        combined_p = np.insert(data_p, 0, z_p, axis=1) # (z, Bx, By, Bz, Btemp)
+        combined_n = np.insert(data_n, 0, z_n, axis=1) # (z, Bx, By, Bz, Btemp)
+        data_pn_offset = self.calc_offset(combined_p[:, [0, 1]], combined_n[:, [0, 1]])
+        return data_pn_offset
 
     def save_probe_offset(self):
         pass
