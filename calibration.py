@@ -40,20 +40,6 @@ def calib_data(calib_coeffs, sensor_data, sensitivity=5):
 
     return xyz_cal_mT
 
-def filter_data(data: np.ndarray, cutoff: int):
-    '''
-    data: (n,) array of single axis hallsensor data
-    cutoff: integer value for level of filter smoothing
-    returns (n,) numpy array of filtered sensor data
-    '''
-    x_delta = 1
-    alpha = np.sqrt(np.log(2)/np.pi)
-    x_lc = np.arange(-cutoff, cutoff + x_delta, x_delta)
-    sx = (1/alpha*cutoff)*np.exp(-np.pi*(x_lc/(alpha*cutoff))**2)
-    sx_norm = sx/np.sum(sx)
-    filtered = np.convolve(data, sx_norm, mode='same')
-    return filtered
-
 def get_xyz_calib_values(path: str):
     '''
     Input: folder path to hall sensor calibration coefficients
@@ -74,6 +60,32 @@ def get_xyz_calib_values(path: str):
                            coeffs_dict['CalibrationY'],
                            coeffs_dict['CalibrationZ']))
     return xyz_coeffs
+
+def filter_data(data: np.ndarray, cutoff: int):
+    '''
+    data: (n,) array of single axis hallsensor data
+    cutoff: integer value for level of filter smoothing
+    returns (n,) numpy array of filtered sensor data
+    '''
+    x_delta = 1
+    alpha = np.sqrt(np.log(2)/np.pi)
+    x_lc = np.arange(-cutoff, cutoff + x_delta, x_delta)
+    sx = (1/alpha*cutoff)*np.exp(-np.pi*(x_lc/(alpha*cutoff))**2)
+    sx_norm = sx/np.sum(sx)
+    filtered = np.convolve(data, sx_norm, mode='same')
+    return filtered
+
+
+def fit_linear(x, y):
+    x_m = np.mean(x)
+    y_m = np.mean(y)
+    x_dev = x - x_m
+    y_dev = y - y_m
+    xy_dev = x_dev * y_dev
+    xsq_dev = x_dev**2
+    m = np.sum(xy_dev)/np.sum(xsq_dev)
+    b = y_m - m * x_m
+    return np.array([m, b])
 
 def remove_outliers(sensor_data, stdev=2, iterations=1):
     '''
