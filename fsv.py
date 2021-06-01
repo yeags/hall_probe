@@ -1,4 +1,4 @@
-from calibration import filter_data
+from calibration import filter_data, fit_linear
 from nicdaq import HallDAQ
 from time import sleep
 import numpy as np
@@ -15,20 +15,30 @@ class FSV:
         self.rotation, self.translation = self.import_fsv_alignment(fsv_filename)
         self.probe_offset = self.import_probe_offset(probe_offset_filename)
     
-    def calc_offset(self, ax: np.ndarray, B_ax: np.ndarray, filter_cutoff=500):
+    def calc_offset(self, data_pos: np.ndarray, data_neg: np.ndarray, filter_cutoff=500, fit_lc=175):
         '''
-        ax: CMM single axis data
-        B_ax: Hallsensor single axis data
+        data_pos: (n, 2) array of sample data (ex. [x, bz])
+        data_neg: (n, 2) array of sample data (current reversed)
         filter_cutoff: integer value used for smoothing raw sensor data,
             default set to 500
+        fit_lc: extra samples to cut off for better linear fit
         returns: offset value for the respective CMM axis
         '''
-        ax_cutoff = ax[filter_cutoff:-filter_cutoff]
-        B_filtered = filter_data(B_ax, filter_cutoff)[filter_cutoff:-filter_cutoff]
-        combined_array = np.array([ax_cutoff, B_filtered]).T
-        array_min = combined_array[combined_array[:, 1] == combined_array[:, 1].min()][0,0]
-        array_max = combined_array[combined_array[:, 1] == combined_array[:, 1].max()][0,0]
-        offset = (array_max + array_min) / 2
+        # Filter hallsensor data
+        dpf = filter_data(data_pos[:, 1], filter_cutoff)
+        dnf = filter_data(data_neg[:, 1], filter_cutoff)
+        # Filter noisy data and cutoff beginning/end
+        dpf_cutoff = dpf[filter_cutoff:-filter_cutoff]
+        dnf_cutoff = dnf[filter_cutoff:-filter_cutoff]
+        # Find min/max indices of filtered data and incorporate additional sample cutoff (fit_lc)
+        dpf_min_index = np.where(dpf_cutoff == dpf_cutoff.min())[0][0] + filter_cutoff + fit_lc
+        dpf_max_index = np.where(dpf_cutoff == dpf_cutoff.max())[0][0] + filter_cutoff - fit_lc
+        dnf_min_index = np.where(dnf_cutoff == dnf_cutoff.min())[0][0] + filter_cutoff + fit_lc
+        dnf_max_index = np.where(dnf_cutoff == dnf_cutoff.max())[0][0] + filter_cutoff - fit_lc
+        dpf_polyfit = np.polyfit(data_pos[:, 0][dpf_min_index:dpf_max_index], dpf[dpf_min_index:dpf_max_index], 3)
+        dnf_polyfit = np.polyfit(data_neg[:, 0][dnf_min_index:dnf_max_index], dnf[dnf_min_index:dnf_max_index], 3)
+        diff = dpf_polyfit - dnf_polyfit
+        offset = np.roots(diff)[1]
         return offset
 
     def import_fsv_alignment(self, filename: str):
@@ -71,27 +81,24 @@ class FSV:
         self.cmm.cnc_off()
         return (start_position, end_position, data)
 
-    def run_x_routine(self):
+    def run_x_routine(self, length=20, speed=5):
         half_length = np.array([20, 0, 0])
         current_pos_fsv = self.mcs2fsv(self.cmm.get_position())
         start_pos_mcs = self.fsv2mcs(current_pos_fsv - half_length)
         end_pos_mcs = self.fsv2mcs(current_pos_fsv + half_length)
-        start_p, end_p, data_p = self.perform_scan(start_pos_mcs, end_pos_mcs, speed=5)
+        # Scan +
+        start_p, end_p, data_p = self.perform_scan(start_pos_mcs, end_pos_mcs)
         x_p = np.linspace(start_p[0], end_p[0], data_p.shape[0])
         sleep(1)
+        # Scan -
         start_n, end_n, data_n = self.perform_scan(end_pos_mcs, start_pos_mcs, direction='negative')
         x_n = np.linspace(start_n[0], end_n[0], data_n.shape[0])
+        # Combine CMM and hallsensor data into one array
         combined_p = np.insert(data_p, 0, x_p, axis=1) # (x, Bx, By, Bz, Btemp)
         combined_n = np.insert(data_n, 0, x_n, axis=1) # (x, Bx, By, Bz, Btemp)
         np.savetxt('x_pos_i.txt', combined_p, fmt='%.6f', delimiter=' ')
         np.savetxt('x_neg_i.txt', combined_n, fmt='%.6f', delimiter=' ')
-        # return (combined_p, combined_n)
-        data_pn = data_p - data_n
-        x_pn = (x_p + x_n) / 2
-        # x_p_offset = self.calc_offset(x_p, data_p[:, 2])
-        # x_n_offset = self.calc_offset(x_n, data_n[:, 2])
-        # return (x_p_offset, x_n_offset)
-        data_pn_offset = self.calc_offset(x_pn, data_pn[:, 2])
+        data_pn_offset = self.calc_offset(combined_p[:, [0, 3]], combined_n[:, [0, 3]])
         return data_pn_offset
 
     def run_y_routine(self):
@@ -143,6 +150,8 @@ if __name__ == '__main__':
     # print(f'offset difference: {round(pos_offset - neg_offset, 3)}')
     offset = test.run_x_routine()
     print(f'offset: {round(offset, 3)}')
+    with open('polyfit_offset.txt', 'a') as file:
+        file.write(f'{round(offset, 6)}\n')
     test.shutdown()
     # np.savetxt('bz_positive.txt', data_p, fmt='%.6f', delimiter=' ')
     # np.savetxt('bz_negative.txt', data_n, fmt='%.6f', delimiter=' ')
