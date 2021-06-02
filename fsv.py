@@ -8,6 +8,8 @@ class FSV:
     CERAMIC_THK = 1.0
     TRACE_THK = 0.06
     GLAZE_THK = 0.01
+    TRACE_Z_OFFSET = 0.242
+
     def __init__(self, fsv_filename: str, probe_offset_filename: str):
         self.daq = HallDAQ(1, 10000, start_trigger=True, acquisition='finite')
         self.daq.power_on()
@@ -121,15 +123,19 @@ class FSV:
         current_pos_fsv = self.mcs2fsv(self.cmm.get_position())
         start_pos_mcs = self.fsv2mcs(current_pos_fsv - half_length)
         end_pos_mcs = self.fsv2mcs(current_pos_fsv + half_length)
+        # Set hall probe to high sensitivity
+        self.daq.change_sensitivity(sensitivity='100MT')
         # Scan +
-        start_p, end_p, data_p = self.perform_scan(start_pos_mcs, end_pos_mcs)
+        start_p, end_p, data_p = self.perform_scan(start_pos_mcs, end_pos_mcs, direction='negative')
         z_p = np.linspace(start_p[2], end_p[2], data_p.shape[0])
         sleep(1)
         # Scan -
-        start_n, end_n, data_n = self.perform_scan(end_pos_mcs, start_pos_mcs, direction='negative')
+        start_n, end_n, data_n = self.perform_scan(end_pos_mcs, start_pos_mcs)
         z_n = np.linspace(start_n[2], end_n[2], data_n.shape[0])
         combined_p = np.insert(data_p, 0, z_p, axis=1) # (z, Bx, By, Bz, Btemp)
         combined_n = np.insert(data_n, 0, z_n, axis=1) # (z, Bx, By, Bz, Btemp)
+        # np.savetxt('z_routine_pos.txt', combined_p, fmt='%.6f', delimiter=' ')
+        # np.savetxt('z_routine_neg.txt', combined_n, fmt='%.6f', delimiter=' ')
         data_pn_offset = self.calc_offset(combined_p[:, [0, 1]], combined_n[:, [0, 1]])
         return data_pn_offset
 
@@ -146,10 +152,15 @@ if __name__ == '__main__':
     # pos_offset, neg_offset = test.run_x_routine()
     # print(f'positive offset: {round(pos_offset, 3)}\nnegative offset: {round(neg_offset, 3)}')
     # print(f'offset difference: {round(pos_offset - neg_offset, 3)}')
-    offset = test.run_x_routine()
-    print(f'offset: {round(offset, 3)}')
-    with open('polyfit_offset.txt', 'a') as file:
-        file.write(f'{round(offset, 6)}\n')
+    start_point = test.cmm.get_position()
+    for i in range(10):
+        offset = test.run_z_routine()
+        print(f'offset {i}: {round(offset, 3)}')
+        with open('polyfit_offset_z.txt', 'a') as file:
+            file.write(f'{round(offset, 6)}\n')
+        test.cmm.goto_position(start_point)
+        while np.linalg.norm(start_point - test.cmm.get_position()) > 0.025:
+            pass
     test.shutdown()
     # np.savetxt('bz_positive.txt', data_p, fmt='%.6f', delimiter=' ')
     # np.savetxt('bz_negative.txt', data_n, fmt='%.6f', delimiter=' ')
