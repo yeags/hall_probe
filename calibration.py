@@ -17,8 +17,9 @@ def calib_data(calib_coeffs, sensor_data, sensitivity=5):
         function returns (n, 3) calibrated hall sensor readings (Bx,By,Bz) in mT
     '''
     Bxyz = sensor_data[:, :-1]
-    temp_v = calib_coeffs[0, 0, 6] * (sensor_data[0, 3] + calib_coeffs[0, 0, 5])
-    
+    temp_v = calib_coeffs[0, 0, 6] * (sensor_data[:, 3] + calib_coeffs[0, 0, 5])
+    temp_v = np.array([temp_v, temp_v, temp_v]).T
+
     # k values are a (3,) array (x_coeff, y_coeff, z_coeff)
     if sensitivity == 5:
         k1 = calib_coeffs[:, 2, 0]
@@ -27,16 +28,16 @@ def calib_data(calib_coeffs, sensor_data, sensitivity=5):
         k4 = calib_coeffs[:, 2, 3]
         k5 = calib_coeffs[:, 2, 4]
     elif sensitivity == 100:
-        k1 = calib_coeffs[0, 0, 0]
-        k2 = calib_coeffs[0, 0, 1]
-        k3 = calib_coeffs[0, 0, 2]
-        k4 = calib_coeffs[0, 0, 3]
-        k5 = calib_coeffs[0, 0, 4]
+        k1 = calib_coeffs[:, 0, 0]
+        k2 = calib_coeffs[:, 0, 1]
+        k3 = calib_coeffs[:, 0, 2]
+        k4 = calib_coeffs[:, 0, 3]
+        k5 = calib_coeffs[:, 0, 4]
     else:
         print('Invalid sensitivity value')
     xyz_prime = k1 + Bxyz
     xyz_dbl_prime = k2 * xyz_prime**3 + xyz_prime
-    xyz_cal_mT = (2 * (k5 * (xyz_dbl_prime + xyz_dbl_prime * k3 * temp_v + k4 * temp_v)) / sensitivity) * 1000
+    xyz_cal_mT = ((k5 * (xyz_dbl_prime + xyz_dbl_prime * k3 * temp_v + k4 * temp_v)) / sensitivity) * 1000
 
     return xyz_cal_mT
 
@@ -51,7 +52,8 @@ def get_xyz_calib_values(path: str):
     for i in files:
         with open(f'{path}/{i}', 'r') as contents:
             files_dict[i[:-4]] = contents.read()
-    coeffs_re = re.compile(r'\d+\.\d{7}')
+    # coeffs_re = re.compile(r'\d+\.\d{7}')
+    coeffs_re = re.compile(r'[+-]*\d+\.\d{7}')
     coeffs_dict = {}
     for i, j in files_dict.items():
         coeffs_dict[i] = re.findall(coeffs_re, j)
@@ -86,6 +88,22 @@ def fit_linear(x, y):
     b = y_m - m * x_m
     return np.array([m, b])
 
+def orthogonalize(cube_data: np.ndarray):
+    '''
+    cube_data is a (12, 3) array
+    function returns (3,3) array
+    '''
+    v1 = np.mean(cube_data[:4], axis=0)
+    v2 = np.mean(cube_data[4:8], axis=0)
+    v3 = np.mean(cube_data[8:], axis=0)
+    e_hat1 = v1/np.linalg.norm(v1)
+    e2 = v2 - np.dot(v2, e_hat1)*e_hat1
+    e_hat2 = e2/np.linalg.norm(e2)
+    e3 = v3 - np.dot(v3, e_hat1)*e_hat1 - np.dot(v3, e_hat2)*e_hat2
+    e_hat3 = e3/np.linalg.norm(e3)
+    S = np.array([e_hat1, e_hat2, e_hat3])
+    return S
+
 def remove_outliers(sensor_data, stdev=2, iterations=1):
     '''
     sensor_data is an (n, m) numpy array of 
@@ -109,7 +127,7 @@ def remove_outliers(sensor_data, stdev=2, iterations=1):
 
 
 if __name__ == "__main__":
-    path = 'C:/Users/dyeagly/Documents/hall_probe/hall_probe/Hall probe 443-20'
+    path = 'C:/Users/dyeagly/Documents/hall_probe/hall_probe/Hall probe 444-20'
     calib_coeffs = get_xyz_calib_values(path)
     print(calib_coeffs)
     print(calib_coeffs.shape)
