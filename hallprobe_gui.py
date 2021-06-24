@@ -1,8 +1,10 @@
 import tkinter as tk
 from tkinter import ttk
 from zeisscmm import CMM
-import nidaqmx as ni
 from nicdaq import HallDAQ
+from fsv import fsvWindow
+from cube import Cube
+from zero_gauss import zgWindow
 import numpy as np
 from datetime import datetime
 import threading
@@ -244,7 +246,11 @@ class TemperatureFrame(tk.Frame):
 
 class ProbeQualification(ttk.LabelFrame):
     '''
-    tk frame for qualifying the hall sensor probe on the CMM.
+    tk frame for qualifying the hall probe sensor.
+    Qualification process consists of:
+        * zero gauss offset
+        * xyz offset using fsv tool
+        * sensor orthogonalization using cube tool
     '''
     def __init__(self, parent):
         self.calib_tools_parent = parent
@@ -256,44 +262,36 @@ class ProbeQualification(ttk.LabelFrame):
         self.create_widgets()
 
     def create_widgets(self):
-        self.btn_load_fsv = ttk.Button(self, text='Load FSV Alignment',
-                                       command=lambda: self.load_filepath(self.fsv_filepath, enable=self.btn_run_fsv))
+        self.btn_run_zg = ttk.Button(self, text='Run Zero Gauss Offset',
+                                       command=self.run_zero_gauss)
         self.btn_run_fsv = ttk.Button(self, text='Run FSV Qualification',
                                       command=self.run_fsv, state='disabled')
-        self.btn_load_cube = ttk.Button(self, text='Load Cube Alignment',
-                                        command=lambda: self.load_filepath(self.cube_filepath, enable=self.btn_run_cube), state='disabled')
         self.btn_run_cube = ttk.Button(self, text='Run Cube Qualification',
-                                       command=self.run_cube, state='disabled')
-        self.btn_load_zero_gauss = ttk.Button(self, text='Load Zero Gauss Alignment',
-                                              command=lambda: self.load_filepath(self.zero_gauss_filepath, enable=self.btn_run_zero_gauss), state='disabled')
-        self.btn_run_zero_gauss = ttk.Button(self, text='Run Zero Gauss Alignment',
-                                             command=self.run_zero_gauss, state='disabled')
-        self.btn_load_probe_calib = ttk.Button(self, text='Load Probe Calibration',
-                                               command=lambda: self.load_filepath(self.probe_calib_filepath))
+                                        command=self.run_cube, state='disabled')
         self.lbl_instructions = ttk.Label(self, text='Qualification Instructions')
         self.txt_instructions = tk.Text(self, wrap=tk.WORD, height=11, width=40, state='disabled')
 
-        self.btn_load_fsv.grid(column=0, row=0, sticky='w', padx=5, pady=(5,0))
+        self.btn_run_zg.grid(column=0, row=0, sticky='w', padx=5, pady=(5,0))
         self.btn_run_fsv.grid(column=0, row=1, sticky='w', padx=5, pady=(5,0))
-        self.btn_load_cube.grid(column=0, row=2, sticky='w', padx=5, pady=(5,0))
-        self.btn_run_cube.grid(column=0, row=3, sticky='w', padx=5, pady=(5,0))
-        self.btn_load_zero_gauss.grid(column=0, row=4, sticky='w', padx=5, pady=(5,0))
-        self.btn_run_zero_gauss.grid(column=0, row=5, sticky='w', padx=5, pady=(5,0))
-        self.btn_load_probe_calib.grid(column=0, row=6, sticky='w', padx=5, pady=(5))
+        self.btn_run_cube.grid(column=0, row=2, sticky='w', padx=5, pady=(5,0))
         self.lbl_instructions.grid(column=1, row=0, sticky='w', padx=5, pady=(5,0))
-        self.txt_instructions.grid(column=1, row=1, rowspan=7, sticky='nw', padx=5, pady=(0,5))
+        self.txt_instructions.grid(column=1, row=1, rowspan=2, sticky='nw', padx=5, pady=(0,5))
 
     def load_filepath(self, filepath, enable=None):
         filepath = tk.filedialog.askopenfilename(filetypes=[('Text Files', '*.txt'), ('All Files', '*.*')])
         if enable != None:
             enable.configure(state='enabled')
     
+    def run_zero_gauss(self):
+        zg = zgWindow(self)
+        self.btn_run_fsv.configure(state='enabled')
+    
     def run_fsv(self):
-        self.btn_load_cube.configure(state='enabled')
+        fsv = fsvWindow(self)
+        self.btn_run_cube.configure(state='enabled')
+    
     def run_cube(self):
         self.btn_load_zero_gauss.configure(state='enabled')
-    def run_zero_gauss(self):
-        pass
 
 class ProgramControls(ttk.LabelFrame):
     '''
@@ -351,7 +349,7 @@ class ProgramControls(ttk.LabelFrame):
 
 class StartMeasurement(tk.Frame):
     '''
-    Empty tk frame used for starting a measurement session based off
+    Empty tk frame used for starting a measurement session based on
     set parameters and loaded magnet alignment.
     '''
     def __init__(self, parent):
