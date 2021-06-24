@@ -11,7 +11,7 @@ def calib_data(calib_coeffs, sensor_data, sensitivity=5):
     Arguments:
         calib_coeffs is a (3,3,7) numpy array of calibration coefficients
         sensitivity is the volts per tesla of the probe.  Use only either 5 (2 T range) or 100 (100 mT range)
-        default range is 2 T
+            default range is 2 T
         sensor_data should be a (n, 4) numpy array (Bx, By, Bz, Temperature(in volts))
     Returns:
         function returns (n, 3) calibrated hall sensor readings (Bx,By,Bz) in mT
