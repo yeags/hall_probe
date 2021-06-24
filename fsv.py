@@ -4,7 +4,10 @@ from pathlib import Path
 from time import sleep
 import numpy as np
 import zeisscmm
-import os, re
+import tkinter as tk
+from tkinter import filedialog, messagebox
+from tkinter import ttk
+from PIL import Image, ImageTk
 
 class FSV:
     CERAMIC_THK = 1.0
@@ -47,12 +50,12 @@ class FSV:
         dnf_polyfit = np.polyfit(data_neg[:, 0][dnf_min_index:dnf_max_index], dnf[dnf_min_index:dnf_max_index], 5)
         diff = dpf_polyfit - dnf_polyfit
         offset = np.roots(diff)[2].real
-        return offset
+        return self.fsv2mcs(offset)
 
     def import_fsv_alignment(self, filename: str):
         diff = np.genfromtxt(filename, delimiter=' ')
-        rotation = diff[:-3].reshape((3,3))
-        translation = diff[-3:]
+        rotation = diff[:9].reshape((3,3))
+        translation = diff[9:]
         return (rotation, translation)
 
     def fsv2mcs(self, coordinate: np.ndarray):
@@ -153,6 +156,56 @@ class FSV:
         self.daq.power_off()
         self.daq.close_tasks()
 
+class fsvWindow(tk.Toplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.fsv_filename = None
+        self.calib_folder = None
+        self.title('FSV Qualification')
+        self.frm_fsv_window = tk.Frame(self)
+        self.frm_fsv_window.pack()
+        self.img_fsv_x = ImageTk.PhotoImage(Image.open('images/fsv_x.jpg'))
+        self.img_fsv_y = ImageTk.PhotoImage(Image.open('images/fsv_y.jpg'))
+        self.img_fsv_z = ImageTk.PhotoImage(Image.open('images/fsv_z.jpg'))
+        self.create_widgets()
+    
+    def create_widgets(self):
+        self.btn_load_alignment = ttk.Button(self.frm_fsv_window, text='Load FSV Alignment', command=self.load_alignment)
+        self.btn_load_calibration = ttk.Button(self.frm_fsv_window, text='Load Sensor Calibration', command=self.load_calibration)
+        self.btn_run_x = ttk.Button(self.frm_fsv_window, text='Run X Offset', command=lambda: self.run_fsv(offset='x'))
+        self.btn_run_y = ttk.Button(self.frm_fsv_window, text='Run Y Offset', command=lambda: self.run_fsv(offset='y'))
+        self.btn_run_z = ttk.Button(self.frm_fsv_window, text='Run Z Offset', command=lambda: self.run_fsv(offset='z'))
+        self.btn_load_alignment.grid(column=0, row=0, padx=5, pady=5)
+        self.btn_load_calibration.grid(column=0, row=1, padx=5, pady=5)
+        self.btn_run_x.grid(column=0, row=2, padx=5, pady=5)
+        self.btn_run_y.grid(column=0, row=3, padx=5, pady=5)
+        self.btn_run_z.grid(column=0, row=4, padx=5, pady=5)
+
+    def load_alignment(self):
+        self.fsv_filename = filedialog.askopenfilename(filetypes=[('Text Files', '*.txt'), ('All Files', '*.*')])
+    
+    def load_calibration(self):
+        self.calib_folder = filedialog.askdirectory()
+    
+    def load_image(self):
+        pass
+    
+    def run_fsv(self, offset='x'):
+        if (self.fsv_filename and self.calib_folder) is None:
+            messagebox.showerror(title='Error', message='Load alignment and calibration files first.')
+        else:
+            self.fsv = FSV(self.fsv_filename, self.calib_folder)
+            if offset == 'x':
+                self.lbl_desc = tk.Label(self.frm_fsv_window, text='Move probe over fsv tool as shown and run x offset.')
+                self.lbl_img_x = tk.Label(self.frm_fsv_window, image=self.img_fsv_x)
+                self.lbl_desc.grid(column=1, row=0, padx=5, pady=5, sticky='w')
+                self.lbl_img_x.grid(column=1, row=1, padx=5, pady=5)
+                self.fsv.run_x_routine()
+            elif offset == 'y':
+                self.fsv.run_y_routine()
+            elif offset == 'z':
+                self.fsv.run_z_routine()
+
 if __name__ == '__main__':
     test = FSV(r'D:\CMM Programs\FSV Calibration\fsv_alignment.txt', r'C:\Users\dyeagly\Documents\hall_probe\hall_probe\Hall probe 444-20')
     
@@ -167,4 +220,4 @@ if __name__ == '__main__':
         while np.linalg.norm(start_point - test.cmm.get_position()) > 0.025:
             pass
     test.shutdown()
-    test.save_probe_offset(r'D:\CMM Programs\FSV Calibration\fsv_alignment.txt')
+    test.save_probe_offset(r'D:\CMM Programs\FSV Calibration')
