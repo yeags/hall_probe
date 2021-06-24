@@ -172,23 +172,34 @@ class fsvWindow(tk.Toplevel):
     def create_widgets(self):
         self.btn_load_alignment = ttk.Button(self.frm_fsv_window, text='Load FSV Alignment', command=self.load_alignment)
         self.btn_load_calibration = ttk.Button(self.frm_fsv_window, text='Load Sensor Calibration', command=self.load_calibration)
-        self.btn_run_x = ttk.Button(self.frm_fsv_window, text='Run X Offset', command=lambda: self.run_fsv(offset='x'))
-        self.btn_run_y = ttk.Button(self.frm_fsv_window, text='Run Y Offset', command=lambda: self.run_fsv(offset='y'))
-        self.btn_run_z = ttk.Button(self.frm_fsv_window, text='Run Z Offset', command=lambda: self.run_fsv(offset='z'))
+        self.btn_run_x = ttk.Button(self.frm_fsv_window, text='Run X Offset', command=lambda: self.run_fsv(offset='x'), state='disabled')
+        self.btn_run_y = ttk.Button(self.frm_fsv_window, text='Run Y Offset', command=lambda: self.run_fsv(offset='y'), state='disabled')
+        self.btn_run_z = ttk.Button(self.frm_fsv_window, text='Run Z Offset', command=lambda: self.run_fsv(offset='z'), state='disabled')
+        self.btn_close = ttk.Button(self.frm_fsv_window, text='Close', command=self.destroy)
         self.btn_load_alignment.grid(column=0, row=0, padx=5, pady=5)
         self.btn_load_calibration.grid(column=0, row=1, padx=5, pady=5)
         self.btn_run_x.grid(column=0, row=2, padx=5, pady=5)
         self.btn_run_y.grid(column=0, row=3, padx=5, pady=5)
         self.btn_run_z.grid(column=0, row=4, padx=5, pady=5)
+        self.btn_close.grid(column=0, row=5, padx=5, pady=5)
 
     def load_alignment(self):
         self.fsv_filename = filedialog.askopenfilename(filetypes=[('Text Files', '*.txt'), ('All Files', '*.*')])
+        if (self.fsv_filename and self.calib_folder) is not None:
+            self.btn_run_x.configure(state='enabled')
+            self.load_image(self.img_fsv_x)
     
     def load_calibration(self):
         self.calib_folder = filedialog.askdirectory()
+        if (self.fsv_filename and self.calib_folder) is not None:
+            self.btn_run_x.configure(state='enabled')
+            self.load_image(self.img_fsv_x)
     
-    def load_image(self):
-        pass
+    def load_image(self, image):
+        self.lbl_desc = tk.Label(self.frm_fsv_window, text='Move probe over fsv tool as shown and run x offset.')
+        self.lbl_img_x = tk.Label(self.frm_fsv_window, image=self.img_fsv_x)
+        self.lbl_desc.grid(column=1, row=0, padx=5, pady=5, sticky='w')
+        self.lbl_img_x.grid(column=1, row=1, padx=5, pady=5, rowspan=5)
     
     def run_fsv(self, offset='x'):
         if (self.fsv_filename and self.calib_folder) is None:
@@ -196,13 +207,11 @@ class fsvWindow(tk.Toplevel):
         else:
             self.fsv = FSV(self.fsv_filename, self.calib_folder)
             if offset == 'x':
-                self.lbl_desc = tk.Label(self.frm_fsv_window, text='Move probe over fsv tool as shown and run x offset.')
-                self.lbl_img_x = tk.Label(self.frm_fsv_window, image=self.img_fsv_x)
-                self.lbl_desc.grid(column=1, row=0, padx=5, pady=5, sticky='w')
-                self.lbl_img_x.grid(column=1, row=1, padx=5, pady=5)
                 self.fsv.run_x_routine()
+                self.btn_run_y.configure(state='enabled')
             elif offset == 'y':
                 self.fsv.run_y_routine()
+                self.btn_run_z.configure(state='enabled')
             elif offset == 'z':
                 self.fsv.run_z_routine()
 
