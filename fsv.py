@@ -184,6 +184,9 @@ class fsvWindow(tk.Toplevel):
         self.btn_run_y.grid(column=0, row=3, padx=5, pady=5)
         self.btn_run_z.grid(column=0, row=4, padx=5, pady=5)
         self.btn_close.grid(column=0, row=5, padx=5, pady=5)
+        self.btn_run_x.bind('<Button-1>', lambda event: self.lbl_desc.configure(text='Please wait.  X offset routine running...'))
+        self.btn_run_y.bind('<Button-1>', lambda event: self.lbl_desc.configure(text='Please wait.  Y offset routine running...'))
+        self.btn_run_z.bind('<Button-1>', lambda event: self.lbl_desc.configure(text='Please wait.  Z offset routine running...'))
 
     def load_alignment(self):
         self.fsv_filename = filedialog.askopenfilename(filetypes=[('Text Files', '*.txt'), ('All Files', '*.*')])
@@ -216,19 +219,16 @@ class fsvWindow(tk.Toplevel):
             if self.fsv is None:
                 self.fsv = FSV(self.fsv_filename, self.calib_folder)
             if offset == 'x':
-                self.lbl_desc.configure(text='Please wait.  Running x offset routine...')
                 self.fsv.run_x_routine()
                 self.btn_run_x.configure(state='disabled')
                 self.btn_run_y.configure(state='enabled')
                 self.load_image(self.img_fsv_y, offset_axis='y')
             elif offset == 'y':
-                self.lbl_desc.configure(text='Please wait.  Running y offset routine...')
                 self.fsv.run_y_routine()
                 self.btn_run_y.configure(state='disabled')
                 self.btn_run_z.configure(state='enabled')
                 self.load_image(self.img_fsv_z, offset_axis='z')
             elif offset == 'z':
-                self.lbl_desc.configure(text='Please wait.  Running z offset routine...')
                 self.fsv.run_z_routine()
                 self.btn_run_z.configure(state='disabled')
                 self.fsv.save_probe_offset()

@@ -40,15 +40,13 @@ class zgWindow(tk.Toplevel):
         self.btn_close.grid(column=0, row=1, padx=5, pady=5, sticky='nw')
         self.lbl_desc.grid(column=1, row=0, padx=5, pady=5, sticky='w')
         self.lbl_img.grid(column=1, row=1, padx=5, pady=5)
+        self.btn_zg_run.bind('<Button-1>', lambda event: self.lbl_desc.configure(text='Please wait.  Recording samples...'))
     
     def run_zg(self):
-        self.lbl_desc.configure(text='Please wait.  Recording samples...')
         zg = ZeroGauss()
         zg.measure_offset()
         zg.save_offset('zg_offset.txt')
         self.lbl_desc.configure(text='Signal offset saved.  You may now close the window.')
-
-
 
 if __name__ == '__main__':
     test = ZeroGauss()
