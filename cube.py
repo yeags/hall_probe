@@ -3,6 +3,7 @@ from calibration import get_xyz_calib_values, calib_data, orthogonalize
 import zeisscmm
 import numpy as np
 from time import sleep
+import tkinter as tk
 
 class Cube:
     def __init__(self, cube_alignment_filename: str,\
@@ -39,11 +40,14 @@ class Cube:
     def measure_cube_center(self):
         pass
 
-    
     def shutdown(self):
         self.cmm.close()
         self.daq.power_off()
         self.daq.close_tasks()
+
+class CubeWindow(tk.Toplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
 
 if __name__ == '__main__':
     test = Cube(r'D:\CMM Programs\Cube Calibration\cube_alignment.txt', r'C:\Users\dyeagly\Documents\hall_probe\hall_probe\Hall probe 444-20', r'D:\CMM Programs\FSV Calibration\hallsensor_offset_mcs.txt')
