@@ -23,7 +23,7 @@ class ZeroGauss:
 
 class zgWindow(tk.Toplevel):
     def __init__(self, parent):
-        super().__init__(parent)
+        super().__init__(parent, takefocus=True)
         self.frm_zg_window = tk.Frame(self)
         self.frm_zg_window.pack()
         self.img = ImageTk.PhotoImage(Image.open('images/zg_chamber1.jpg'))
@@ -42,9 +42,11 @@ class zgWindow(tk.Toplevel):
         self.lbl_img.grid(column=1, row=1, padx=5, pady=5)
     
     def run_zg(self):
+        self.lbl_desc.configure(text='Please wait.  Recording samples...')
         zg = ZeroGauss()
         zg.measure_offset()
         zg.save_offset('zg_offset.txt')
+        self.lbl_desc.configure(text='Signal offset saved.  You may now close the window.')
 
 
 

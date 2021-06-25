@@ -1,3 +1,4 @@
+from numpy.core.fromnumeric import take
 from calibration import filter_data, get_xyz_calib_values, calib_data
 from nicdaq import HallDAQ
 from pathlib import Path
@@ -50,7 +51,8 @@ class FSV:
         dnf_polyfit = np.polyfit(data_neg[:, 0][dnf_min_index:dnf_max_index], dnf[dnf_min_index:dnf_max_index], 5)
         diff = dpf_polyfit - dnf_polyfit
         offset = np.roots(diff)[2].real
-        return self.fsv2mcs(offset)
+        # print(f'offset: {offset}')
+        return offset
 
     def import_fsv_alignment(self, filename: str):
         diff = np.genfromtxt(filename, delimiter=' ')
@@ -106,8 +108,7 @@ class FSV:
         combined_p = np.insert(data_p, 0, x_p, axis=1) # (x, Bx, By, Bz)
         combined_n = np.insert(data_n, 0, x_n, axis=1) # (x, Bx, By, Bz)
         data_pn_offset = self.calc_offset(combined_p[:, [0, 3]], combined_n[:, [0, 3]])
-        self.x_offset_fsv = data_pn_offset
-        return data_pn_offset
+        self.x_offset_fsv = data_pn_offset - (self.TRACE_THK/2 + self.GLAZE_THK)
 
     def run_y_routine(self):
         half_length = np.array([0, 20, 0])
@@ -124,8 +125,7 @@ class FSV:
         combined_p = np.insert(data_p, 0, y_p, axis=1) # (y, Bx, By, Bz)
         combined_n = np.insert(data_n, 0, y_n, axis=1) # (y, Bx, By, Bz)
         data_pn_offset = self.calc_offset(combined_p[:, [0, 3]], combined_n[:, [0, 3]])
-        self.y_offset_fsv = data_pn_offset
-        return data_pn_offset
+        self.y_offset_fsv = data_pn_offset - (self.TRACE_THK/2 + self.GLAZE_THK)
 
     def run_z_routine(self):
         half_length = np.array([0, 0, 20])
@@ -144,12 +144,13 @@ class FSV:
         combined_p = np.insert(data_p, 0, z_p, axis=1) # (z, Bx, By, Bz)
         combined_n = np.insert(data_n, 0, z_n, axis=1) # (z, Bx, By, Bz)
         data_pn_offset = self.calc_offset(combined_p[:, [0, 1]], combined_n[:, [0, 1]])
-        self.z_offset_fsv = data_pn_offset
-        return data_pn_offset
+        self.z_offset_fsv = data_pn_offset + self.TRACE_Z_OFFSET
 
-    def save_probe_offset(self, filepath):
+    def save_probe_offset(self):
+        # print(f'x_fsv: {self.x_offset_fsv}\ny_fsv: {self.y_offset_fsv}\nz_fsv: {self.z_offset_fsv}')
         offset_mcs = np.array([self.x_offset_fsv, self.y_offset_fsv, self.z_offset_fsv])@self.rotation
-        np.savetxt(Path(filepath) / 'hallsensor_offset.txt', offset_mcs)
+        with open('fsv_offset.txt', 'w') as file:
+            file.write(f'{offset_mcs[0]} {offset_mcs[1]} {offset_mcs[2]}\n')
 
     def shutdown(self):
         self.cmm.close()
@@ -158,7 +159,8 @@ class FSV:
 
 class fsvWindow(tk.Toplevel):
     def __init__(self, parent):
-        super().__init__(parent)
+        super().__init__(parent, takefocus=True)
+        self.fsv = None
         self.fsv_filename = None
         self.calib_folder = None
         self.title('FSV Qualification')
@@ -187,46 +189,54 @@ class fsvWindow(tk.Toplevel):
         self.fsv_filename = filedialog.askopenfilename(filetypes=[('Text Files', '*.txt'), ('All Files', '*.*')])
         if (self.fsv_filename and self.calib_folder) is not None:
             self.btn_run_x.configure(state='enabled')
-            self.load_image(self.img_fsv_x)
+            self.load_image(self.img_fsv_x, offset_axis='x')
+        self.focus()
     
     def load_calibration(self):
         self.calib_folder = filedialog.askdirectory()
         if (self.fsv_filename and self.calib_folder) is not None:
             self.btn_run_x.configure(state='enabled')
-            self.load_image(self.img_fsv_x)
+            self.load_image(self.img_fsv_x, offset_axis='x')
+            self.focus()
     
-    def load_image(self, image):
-        self.lbl_desc = tk.Label(self.frm_fsv_window, text='Move probe over fsv tool as shown and run x offset.')
-        self.lbl_img_x = tk.Label(self.frm_fsv_window, image=self.img_fsv_x)
-        self.lbl_desc.grid(column=1, row=0, padx=5, pady=5, sticky='w')
-        self.lbl_img_x.grid(column=1, row=1, padx=5, pady=5, rowspan=5)
+    def load_image(self, image, offset_axis='x'):
+        try:
+            self.lbl_desc.configure(text=f'Move probe over fsv tool as shown and run {offset_axis} offset')
+            self.lbl_img.configure(image=image)
+        except:
+            self.lbl_desc = tk.Label(self.frm_fsv_window, text=f'Move probe over fsv tool as shown and run {offset_axis} offset.')
+            self.lbl_img = tk.Label(self.frm_fsv_window, image=image)
+            self.lbl_desc.grid(column=1, row=0, padx=5, pady=5, sticky='w')
+            self.lbl_img.grid(column=1, row=1, padx=5, pady=5, rowspan=5)
     
     def run_fsv(self, offset='x'):
         if (self.fsv_filename and self.calib_folder) is None:
             messagebox.showerror(title='Error', message='Load alignment and calibration files first.')
         else:
-            self.fsv = FSV(self.fsv_filename, self.calib_folder)
+            if self.fsv is None:
+                self.fsv = FSV(self.fsv_filename, self.calib_folder)
             if offset == 'x':
+                self.lbl_desc.configure(text='Please wait.  Running x offset routine...')
                 self.fsv.run_x_routine()
+                self.btn_run_x.configure(state='disabled')
                 self.btn_run_y.configure(state='enabled')
+                self.load_image(self.img_fsv_y, offset_axis='y')
             elif offset == 'y':
+                self.lbl_desc.configure(text='Please wait.  Running y offset routine...')
                 self.fsv.run_y_routine()
+                self.btn_run_y.configure(state='disabled')
                 self.btn_run_z.configure(state='enabled')
+                self.load_image(self.img_fsv_z, offset_axis='z')
             elif offset == 'z':
+                self.lbl_desc.configure(text='Please wait.  Running z offset routine...')
                 self.fsv.run_z_routine()
+                self.btn_run_z.configure(state='disabled')
+                self.fsv.save_probe_offset()
+                self.fsv.shutdown()
+                self.lbl_desc.configure(text='xyz offset routines complete.  You may now close the window.')
+
 
 if __name__ == '__main__':
-    test = FSV(r'D:\CMM Programs\FSV Calibration\fsv_alignment.txt', r'C:\Users\dyeagly\Documents\hall_probe\hall_probe\Hall probe 444-20')
+    pass
+    # test = FSV(r'D:\CMM Programs\FSV Calibration\fsv_alignment.txt', r'C:\Users\dyeagly\Documents\hall_probe\hall_probe\Hall probe 444-20')
     
-    num_iter = input('Position probe above Y-axis.\nEnter number of iterations: ')
-    start_point = test.cmm.get_position()
-    for i in range(num_iter):
-        offset = test.run_x_routine()
-        print(f'offset {i}: {round(offset, 3)}')
-        with open('polyfit_offset_x.txt', 'a') as file:
-            file.write(f'{round(offset, 6)}\n')
-        test.cmm.goto_position(start_point)
-        while np.linalg.norm(start_point - test.cmm.get_position()) > 0.025:
-            pass
-    test.shutdown()
-    test.save_probe_offset(r'D:\CMM Programs\FSV Calibration')
