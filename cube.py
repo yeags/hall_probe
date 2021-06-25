@@ -4,6 +4,7 @@ import zeisscmm
 import numpy as np
 from time import sleep
 import tkinter as tk
+import os
 
 class Cube:
     def __init__(self, cube_alignment_filename: str,\
@@ -40,10 +41,16 @@ class Cube:
     def measure_cube_center(self):
         pass
 
+    def save_calib_coeffs(self):
+        np.save('zg_calib_coeffs.npy', self.calib_coeffs, allow_pickle=False)
+
     def shutdown(self):
         self.cmm.close()
         self.daq.power_off()
         self.daq.close_tasks()
+    
+    def update_offset(self):
+        self.calib_coeffs[:, 2, 0] = self.zg_offset
 
 class CubeWindow(tk.Toplevel):
     def __init__(self, parent):
