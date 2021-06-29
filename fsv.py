@@ -1,7 +1,5 @@
-from numpy.core.fromnumeric import take
 from calibration import filter_data, get_xyz_calib_values, calib_data
 from nicdaq import HallDAQ
-from pathlib import Path
 from time import sleep
 import numpy as np
 import zeisscmm
@@ -16,12 +14,12 @@ class FSV:
     GLAZE_THK = 0.01
     TRACE_Z_OFFSET = 0.242
 
-    def __init__(self, fsv_filename: str, probe_calibration_path: str):
+    def __init__(self, fsv_filename: str, probe_calibration_array: np.ndarray):
         self.daq = HallDAQ(1, 10000, start_trigger=True, acquisition='finite')
         self.daq.power_on()
         self.cmm = zeisscmm.CMM()
         self.rotation, self.translation = self.import_fsv_alignment(fsv_filename)
-        self.calibration_coeffs = get_xyz_calib_values(probe_calibration_path)
+        self.calibration_coeffs = probe_calibration_array
     
     def calc_offset(self, data_pos: np.ndarray, data_neg: np.ndarray, filter_cutoff=500, fit_lc=175):
         '''
@@ -162,7 +160,7 @@ class fsvWindow(tk.Toplevel):
         super().__init__(parent, takefocus=True)
         self.fsv = None
         self.fsv_filename = None
-        self.calib_folder = None
+        self.calib_coeffs = None
         self.title('FSV Qualification')
         self.frm_fsv_window = tk.Frame(self)
         self.frm_fsv_window.pack()
@@ -190,14 +188,18 @@ class fsvWindow(tk.Toplevel):
 
     def load_alignment(self):
         self.fsv_filename = filedialog.askopenfilename(filetypes=[('Text Files', '*.txt'), ('All Files', '*.*')])
-        if (self.fsv_filename and self.calib_folder) is not None:
+        if (self.fsv_filename and self.calib_coeffs) is not None:
             self.btn_run_x.configure(state='enabled')
             self.load_image(self.img_fsv_x, offset_axis='x')
         self.focus()
     
     def load_calibration(self):
-        self.calib_folder = filedialog.askdirectory()
-        if (self.fsv_filename and self.calib_folder) is not None:
+        calib_folder = filedialog.askdirectory()
+        self.calib_coeffs = get_xyz_calib_values(calib_folder)
+        zg_offset = np.genfromtxt('zg_offset.txt')
+        self.calib_coeffs[:, 2, 0] = -zg_offset
+        np.save('zg_calib_coeffs.npy', self.calib_coeffs, allow_pickle=False)
+        if (self.fsv_filename and self.calib_coeffs) is not None:
             self.btn_run_x.configure(state='enabled')
             self.load_image(self.img_fsv_x, offset_axis='x')
             self.focus()
@@ -213,11 +215,11 @@ class fsvWindow(tk.Toplevel):
             self.lbl_img.grid(column=1, row=1, padx=5, pady=5, rowspan=5)
     
     def run_fsv(self, offset='x'):
-        if (self.fsv_filename and self.calib_folder) is None:
+        if (self.fsv_filename and self.calib_coeffs) is None:
             messagebox.showerror(title='Error', message='Load alignment and calibration files first.')
         else:
             if self.fsv is None:
-                self.fsv = FSV(self.fsv_filename, self.calib_folder)
+                self.fsv = FSV(self.fsv_filename, self.calib_coeffs)
             if offset == 'x':
                 self.fsv.run_x_routine()
                 self.btn_run_x.configure(state='disabled')
