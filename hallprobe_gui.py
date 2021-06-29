@@ -290,7 +290,7 @@ class ProbeQualification(ttk.LabelFrame):
         self.btn_run_cube.configure(state='enabled')
     
     def run_cube(self):
-        self.btn_load_zero_gauss.configure(state='enabled')
+        cube = CubeWindow(self)
 
 class ProgramControls(ttk.LabelFrame):
     '''
