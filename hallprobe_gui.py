@@ -5,9 +5,6 @@ from fsv import fsvWindow
 from cube import CubeWindow
 from zero_gauss import zgWindow
 import numpy as np
-from datetime import datetime
-import threading
-import calibration
 
 import matplotlib
 matplotlib.use("TkAgg")
