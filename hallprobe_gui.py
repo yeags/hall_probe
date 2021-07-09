@@ -269,7 +269,7 @@ class ProbeQualification(ttk.LabelFrame):
                                         command=self.run_cube, state='disabled')
         self.lbl_instructions = ttk.Label(self, text='Qualification Instructions')
         self.txt_instructions = tk.Text(self, wrap=tk.WORD, height=11, width=40, state='disabled')
-
+        # Place widgets within grid
         self.btn_run_zg.grid(column=0, row=0, sticky='w', padx=5, pady=(5,0))
         self.btn_run_fsv.grid(column=0, row=1, sticky='w', padx=5, pady=(5,0))
         self.btn_run_cube.grid(column=0, row=2, sticky='w', padx=5, pady=(5,0))
