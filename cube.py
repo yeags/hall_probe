@@ -1,23 +1,24 @@
 from nicdaq import HallDAQ
 from calibration import get_xyz_calib_values, calib_data, orthogonalize
-import zeisscmm
+from zeisscmm import CMM
 import numpy as np
 from time import sleep
 import tkinter as tk
 from tkinter import filedialog, ttk
 from PIL import Image, ImageTk
-import os
 
 class Cube:
     def __init__(self, cube_alignment_filename: str,\
                  calibration_array: np.ndarray,\
                  probe_offset_filename: str):
+        self.cube_dict = {}
         self.daq = HallDAQ(1, 20000, start_trigger=True, acquisition='finite')
         self.daq.power_on()
-        self.cmm = zeisscmm.CMM()
+        self.cmm = CMM()
         self.calib_coeffs = calibration_array
         self.rotation, self.translation = self.load_cube_alignment(cube_alignment_filename)
         self.probe_offset = np.genfromtxt(probe_offset_filename)
+        self.cube_origin_mcs = (np.zeros((3,)) - self.translation)@self.rotation + self.probe_offset
     
     def cube2mcs(self, coordinate):
         return (coordinate - self.translation)@self.rotation
@@ -30,9 +31,15 @@ class Cube:
         rotation = diff[:-3].reshape((3,3))
         translation = diff[-3:]
         return (rotation, translation)
-    
-    def measure_cube_center(self):
-        pass
+
+    def measure(self, cube_dict_key: str):
+        self.daq.start_hallsensor_task()
+        sleep(1)
+        self.daq.pulse()
+        data = self.daq.read_hallsensor()[7500:15000]
+        self.daq.stop_hallsensor_task()
+        cal_data = calib_data(self.calib_coeffs, data)
+        self.cube_dict[cube_dict_key] = np.mean(cal_data, axis=0)
 
     def shutdown(self):
         self.cmm.close()
@@ -42,6 +49,7 @@ class Cube:
 class CubeWindow(tk.Toplevel):
     def __init__(self, parent):
         self.cube = None
+        self.click_index = None
         self.calib_array = np.load('zg_calib_coeffs.npy')
         self.images = self.__create_image_dict__()
         super().__init__(parent)
@@ -66,7 +74,7 @@ class CubeWindow(tk.Toplevel):
                                              command=self.load_alignment)
         self.btn_measure_cube_center = ttk.Button(self.frm_cube_window,
                                                   text='Measure Cube Center',
-                                                  command=self.measure)
+                                                  command=self.click_iter)
         self.btn_close = ttk.Button(self.frm_cube_window, text='Close', command=self.destroy)
         self.lbl_img_desc = tk.Label(self.frm_cube_window, text='Load alignment, calibration, and offsets')
         self.lbl_img = tk.Label(self.frm_cube_window)
@@ -83,15 +91,30 @@ class CubeWindow(tk.Toplevel):
         self.lbl_img_desc.configure(text='Manually guide hallprobe into cube.')
         self.focus()
     
-    def measure(self):
+    def measure_origin(self):
         if self.cube is None:
             self.cube = Cube(self.cube_filename, self.calib_array, 'fsv_offset.txt')
-    
-    def select_calib_folder(self):
-        self.calib_folder = filedialog.askdirectory()
-        self.calib_array = get_xyz_calib_values(self.calib_folder)
-        self.focus()
+            self.manual_position = self.cube.mcs2cube(self.cube.cmm.get_position())
+            self.probe_offset_cube = self.cube.probe_offset@self.cube.rotation
+            self.manual_origin_cube = np.array([self.manual_position[0], self.manual_position[1], self.probe_offset_cube[2]])
+        self.cube.cmm.cnc_on()
+        self.cube.cmm.set_speed(5)
+        self.cube.cmm.goto_position(self.cube.cube2mcs(self.manual_origin_cube))
+        while np.linalg.norm(self.manual_origin_cube - self.cube.cmm.get_position()) > 0.025:
+            pass
+        self.cube.measure(self.keys[self.click_index])
+        self.cube.cmm.goto_position(self.cube.cube2mcs(self.manual_origin_cube + np.array([0, 0, 135])))
+        self.cube.cmm.set_speed(70)
+        self.cube.cmm.cnc_off()
+        self.click_index += 1
+
+    def click_iter(self):
+        if self.click_index is None:
+            self.click_index = 0
+        self.measure_origin()
         
+    def update_step(self):
+        pass
 
 if __name__ == '__main__':
     test = Cube(r'D:\CMM Programs\Cube Calibration\cube_alignment.txt', r'C:\Users\dyeagly\Documents\hall_probe\hall_probe\Hall probe 444-20', r'D:\CMM Programs\FSV Calibration\hallsensor_offset_mcs.txt')
