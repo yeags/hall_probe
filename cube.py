@@ -48,6 +48,9 @@ class Cube:
     
 class CubeWindow(tk.Toplevel):
     def __init__(self, parent):
+        self.cube_sequence = [2, 3, 4, 1,
+                              16, 8, 9, 19,
+                              20, 23, 12, 7]
         self.cube = None
         self.click_index = None
         self.calib_array = np.load('zg_calib_coeffs.npy')
@@ -60,12 +63,12 @@ class CubeWindow(tk.Toplevel):
     
     def __create_image_dict__(self):
         image_dict = {}
-        keys = ['x1', 'x2', 'x3', 'x4', 'y1', 'y2', 'y3', 'y4', 'z1', 'z2', 'z3', 'z4']
+        self.keys = ['x1', 'x2', 'x3', 'x4', 'y1', 'y2', 'y3', 'y4', 'z1', 'z2', 'z3', 'z4']
         images = ['images/cube_x1.jpg', 'images/cube_x2.jpg', 'images/cube_x3.jpg', 'images/cube_x4.jpg',
                   'images/cube_y1.jpg', 'images/cube_y2.jpg', 'images/cube_y3.jpg', 'images/cube_y4.jpg',
                   'images/cube_z1.jpg', 'images/cube_z2.jpg', 'images/cube_z3.jpg', 'images/cube_z4.jpg']
         for i in range(12):
-            image_dict[keys[i]] = ImageTk.PhotoImage(Image.open(images[i]))
+            image_dict[self.keys[i]] = ImageTk.PhotoImage(Image.open(images[i]))
         return image_dict
     
     def create_widgets(self):
@@ -75,7 +78,7 @@ class CubeWindow(tk.Toplevel):
         self.btn_measure_cube_center = ttk.Button(self.frm_cube_window,
                                                   text='Measure Cube Center',
                                                   command=self.click_iter)
-        self.btn_close = ttk.Button(self.frm_cube_window, text='Close', command=self.destroy)
+        self.btn_close = ttk.Button(self.frm_cube_window, text='Close', command=self.close_window)
         self.lbl_img_desc = tk.Label(self.frm_cube_window, text='Load alignment, calibration, and offsets')
         self.lbl_img = tk.Label(self.frm_cube_window)
         # Place widgets within grid
@@ -97,24 +100,39 @@ class CubeWindow(tk.Toplevel):
             self.manual_position = self.cube.mcs2cube(self.cube.cmm.get_position())
             self.probe_offset_cube = self.cube.probe_offset@self.cube.rotation
             self.manual_origin_cube = np.array([self.manual_position[0], self.manual_position[1], self.probe_offset_cube[2]])
-        self.cube.cmm.cnc_on()
-        self.cube.cmm.set_speed(5)
-        self.cube.cmm.goto_position(self.cube.cube2mcs(self.manual_origin_cube))
-        while np.linalg.norm(self.manual_origin_cube - self.cube.cmm.get_position()) > 0.025:
-            pass
-        self.cube.measure(self.keys[self.click_index])
-        self.cube.cmm.goto_position(self.cube.cube2mcs(self.manual_origin_cube + np.array([0, 0, 135])))
-        self.cube.cmm.set_speed(70)
-        self.cube.cmm.cnc_off()
-        self.click_index += 1
+        if self.click_index < 12:
+            self.cube.cmm.cnc_on()
+            self.cube.cmm.set_speed(5)
+            self.cube.cmm.goto_position(self.cube.cube2mcs(self.manual_origin_cube))
+            while np.linalg.norm(self.manual_origin_cube - self.cube.mcs2cube(self.cube.cmm.get_position())) > 0.025:
+                pass
+            self.cube.measure(self.keys[self.click_index])
+            self.cube.cmm.set_speed(20)
+            self.cube.cmm.goto_position(self.cube.cube2mcs(self.manual_origin_cube + np.array([0, 0, 135])))
+            self.cube.cmm.set_speed(70)
+            self.cube.cmm.cnc_off()
+            if self.click_index == 11:
+                s_matrix = orthogonalize(np.array([i for i in self.cube.cube_dict.values()]))
+                np.save('sensitivity.npy', s_matrix, allow_pickle=False)
+                self.lbl_img_desc.configure(text='Cube qualification complete.  Window can now be closed.')
+            self.click_index += 1
+        else:
+            self.btn_measure_cube_center.configure(state='disabled')
 
     def click_iter(self):
         if self.click_index is None:
             self.click_index = 0
         self.measure_origin()
+        if self.click_index < 12:
+            self.update_step()
         
     def update_step(self):
-        pass
+        self.lbl_img.configure(image=self.images[self.keys[self.click_index]])
+        self.lbl_img_desc.configure(text=f'Rotate cube to side number {self.cube_sequence[self.click_index]}')
+    
+    def close_window(self):
+        self.cube.shutdown()
+        self.destroy()
 
 if __name__ == '__main__':
     test = Cube(r'D:\CMM Programs\Cube Calibration\cube_alignment.txt', r'C:\Users\dyeagly\Documents\hall_probe\hall_probe\Hall probe 444-20', r'D:\CMM Programs\FSV Calibration\hallsensor_offset_mcs.txt')
