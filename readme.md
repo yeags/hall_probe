@@ -16,11 +16,11 @@ Placeholder description...
 
 ## Software
 
-The entire project is written in Python.  Third party libraries utilized are:
+The entire project is written in Python.  So far this is still a work in progress and code may break or change in the meantime.  GUI started out as an empty proof of concept and is slowly being modified to contain actual functionality.  Currently only the probe qualification routines are integrated and working within the graphical interface.
 
-```
-numpy
-matplotlib
-Pillow
-nidaqmx
-```
+Third party libraries utilized are:
+
+* numpy
+* matplotlib
+* Pillow
+* nidaqmx
