@@ -123,7 +123,7 @@ def remove_outliers(sensor_data, stdev=2, iterations=1):
             raw_stdev = np.std(raw_cleaned, axis=0, ddof=1)
             raw_filt = (raw_cleaned > -stdev*raw_stdev+raw_mean) & (raw_cleaned < stdev*raw_stdev+raw_mean)
             raw_cleaned = np.where(raw_filt, raw_cleaned, raw_mean)
-    return np.mean(raw_cleaned, axis=0)
+    return raw_cleaned
 
 
 if __name__ == "__main__":
