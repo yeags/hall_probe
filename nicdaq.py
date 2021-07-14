@@ -54,6 +54,9 @@ class HallDAQ:
         self.magnet_temp.timing.cfg_samp_clk_timing(self.RATE, sample_mode=ni.constants.AcquisitionType.CONTINUOUS,
                                                     samps_per_chan=self.SAMPLES_CHAN)
     
+    def change_sampling(self, rate, num_samples):
+        self.hallsensor.timing.cfg_samp_clk_timing(rate, samps_per_chan=num_samples)
+
     def change_sensitivity(self, sensitivity=None):
         if sensitivity is not None:
             self.hall_sensitivity.write(self.SENSOR_RANGE[sensitivity.upper().replace(' ', '')])
