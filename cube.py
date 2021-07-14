@@ -113,8 +113,10 @@ class CubeWindow(tk.Toplevel):
             self.cube.cmm.cnc_off()
             if self.click_index == 11:
                 s_matrix = orthogonalize(np.array([i for i in self.cube.cube_dict.values()]))
-                np.save('sensitivity.npy', s_matrix, allow_pickle=False)
+                s_matrix_mcs = self.cube.rotation.T@s_matrix
+                np.save('sensitivity.npy', s_matrix_mcs, allow_pickle=False)
                 self.lbl_img_desc.configure(text='Cube qualification complete.  Window can now be closed.')
+                self.btn_measure_cube_center.configure(state='disabled')
             self.click_index += 1
         else:
             self.btn_measure_cube_center.configure(state='disabled')
@@ -131,11 +133,14 @@ class CubeWindow(tk.Toplevel):
         self.lbl_img_desc.configure(text=f'Rotate cube to side number {self.cube_sequence[self.click_index]}')
     
     def close_window(self):
-        self.cube.shutdown()
+        if self.cube is not None:
+            self.cube.shutdown()
         self.destroy()
 
 if __name__ == '__main__':
-    test = Cube(r'D:\CMM Programs\Cube Calibration\cube_alignment.txt', r'C:\Users\dyeagly\Documents\hall_probe\hall_probe\Hall probe 444-20', r'D:\CMM Programs\FSV Calibration\hallsensor_offset_mcs.txt')
+    test = Cube(r'D:\CMM Programs\Cube Calibration v3\cube_alignment.txt',
+                np.load('zg_calib_coeffs.npy'),
+                'fsv_offset.txt')
     
     test.daq.start_hallsensor_task()
     sleep(1)
@@ -143,15 +148,9 @@ if __name__ == '__main__':
     data = test.daq.read_hallsensor()[7500:15000]
     cal_data = calib_data(test.calib_coeffs, data)
     cal_mean = np.mean(cal_data, axis=0)
-    data_mean = np.mean(data, axis=0)
-    # np.savetxt('cube_data_raw_05.txt', data, fmt='%.6f', delimiter=' ')
-    with open('cube_data_2021-06-17.txt', 'a') as file:
+    # data_mean = np.mean(data, axis=0)
+    with open('cube_data_2021-07-14.txt', 'a') as file:
         file.write(f'{cal_mean[0]} {cal_mean[1]} {cal_mean[2]}\n')
-    # with open('zg.txt', 'a') as file:
-    #     file.write(f'{data_mean[0]} {data_mean[1]} {data_mean[2]}\n')
-    # print(data_mean)
-    # print(data_mean)
-    print(cal_mean)
-    print(np.linalg.norm(cal_mean))
-    # print(np.std(cal_data, axis=0, ddof=1))
+    print(f'Bxyz: {cal_mean}')
+    print(f'Magnitude: {np.linalg.norm(cal_mean)}')
     test.shutdown()
