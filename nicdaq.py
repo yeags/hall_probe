@@ -56,6 +56,8 @@ class HallDAQ:
     
     def change_sampling(self, rate, num_samples):
         self.hallsensor.timing.cfg_samp_clk_timing(rate, samps_per_chan=num_samples)
+        self.RATE = rate
+        self.SAMPLES_CHAN = num_samples
 
     def change_sensitivity(self, sensitivity=None):
         if sensitivity is not None:
