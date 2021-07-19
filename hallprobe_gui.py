@@ -30,8 +30,8 @@ class HallProbeApp(tk.Frame):
         self.controls = ControlsFrame(self)
         self.visuals = VisualsFrame(self)
         self.pack()
-        self.controls.grid(column=0, row=0, padx=5, pady=5)
-        self.visuals.grid(column=1, row=0, padx=5, pady=5)
+        self.controls.grid(column=0, row=0, padx=5, pady=5, sticky='nsew')
+        self.visuals.grid(column=1, row=0, padx=5, pady=5, sticky='nsew')
     
     def update_graph_labels(self):
         self.visuals.temp_plot.temp_frame_parent.temp_plot.update_labels()
@@ -56,9 +56,9 @@ class ControlsFrame(tk.Frame):
         self.program_frame = ProgramControls(self)
 
         self.magnet_info_frame.grid(column=0, row=0)
-        self.zeiss_frame.grid(column=0, row=1)
-        self.calibration_frame.grid(column=0, row=2)
-        self.program_frame.grid(column=0, row=4)
+        self.calibration_frame.grid(column=0, row=1)
+        self.zeiss_frame.grid(column=0, row=2)
+        self.program_frame.grid(column=0, row=3)
 
 class VisualsFrame(tk.Frame):
     '''
@@ -117,13 +117,15 @@ class ZeissControls(ttk.LabelFrame):
         self.ent_start_pt_y = ttk.Entry(self, width=9)
         self.lbl_start_pt_z = tk.Label(self, text='Z')
         self.ent_start_pt_z = ttk.Entry(self, width=9)
-        self.lbl_scan_length = tk.Label(self, text='Scan Length')
+        self.lbl_scan_length = tk.Label(self, text='Scan Volume')
         self.lbl_scan_length_x = tk.Label(self, text='X')
         self.ent_scan_length_x = ttk.Entry(self, width=9)
         self.lbl_scan_length_y = tk.Label(self, text='Y')
         self.ent_scan_length_y = ttk.Entry(self, width=9)
         self.lbl_scan_length_z = ttk.Label(self, text='Z')
         self.ent_scan_length_z = ttk.Entry(self, width=9)
+        self.lbl_sample_spacing = tk.Label(self, text='Sample Spacing')
+        self.ent_sample_spacing = ttk.Entry(self, width=9)
 
         self.btn_emerg_stop.grid(column=0, row=0, columnspan=6)
         self.lbl_conn_status.grid(column=0, row=1, columnspan=6, padx=5, pady=5, sticky='ew')
@@ -141,6 +143,10 @@ class ZeissControls(ttk.LabelFrame):
         self.ent_scan_length_y.grid(column=3, row=5)
         self.lbl_scan_length_z.grid(column=4, row=5)
         self.ent_scan_length_z.grid(column=5, row=5)
+        self.lbl_sample_spacing.grid(column=0, row=6, columnspan=2, padx=5, pady=5)
+        self.ent_sample_spacing.grid(column=3, row=6, padx=5, pady=5)
+        self.ent_sample_spacing.tooltip = ToolTip(self.ent_sample_spacing, 'Default value = 0.5', delay=500)
+        self.ent_sample_spacing.insert(tk.END, '0.5')
 
     def emergency_stop(self):
         pass
@@ -172,22 +178,21 @@ class PlotField(tk.Frame):
         self.create_plot()
 
     def create_plot(self):
-        x, y, z = np.meshgrid(np.arange(-0.8, 1, 0.2),
-                              np.arange(-0.8, 1, 0.2),
-                              np.arange(-0.8, 1, 0.8))
-        u = np.sin(np.pi * x) * np.cos(np.pi * y) * np.cos(np.pi * z)
-        v = -np.cos(np.pi * x) * np.sin(np.pi * y) * np.cos(np.pi * z)
-        w = (np.sqrt(2.0 / 3.0) * np.cos(np.pi * x) * np.cos(np.pi * y) * np.sin(np.pi * z))
+        data = np.genfromtxt('fieldmap_reduced.txt')
+        cmm_xyz = data[:, :3]
+        Bxyz = data[:, 3:]
+        Bxyz_norm = np.linalg.norm(Bxyz, axis=1)
         self.fig = Figure(figsize=(8,4))
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.plotfield_parent)
         self.canvas.draw()
         self.ax = self.fig.add_subplot(111, projection='3d')
-        self.fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
-        self.ax.set_title('Vector Field Map')
+        self.fig.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.95)
+        self.ax.set_title(' Field Strength Map')
         self.ax.set_xlabel('x axis [mm]')
         self.ax.set_ylabel('y axis [mm]')
-        self.ax.set_zlabel('z axis [mm]')
-        self.ax.quiver(x, y, z, u, v, w, length=0.15, normalize=True)
+        self.ax.set_zlabel('Field Strength [mT]')
+        plot3d = self.ax.scatter(cmm_xyz[:, 0], cmm_xyz[:, 1], Bxyz_norm, c=Bxyz_norm, cmap='rainbow', marker='.')
+        self.fig.colorbar(plot3d, ax=self.ax, label='mT', pad=0.1)
         self.toolbar = NavigationToolbar2Tk(self.canvas, self.plotfield_parent)
         self.toolbar.update()
         self.canvas.get_tk_widget().pack(side=tk.TOP,
@@ -265,13 +270,17 @@ class ProbeQualification(ttk.LabelFrame):
         self.btn_run_cube = ttk.Button(self, text='Run Cube Qualification',
                                         command=self.run_cube, state='disabled')
         self.lbl_instructions = ttk.Label(self, text='Qualification Instructions')
-        self.txt_instructions = tk.Text(self, wrap=tk.WORD, height=11, width=40, state='disabled')
+        self.txt_instructions = tk.Text(self, wrap=tk.WORD, height=11, width=40, state='normal')
+        with open('qualification_instructions.txt', 'r') as file:
+            instructions = file.read()
+        self.txt_instructions.insert(tk.END, instructions)
         # Place widgets within grid
-        self.btn_run_zg.grid(column=0, row=0, sticky='w', padx=5, pady=(5,0))
-        self.btn_run_fsv.grid(column=0, row=1, sticky='w', padx=5, pady=(5,0))
-        self.btn_run_cube.grid(column=0, row=2, sticky='w', padx=5, pady=(5,0))
+        self.btn_run_zg.grid(column=0, row=1, sticky='w', padx=5, pady=(5,0))
+        self.btn_run_fsv.grid(column=0, row=2, sticky='w', padx=5, pady=(5,0))
+        self.btn_run_cube.grid(column=0, row=3, sticky='w', padx=5, pady=(5,0))
         self.lbl_instructions.grid(column=1, row=0, sticky='w', padx=5, pady=(5,0))
-        self.txt_instructions.grid(column=1, row=1, rowspan=2, sticky='nw', padx=5, pady=(0,5))
+        self.txt_instructions.grid(column=1, row=1, rowspan=3, sticky='nw', padx=5, pady=(0,5))
+        self.txt_instructions.configure(state='disabled')
 
     def load_filepath(self, filepath, enable=None):
         filepath = tk.filedialog.askopenfilename(filetypes=[('Text Files', '*.txt'), ('All Files', '*.*')])
