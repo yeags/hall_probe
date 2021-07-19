@@ -1,11 +1,12 @@
 # Hall Probe / CMM Integration
-![Image](images/overview.jpg)
+![Image](images/screenshot.png)
 ## Intro
 
 This project is designed to integrate a Senis 3-axis hall sensor with a Zeiss Accura CMM.
 Instead of using a start-and-stop method of mapping a magnetic field, this system will map on-the-fly along a given path.  The advantages to this method is a major time savings for large mapping areas while only sacrificing a relatively small amount of positional accuracy.
 
 ## Equipment and Hardware
+![Image](images/overview.jpg)
 
 ### Zeiss Accura CMM
 Placeholder description...
@@ -40,3 +41,7 @@ Third party python libraries utilized are:
 * matplotlib
 * Pillow
 * nidaqmx
+
+All libraries are installable via pip.  For example:
+
+>`pip install nidaqmx`
