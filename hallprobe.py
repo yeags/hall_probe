@@ -99,7 +99,7 @@ class HallProbe(HallDAQ):
     def scan_line(self, start_point, end_point):
         distance = np.linalg.norm(end_point - start_point)
         travel_time = distance / self.scan_speed
-        samples = int((travel_time * self.sample_rate) - self.sample_rate)
+        samples = ((travel_time * self.sample_rate) - self.sample_rate).round(0).astype(int)
         speed_direction_vector = 5 * np.abs((end_point - start_point) / np.linalg.norm((end_point - start_point)))
         print(f'Distance: {distance}')
         print(f'Travel Time: {travel_time}')
