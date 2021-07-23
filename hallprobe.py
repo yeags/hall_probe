@@ -79,7 +79,7 @@ class HallProbe(HallDAQ):
         else:
             point = point[0]
             self.cmm.cnc_on()
-            self.cmm.set_speed(40)
+            self.cmm.set_speed((40,40,40))
             self.cmm.goto_position(point)
             while np.linalg.norm(point - self.cmm.get_position()) > 0.025:
                 pass
@@ -89,7 +89,7 @@ class HallProbe(HallDAQ):
             self.pulse()
             data = self.read_hallsensor()
             cal_data = calib_data(self.calib_coeffs, data)
-            self.cmm.set_speed(70)
+            self.cmm.set_speed((70,70,70))
             self.cmm.cnc_off()
             self.power_off()
             self.stop_hallsensor_task()
@@ -99,17 +99,18 @@ class HallProbe(HallDAQ):
     def scan_line(self, start_point, end_point):
         distance = np.linalg.norm(end_point - start_point)
         travel_time = distance / self.scan_speed
-        samples = int((travel_time * self.sample_rate) - 2 * self.sample_rate)
+        samples = int((travel_time * self.sample_rate) - self.sample_rate)
+        speed_direction_vector = 5 * np.abs((end_point - start_point) / np.linalg.norm((end_point - start_point)))
         print(f'Distance: {distance}')
         print(f'Travel Time: {travel_time}')
         print(f'Num Samples: {samples}')
         self.change_sampling(1, samples)
         self.cmm.cnc_on()
-        self.cmm.set_speed(20)
+        self.cmm.set_speed((20,20,20))
         self.cmm.goto_position(start_point)
         while np.linalg.norm(start_point - self.cmm.get_position()) > 0.025:
             pass
-        self.cmm.set_speed(5)
+        self.cmm.set_speed(speed_direction_vector)
         self.power_on()
         self.start_hallsensor_task()
         sleep(1)
@@ -121,7 +122,7 @@ class HallProbe(HallDAQ):
         end_pt = self.cmm.get_position()
         while np.linalg.norm(end_point - self.cmm.get_position()) > 0.025:
             pass
-        self.cmm.set_speed(70)
+        self.cmm.set_speed((70,70,70))
         self.cmm.cnc_off()
         self.stop_hallsensor_task()
         self.power_off()
