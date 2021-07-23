@@ -32,10 +32,10 @@ class CMM(socket.socket):
 
     def set_speed(self, speed):
         '''
-        speed in mm/s (int or float)
+        speed in mm/s (3,) array
         '''
         self.speed = speed
-        self.send(f'G53X{speed}Y{speed}Z{speed}\r\n'.encode('ascii'))
+        self.send(f'G53X{round(speed[0], 3)}Y{round(speed[1], 3)}Z{round(speed[2], 3)}\r\n'.encode('ascii'))
     
     def wait(self, delay):
         while '@_' in self.get_status():
