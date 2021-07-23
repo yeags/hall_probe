@@ -64,7 +64,7 @@ class FSV:
     def mcs2fsv(self, coordinate: np.ndarray):
         return coordinate@np.linalg.inv(self.rotation) + self.translation
 
-    def perform_scan(self, start_pt, end_pt, speed=5, sensitivity=5, direction='positive'):
+    def perform_scan(self, start_pt, end_pt, speed=(5,5,5), sensitivity=5, direction='positive'):
         '''
         direction can either be 'positive' or 'negative'
         sensitivity should either be 5 V/T or 100 V/T
@@ -85,7 +85,7 @@ class FSV:
         end_position = self.mcs2fsv(self.cmm.get_position())
         self.daq.fsv_off()
         self.daq.stop_hallsensor_task()
-        self.cmm.set_speed(70)
+        self.cmm.set_speed((70,70,70))
         self.cmm.cnc_off()
         cal_data = calib_data(self.calibration_coeffs, data, sensitivity=sensitivity)
         return (start_position, end_position, cal_data)
@@ -96,11 +96,12 @@ class FSV:
         start_pos_mcs = self.fsv2mcs(current_pos_fsv - half_length)
         end_pos_mcs = self.fsv2mcs(current_pos_fsv + half_length)
         # Scan +
-        start_p, end_p, data_p = self.perform_scan(start_pos_mcs, end_pos_mcs)
+        speed_direction_vector = 5 * np.abs((end_pos_mcs - start_pos_mcs) / np.linalg.norm(end_pos_mcs - start_pos_mcs))
+        start_p, end_p, data_p = self.perform_scan(start_pos_mcs, end_pos_mcs, speed=speed_direction_vector)
         x_p = np.linspace(start_p[0], end_p[0], data_p.shape[0])
         sleep(1)
         # Scan -
-        start_n, end_n, data_n = self.perform_scan(end_pos_mcs, start_pos_mcs, direction='negative')
+        start_n, end_n, data_n = self.perform_scan(end_pos_mcs, start_pos_mcs, speed=speed_direction_vector, direction='negative')
         x_n = np.linspace(start_n[0], end_n[0], data_n.shape[0])
         # Combine CMM and hallsensor data into one array
         combined_p = np.insert(data_p, 0, x_p, axis=1) # (x, Bx, By, Bz)
@@ -114,11 +115,12 @@ class FSV:
         start_pos_mcs = self.fsv2mcs(current_pos_fsv - half_length)
         end_pos_mcs = self.fsv2mcs(current_pos_fsv + half_length)
         # Scan +
-        start_p, end_p, data_p = self.perform_scan(start_pos_mcs, end_pos_mcs)
+        speed_direction_vector = 5 * np.abs((end_pos_mcs - start_pos_mcs) / np.linalg.norm(end_pos_mcs - start_pos_mcs))
+        start_p, end_p, data_p = self.perform_scan(start_pos_mcs, end_pos_mcs, speed=speed_direction_vector)
         y_p = np.linspace(start_p[1], end_p[1], data_p.shape[0])
         sleep(1)
         # Scan -
-        start_n, end_n, data_n = self.perform_scan(end_pos_mcs, start_pos_mcs, direction='negative')
+        start_n, end_n, data_n = self.perform_scan(end_pos_mcs, start_pos_mcs, speed=speed_direction_vector, direction='negative')
         y_n = np.linspace(start_n[1], end_n[1], data_n.shape[0])
         combined_p = np.insert(data_p, 0, y_p, axis=1) # (y, Bx, By, Bz)
         combined_n = np.insert(data_n, 0, y_n, axis=1) # (y, Bx, By, Bz)
@@ -133,11 +135,12 @@ class FSV:
         # Set hall probe to high sensitivity
         self.daq.change_sensitivity(sensitivity='100MT')
         # Scan +
-        start_p, end_p, data_p = self.perform_scan(start_pos_mcs, end_pos_mcs, sensitivity=100, direction='negative')
+        speed_direction_vector = 5 * np.abs((end_pos_mcs - start_pos_mcs) / np.linalg.norm(end_pos_mcs - start_pos_mcs))
+        start_p, end_p, data_p = self.perform_scan(start_pos_mcs, end_pos_mcs, speed=speed_direction_vector, sensitivity=100, direction='negative')
         z_p = np.linspace(start_p[2], end_p[2], data_p.shape[0])
         sleep(1)
         # Scan -
-        start_n, end_n, data_n = self.perform_scan(end_pos_mcs, start_pos_mcs, sensitivity=100)
+        start_n, end_n, data_n = self.perform_scan(end_pos_mcs, start_pos_mcs, speed=speed_direction_vector, sensitivity=100)
         z_n = np.linspace(start_n[2], end_n[2], data_n.shape[0])
         combined_p = np.insert(data_p, 0, z_p, axis=1) # (z, Bx, By, Bz)
         combined_n = np.insert(data_n, 0, z_n, axis=1) # (z, Bx, By, Bz)

@@ -102,14 +102,14 @@ class CubeWindow(tk.Toplevel):
             self.manual_origin_cube = np.array([self.manual_position[0], self.manual_position[1], self.probe_offset_cube[2]])
         if self.click_index < 12:
             self.cube.cmm.cnc_on()
-            self.cube.cmm.set_speed(5)
+            self.cube.cmm.set_speed((5,5,5))
             self.cube.cmm.goto_position(self.cube.cube2mcs(self.manual_origin_cube))
             while np.linalg.norm(self.manual_origin_cube - self.cube.mcs2cube(self.cube.cmm.get_position())) > 0.025:
                 pass
             self.cube.measure(self.keys[self.click_index])
-            self.cube.cmm.set_speed(20)
+            self.cube.cmm.set_speed((20,20,20))
             self.cube.cmm.goto_position(self.cube.cube2mcs(self.manual_origin_cube + np.array([0, 0, 135])))
-            self.cube.cmm.set_speed(70)
+            self.cube.cmm.set_speed((70,70,70))
             self.cube.cmm.cnc_off()
             if self.click_index == 11:
                 s_matrix = orthogonalize(np.array([i for i in self.cube.cube_dict.values()]))
