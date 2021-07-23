@@ -1,10 +1,14 @@
 import tkinter as tk
 from tkinter import ttk
+from tkinter.constants import W
+from tkinter.messagebox import showinfo
+from tkinter.scrolledtext import ScrolledText
 from zeisscmm import CMM
 from fsv import fsvWindow
 from cube import CubeWindow
 from zero_gauss import zgWindow
 import numpy as np
+from os.path import isfile
 
 import matplotlib
 matplotlib.use("TkAgg")
@@ -21,6 +25,9 @@ class HallProbeApp(tk.Frame):
     def __init__(self, master):
         self.master = master
         super().__init__(master)
+        # self.master.resizable(0,0)
+        # self.master.columnconfigure(0, weight=1)
+        # self.master.rowconfigure(0, weight=1)
         self.master.title('Hall Probe CMM Program')
         self.master.iconbitmap('magnet.ico')
         self.master.geometry('1350x900')
@@ -29,9 +36,15 @@ class HallProbeApp(tk.Frame):
     def create_frames(self):
         self.controls = ControlsFrame(self)
         self.visuals = VisualsFrame(self)
-        self.pack()
+        self.grid(column=0, row=0, sticky='nsew')
+        # self.columnconfigure(0, weight=1)
+        # self.rowconfigure(0, weight=1)
         self.controls.grid(column=0, row=0, padx=5, pady=5, sticky='nsew')
-        self.visuals.grid(column=1, row=0, padx=5, pady=5, sticky='nsew')
+        self.visuals.grid(column=1, row=0, padx=(0,5), pady=(5,0), sticky='nsew')
+        # self.controls.columnconfigure(0, weight=1)
+        # self.visuals.columnconfigure(1, weight=1)
+        # self.controls.rowconfigure(0, weight=1)
+        # self.visuals.rowconfigure(0, weight=1)
     
     def update_graph_labels(self):
         self.visuals.temp_plot.temp_frame_parent.temp_plot.update_labels()
@@ -51,14 +64,14 @@ class ControlsFrame(tk.Frame):
     
     def create_frames(self):
         self.magnet_info_frame = MagnetInformation(self)
-        self.zeiss_frame = ZeissControls(self)
+        self.map_field_frame = MapField(self)
         self.calibration_frame = ProbeQualification(self)
         self.program_frame = ProgramControls(self)
 
-        self.magnet_info_frame.grid(column=0, row=0)
-        self.calibration_frame.grid(column=0, row=1)
-        self.zeiss_frame.grid(column=0, row=2)
-        self.program_frame.grid(column=0, row=3)
+        self.magnet_info_frame.grid(column=0, row=0, sticky='nsew')
+        self.calibration_frame.grid(column=0, row=1, pady=(10,0), sticky='nsew')
+        self.map_field_frame.grid(column=0, row=2, sticky='nsew')
+        self.program_frame.grid(column=0, row=3, sticky='nsew')
 
 class VisualsFrame(tk.Frame):
     '''
@@ -81,91 +94,119 @@ class MagnetInformation(ttk.LabelFrame):
     '''
     def __init__(self, parent, title='Magnet Information'):
         self.magnet_info_parent = parent
-        super().__init__(parent, text=title, labelanchor='n')
+        super().__init__(parent, text=title, labelanchor='nw')
         self.create_widgets()
 
     def create_widgets(self):
         self.lbl_partnum = tk.Label(self, text='Part Number')
-        self.ent_partnum = ttk.Entry(self)
         self.lbl_serial = tk.Label(self, text='Serial Number')
+        self.lbl_notes = tk.Label(self, text='Notes')
+        self.ent_partnum = ttk.Entry(self)
         self.ent_serial = ttk.Entry(self)
-
+        self.txt_notes = ScrolledText(self, width=60, height=12)
+        # Place widgets within grid
         self.lbl_partnum.grid(column=0, row=0, sticky='w', padx=5)
-        self.ent_partnum.grid(column=0, row=1, sticky='w', padx=5, pady=(0,5))
         self.lbl_serial.grid(column=1, row=0, sticky='w', padx=5)
+        self.lbl_notes.grid(column=0, row=2, sticky='w', padx=5, pady=(5,0))
+        self.ent_partnum.grid(column=0, row=1, sticky='w', padx=5, pady=(0,5))
         self.ent_serial.grid(column=1, row=1, sticky='w', padx=5, pady=(0,5))
+        self.txt_notes.grid(column=0, row=3, columnspan=2, sticky='nw', padx=5, pady=(0,5))
 
-class ZeissControls(ttk.LabelFrame):
+class MapField(ttk.LabelFrame):
     '''
     tk frame for inputting CMM parameters such as
     starting coordinate, scan length, speed, and measurement interval
     '''
-    def __init__(self, parent, title='Zeiss CMM Controls'):
-        self.zeiss_controls_parent = parent
-        super().__init__(parent, text=title, labelanchor='n')
-        self.grid(pady=20)
+    def __init__(self, parent, title='Field Mapping'):
+        self.map_field_parent = parent
+        super().__init__(parent, text=title, labelanchor='nw')
+        self.grid(pady=10, sticky='nsew')
+        self.create_frames()
         self.create_widgets()
+
+    def create_frames(self):
+        self.frm_buttons = tk.Frame(self)
+        self.frm_start_point = tk.Frame(self)
+        self.frm_scan_volume = tk.Frame(self)
+        self.frm_parameters = tk.Frame(self)
+
+        self.frm_buttons.grid(column=0, row=0, rowspan=3, padx=(0, 10), sticky='new')
+        self.frm_start_point.grid(column=1, row=0, sticky='new')
+        self.frm_scan_volume.grid(column=1, row=1, sticky='new')
+        self.frm_parameters.grid(column=1, row=2, sticky='new')
     
     def create_widgets(self):
-        self.btn_emerg_stop = ttk.Button(self, text='Emergency Stop', command=self.emergency_stop)
-        self.lbl_conn_status = tk.Label(self, text='*Connection Status*')
-        self.lbl_conn_status.config(relief='sunken')
-        self.lbl_start_pt = tk.Label(self, text='Start Point')
-        self.lbl_start_pt_x = tk.Label(self, text='X')
-        self.ent_start_pt_x = ttk.Entry(self, width=9)
-        self.lbl_start_pt_y = tk.Label(self, text='Y')
-        self.ent_start_pt_y = ttk.Entry(self, width=9)
-        self.lbl_start_pt_z = tk.Label(self, text='Z')
-        self.ent_start_pt_z = ttk.Entry(self, width=9)
-        self.lbl_scan_length = tk.Label(self, text='Scan Volume')
-        self.lbl_scan_length_x = tk.Label(self, text='X')
-        self.ent_scan_length_x = ttk.Entry(self, width=9)
-        self.lbl_scan_length_y = tk.Label(self, text='Y')
-        self.ent_scan_length_y = ttk.Entry(self, width=9)
-        self.lbl_scan_length_z = ttk.Label(self, text='Z')
-        self.ent_scan_length_z = ttk.Entry(self, width=9)
-        self.lbl_sample_spacing = tk.Label(self, text='Sample Spacing')
-        self.ent_sample_spacing = ttk.Entry(self, width=9)
+        self.btn_load_part_alignment = ttk.Button(self.frm_buttons, text='Load Part Alignment')
+        self.btn_scan_point = ttk.Button(self.frm_buttons, text='Scan Point')
+        self.btn_scan_line = ttk.Button(self.frm_buttons, text='Scan Line')
+        self.btn_run_pause = ttk.Button(self.frm_buttons, text='Scan Area/Volume')
+        self.btn_stop_mapping = ttk.Button(self.frm_buttons, text='Stop')
+        self.lbl_start_point = tk.Label(self.frm_start_point, text='Start Point')
+        self.lbl_scan_volume = tk.Label(self.frm_scan_volume, text='Scan Area/Volume')
+        self.lbl_sampling_interval = tk.Label(self.frm_parameters, text='Sampling Interval')
+        self.lbl_scanning_plane = tk.Label(self.frm_parameters, text='Scanning Plane')
+        self.lbl_scanning_plane_interval = tk.Label(self.frm_parameters, text='Plane Interval')
+        self.lbl_sp_x = tk.Label(self.frm_start_point, text='X')
+        self.lbl_sp_y = tk.Label(self.frm_start_point, text='Y')
+        self.lbl_sp_z = tk.Label(self.frm_start_point, text='Z')
+        self.lbl_sv_x = tk.Label(self.frm_scan_volume, text='X')
+        self.lbl_sv_y = tk.Label(self.frm_scan_volume, text='Y')
+        self.lbl_sv_z = tk.Label(self.frm_scan_volume, text='Z')
+        self.ent_start_pt_x = ttk.Entry(self.frm_start_point, width=9)
+        self.ent_start_pt_y = ttk.Entry(self.frm_start_point, width=9)
+        self.ent_start_pt_z = ttk.Entry(self.frm_start_point, width=9)
+        self.ent_scan_volume_x = ttk.Entry(self.frm_scan_volume, width=9)
+        self.ent_scan_volume_y = ttk.Entry(self.frm_scan_volume, width=9)
+        self.ent_scan_volume_z = ttk.Entry(self.frm_scan_volume, width=9)
+        self.ent_sampling_interval = ttk.Entry(self.frm_parameters, width=9)
+        self.ent_scan_plane_interval = ttk.Entry(self.frm_parameters, width=9)
+        self.cbox_scan_plane = ttk.Combobox(self.frm_parameters, values=['xy', 'yz', 'zx'], state='readonly', width=9)
+        # Place widgets within grid
+        self.btn_load_part_alignment.grid(column=0, row=0, sticky='new', padx=5, pady=5)
+        self.btn_scan_point.grid(column=0, row=1, sticky='new', padx=5, pady=(0,5))
+        self.btn_scan_line.grid(column=0, row=2, sticky='new', padx=5, pady=(0,5))
+        self.btn_run_pause.grid(column=0, row=3, sticky='new', padx=5, pady=(0,5))
+        self.btn_stop_mapping.grid(column=0, row=4, sticky='new', padx=5, pady=(0,5))
+        self.lbl_start_point.grid(column=0, row=0, columnspan=6)
+        self.lbl_sp_x.grid(column=0, row=1, sticky='e')
+        self.lbl_sp_y.grid(column=2, row=1, sticky='e')
+        self.lbl_sp_z.grid(column=4, row=1, sticky='e')
+        self.ent_start_pt_x.grid(column=1, row=1, padx=(5,10), sticky='w')
+        self.ent_start_pt_y.grid(column=3, row=1, padx=(5,10),sticky='w')
+        self.ent_start_pt_z.grid(column=5, row=1, padx=(5,10), sticky='w')
+        self.lbl_scan_volume.grid(column=0, row=0, columnspan=6)
+        self.lbl_sv_x.grid(column=0, row=1, sticky='e')
+        self.lbl_sv_y.grid(column=2, row=1, sticky='e')
+        self.lbl_sv_z.grid(column=4, row=1, sticky='e')
+        self.ent_scan_volume_x.grid(column=1, row=1, padx=(5,10), sticky='w')
+        self.ent_scan_volume_y.grid(column=3, row=1, padx=(5,10), sticky='w')
+        self.ent_scan_volume_z.grid(column=5, row=1, padx=(5,10), sticky='w')
+        self.lbl_sampling_interval.grid(column=0, row=0, columnspan=2, sticky='w')
+        self.lbl_scanning_plane_interval.grid(column=2, row=0, columnspan=2, sticky='w')
+        self.lbl_scanning_plane.grid(column=4, row=0, columnspan=2, sticky='w')
+        self.ent_sampling_interval.grid(column=0, row=1, padx=5)
+        self.ent_sampling_interval.tooltip = ToolTip(self.ent_sampling_interval, 'Default value 0.5', delay=600)
+        self.ent_scan_plane_interval.grid(column=2, row=1, padx=5)
+        self.cbox_scan_plane.grid(column=4, row=1, columnspan=2, sticky='w')
+        self.ent_sampling_interval.insert(tk.END, '0.5')
+        self.ent_scan_plane_interval.insert(tk.END, '0.0')
+        self.cbox_scan_plane.set('xy')
 
-        self.btn_emerg_stop.grid(column=0, row=0, columnspan=6)
-        self.lbl_conn_status.grid(column=0, row=1, columnspan=6, padx=5, pady=5, sticky='ew')
-        self.lbl_start_pt.grid(column=0, row=2, columnspan=6)
-        self.lbl_start_pt_x.grid(column=0, row=3)
-        self.ent_start_pt_x.grid(column=1, row=3)
-        self.lbl_start_pt_y.grid(column=2, row=3)
-        self.ent_start_pt_y.grid(column=3, row=3)
-        self.lbl_start_pt_z.grid(column=4, row=3)
-        self.ent_start_pt_z.grid(column=5, row=3)
-        self.lbl_scan_length.grid(column=0, row=4, columnspan=6)
-        self.lbl_scan_length_x.grid(column=0, row=5)
-        self.ent_scan_length_x.grid(column=1, row=5)
-        self.lbl_scan_length_y.grid(column=2, row=5)
-        self.ent_scan_length_y.grid(column=3, row=5)
-        self.lbl_scan_length_z.grid(column=4, row=5)
-        self.ent_scan_length_z.grid(column=5, row=5)
-        self.lbl_sample_spacing.grid(column=0, row=6, columnspan=2, padx=5, pady=5)
-        self.ent_sample_spacing.grid(column=3, row=6, padx=5, pady=5)
-        self.ent_sample_spacing.tooltip = ToolTip(self.ent_sample_spacing, 'Default value = 0.5', delay=500)
-        self.ent_sample_spacing.insert(tk.END, '0.5')
+    # def connect_cmm(self):
+    #     try:
+    #         self.zeiss = CMM(ip='192.4.1.200', port=4712)
+    #         self.lbl_conn_status['text'] = 'Connection Established'
+    #     except ConnectionRefusedError:
+    #         self.lbl_conn_status['text'] = 'Connection Refused'
+    #     except TimeoutError:
+    #         self.lbl_conn_status['text'] = 'Connection Timed Out'
 
-    def emergency_stop(self):
-        pass
-    
-    def connect_cmm(self):
-        try:
-            self.zeiss = CMM(ip='192.4.1.200', port=4712)
-            self.lbl_conn_status['text'] = 'Connection Established'
-        except ConnectionRefusedError:
-            self.lbl_conn_status['text'] = 'Connection Refused'
-        except TimeoutError:
-            self.lbl_conn_status['text'] = 'Connection Timed Out'
-
-    def disconnect_cmm(self):
-        try:
-            self.zeiss.close()
-            self.lbl_conn_status['text'] = 'Disconnected'
-        except AttributeError:
-            self.lbl_conn_status['text'] = 'Already Disconnected'
+    # def disconnect_cmm(self):
+    #     try:
+    #         self.zeiss.close()
+    #         self.lbl_conn_status['text'] = 'Disconnected'
+    #     except AttributeError:
+    #         self.lbl_conn_status['text'] = 'Already Disconnected'
 
 
 class PlotField(tk.Frame):
@@ -255,7 +296,7 @@ class ProbeQualification(ttk.LabelFrame):
     '''
     def __init__(self, parent):
         self.calib_tools_parent = parent
-        super().__init__(parent, text='Hall Sensor Qualification', labelanchor='n')
+        super().__init__(parent, text='Hall Sensor Qualification', labelanchor='nw')
         self.fsv_filepath = tk.StringVar()
         self.cube_filepath = tk.StringVar()
         self.zero_gauss_filepath = tk.StringVar()
@@ -268,18 +309,21 @@ class ProbeQualification(ttk.LabelFrame):
         self.btn_run_fsv = ttk.Button(self, text='Run FSV Qualification',
                                       command=self.run_fsv, state='disabled')
         self.btn_run_cube = ttk.Button(self, text='Run Cube Qualification',
-                                        command=self.run_cube, state='disabled')
+                                       command=self.run_cube, state='disabled')
+        self.btn_verify_qualification = ttk.Button(self, text='Verify Qualification',
+                                                   command=self.verify_qualification)
         self.lbl_instructions = ttk.Label(self, text='Qualification Instructions')
         self.txt_instructions = tk.Text(self, wrap=tk.WORD, height=11, width=40, state='normal')
         with open('qualification_instructions.txt', 'r') as file:
             instructions = file.read()
         self.txt_instructions.insert(tk.END, instructions)
         # Place widgets within grid
-        self.btn_run_zg.grid(column=0, row=1, sticky='w', padx=5, pady=(5,0))
-        self.btn_run_fsv.grid(column=0, row=2, sticky='w', padx=5, pady=(5,0))
-        self.btn_run_cube.grid(column=0, row=3, sticky='w', padx=5, pady=(5,0))
+        self.btn_run_zg.grid(column=0, row=1, sticky='new', padx=5, pady=(5,0))
+        self.btn_run_fsv.grid(column=0, row=2, sticky='new', padx=5, pady=(5,0))
+        self.btn_run_cube.grid(column=0, row=3, sticky='new', padx=5, pady=(5,0))
+        self.btn_verify_qualification.grid(column=0, row=4, sticky='new', padx=5, pady=(5,0))
         self.lbl_instructions.grid(column=1, row=0, sticky='w', padx=5, pady=(5,0))
-        self.txt_instructions.grid(column=1, row=1, rowspan=3, sticky='nw', padx=5, pady=(0,5))
+        self.txt_instructions.grid(column=1, row=1, rowspan=4, sticky='nw', padx=5, pady=(0,5))
         self.txt_instructions.configure(state='disabled')
 
     def load_filepath(self, filepath, enable=None):
@@ -297,6 +341,23 @@ class ProbeQualification(ttk.LabelFrame):
     
     def run_cube(self):
         cube = CubeWindow(self)
+    
+    def verify_qualification(self):
+        zg = isfile('zg_calib_coeffs.npy')
+        fsv = isfile('fsv_offset.txt')
+        cube = isfile('sensitivity.npy')
+        instructions = ['Need Zero Gauss Offset',
+                        'Need FSV Qualification',
+                        'Need Cube Qualification']
+        todo = ''
+        for i, state in enumerate((zg, fsv, cube)):
+            if state == False:
+                todo += instructions[i]+'\n'
+        if len(todo) > 0:
+            showinfo('Qualifications Needed', todo)
+        else:
+            showinfo('Qualifications Needed', 'All qualifications are complete.')
+
 
 class ProgramControls(ttk.LabelFrame):
     '''
@@ -306,7 +367,7 @@ class ProgramControls(ttk.LabelFrame):
     '''
     def __init__(self, parent, title='Program Controls'):
         self.program_controls_parent = parent
-        super().__init__(parent, text=title, labelanchor='n')
+        super().__init__(parent, text=title, labelanchor='nw')
         self.create_widgets()
 
     def create_widgets(self):
@@ -317,12 +378,13 @@ class ProgramControls(ttk.LabelFrame):
         self.btn_save_meas = ttk.Button(self, text='Save Measurement', command=self.save_measurement)
         self.lbl_controls_status = tk.Label(self, text='*Program Controls Status*')
         self.lbl_controls_status.config(relief='sunken')
-        self.btn_load_alignment.grid(column=0, row=0, padx=5, pady=5, sticky='e')
-        self.btn_start_meas.grid(column=1, row=0, padx=5, pady=5, sticky='w')
-        self.btn_stop_meas.grid(column=2, row=0, padx=5, pady=5, sticky='w')
-        self.btn_load_meas.grid(column=0, row=1, padx=5, pady=5, sticky='e')
-        self.btn_save_meas.grid(column=1, row=1, padx=5, pady=5, sticky='w')
-        self.lbl_controls_status.grid(column=0, row=2, columnspan=3, padx=5, pady=5, sticky='ew')
+        # Place widgets within grid
+        self.btn_load_alignment.grid(column=0, row=0, padx=5, pady=5, sticky='new')
+        self.btn_start_meas.grid(column=1, row=0, padx=5, pady=5, sticky='new')
+        self.btn_stop_meas.grid(column=2, row=0, padx=5, pady=5, sticky='new')
+        self.btn_load_meas.grid(column=0, row=1, padx=5, pady=5, sticky='new')
+        self.btn_save_meas.grid(column=1, row=1, padx=5, pady=5, sticky='new')
+        self.lbl_controls_status.grid(column=0, row=2, columnspan=3, padx=5, pady=5, sticky='sew')
     
     def load_alignment(self):
         self.alignment_file = tk.filedialog.askopenfilename(filetypes=[('Text Files', '*.txt'), ('All Files', '*.*')])
