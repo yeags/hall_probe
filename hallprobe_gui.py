@@ -38,20 +38,15 @@ class HallProbeApp(tk.Frame):
         self.controls = ControlsFrame(self)
         self.visuals = VisualsFrame(self)
         self.grid(column=0, row=0, sticky='nsew')
-        # self.columnconfigure(0, weight=1)
-        # self.rowconfigure(0, weight=1)
         self.controls.grid(column=0, row=0, padx=5, pady=5, sticky='nsew')
         self.visuals.grid(column=1, row=0, padx=(0,5), pady=(5,0), sticky='nsew')
-        # self.controls.columnconfigure(0, weight=1)
-        # self.visuals.columnconfigure(1, weight=1)
-        # self.controls.rowconfigure(0, weight=1)
-        # self.visuals.rowconfigure(0, weight=1)
     
     def update_graph_labels(self):
         self.visuals.temp_plot.temp_frame_parent.temp_plot.update_labels()
     
     def on_closing(self):
         if tk.messagebox.askokcancel('Quit', 'Do you want to quit?'):
+            self.controls.map_field_frame.frm_mp.close_mapping()
             self.master.destroy()
 
 class ControlsFrame(tk.Frame):
@@ -121,37 +116,11 @@ class MapField(ttk.LabelFrame):
     def __init__(self, parent, title='Field Mapping'):
         self.map_field_parent = parent
         super().__init__(parent, text=title, labelanchor='nw')
-        self.grid(pady=10, sticky='nsew')
-        self.create_frames()
-        self.create_widgets()
+        self.create_frame()
 
-    def create_frames(self):
-        self.frm_buttons = tk.Frame(self)
-        self.frm_mapframe = MapFrames(self)
-        self.frm_buttons.grid(column=0, row=0, padx=(0, 10), sticky='nsew')
-        self.frm_mapframe.grid(column=1, row=0, sticky='nsew')
-    
-    def create_widgets(self):
-        self.btn_load_part_alignment = ttk.Button(self.frm_buttons, text='Load Part Alignment', command=self.load_part_alignment)
-        self.btn_scan_point = ttk.Button(self.frm_buttons, text='Scan Point', state='disabled', command=lambda: self.load_frame(self.frm_mapframe.frm_scan_point))
-        self.btn_scan_line = ttk.Button(self.frm_buttons, text='Scan Line', state='disabled', command=lambda: self.load_frame(self.frm_mapframe.frm_scan_line))
-        self.btn_scan_area_volume = ttk.Button(self.frm_buttons, text='Scan Area/Volume', state='disabled', command=lambda: self.load_frame(self.frm_mapframe.frm_scan_area_volume))
-        self.btn_stop_mapping = ttk.Button(self.frm_buttons, text='Stop')
-        # Place widgets within grid
-        self.btn_load_part_alignment.grid(column=0, row=0, sticky='new', padx=5, pady=5)
-        self.btn_scan_point.grid(column=0, row=1, sticky='new', padx=5, pady=(0,5))
-        self.btn_scan_line.grid(column=0, row=2, sticky='new', padx=5, pady=(0,5))
-        self.btn_scan_area_volume.grid(column=0, row=3, sticky='new', padx=5, pady=(0,5))
-    
-    def load_frame(self, frame: tk.Frame):
-        if self.frm_mapframe.grid_slaves():
-            self.frm_mapframe.grid_slaves()[0].grid_forget()
-        frame.grid(column=0, row=0)
-    
-    def load_part_alignment(self):
-        self.btn_scan_point.configure(state='enabled')
-        self.btn_scan_line.configure(state='enabled')
-        self.btn_scan_area_volume.configure(state='enabled')
+    def create_frame(self):
+        self.frm_mp = MapFrames(self)
+        self.frm_mp.grid(column=0, row=0)
 
 class PlotField(tk.Frame):
     '''
