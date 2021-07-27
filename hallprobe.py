@@ -133,8 +133,23 @@ class HallProbe(HallDAQ):
         else:
             return self.reduce_scan_density(np.hstack((linear, Bxyz)), scan_interval=point_density)
 
-    def scan_area_volume(self, start_point, scan_distance, grid=0.5, scan_plane='xy'):
-        pass
+    def scan_area_volume(self, start_point, scan_distance, pt_density, scan_plane, scan_direction):
+        if scan_plane == 'xy':
+            end_point = start_point + scan_distance
+            if scan_direction == 'x':
+                if pt_density != 'full res':
+                    y_start_pts = np.arange(start_point[1], end_point[1]+pt_density, pt_density)
+                else:
+                    y_start_pts = np.arange(start_point[1], end_point[1]+pt_density, 0.5)
+                waypoints = np.zeros((y_start_pts.shape[0], 3))
+                for i, pt in enumerate(y_start_pts):
+                    waypoints[i] = start_point[0], pt, start_point[2]
+            elif scan_direction == 'y':
+                pass
+        elif scan_plane == 'yz':
+            pass
+        elif scan_plane == 'zx':
+            pass
 
     def shutdown(self):
         self.cmm.close()
@@ -143,7 +158,7 @@ class HallProbe(HallDAQ):
         
 
 if __name__ == '__main__':
-    start_points_y = np.arange(-10, 55, 0.5)
+    start_points_y = np.arange(-10, 55.5, 0.5)
     start_xyz = np.zeros((start_points_y.shape[0], 3))
     for i, pt in enumerate(start_points_y):
         start_xyz[i] = -25, pt, 3
