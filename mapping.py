@@ -10,6 +10,7 @@ class MapFrames(tk.Frame):
         self.mapframes_parent = parent
         super().__init__(parent)
         self.density_list = ['0.1', '0.25', '0.5', '1.0', '2.0', 'full res']
+        self.scan_direction_list = [['x', 'y'], ['y', 'z'], ['z', 'x']]
         self.frm_fm_buttons = tk.Frame(self)
         self.frm_scan_point = tk.Frame(self)
         self.frm_scan_line = tk.Frame(self)
@@ -67,9 +68,10 @@ class MapFrames(tk.Frame):
         sd_z = float(self.ent_sav_sd_z.get())
         pd = float(self.cbox_sav_pd.get())
         scan_plane = self.cbox_sav_scan_plane.get()
-        start_point = np.array([sp_x, sp_y, sp_z])
-        scan_distance = np.array([sd_x, sd_y, sd_z])
-        return (start_point, scan_distance, pd, scan_plane)
+        scan_direction = self.cbox_sav_scan_direction.get()
+        start_point = self.hp.pcs2mcs(np.array([sp_x, sp_y, sp_z]))
+        scan_distance = np.array([sd_x, sd_y, sd_z])@self.hp.rotation
+        return (start_point, scan_distance, pd, scan_plane, scan_direction)
     
     def load_frame(self, frame: tk.Frame):
         if self.grid_slaves(column=1, row=0):
@@ -98,10 +100,10 @@ class MapFrames(tk.Frame):
             data[i, :3] = self.hp.mcs2pcs(data[i, :3])
             data[i, 3:] = data[i, 3:]@np.linalg.inv(self.hp.rotation)
         print(data.shape)
-        np.savetxt('diagonal.txt', data, fmt='%.6f')
 
     def measure_area_volume(self):
-        pass
+        sav_args = self.get_area_volume()
+        data = self.hp.scan_area_volume(*sav_args)
 
     def scan_point_widgets(self):
         self.lbl_scan_point = tk.Label(self.frm_scan_point, text='Scan Point')
@@ -160,6 +162,17 @@ class MapFrames(tk.Frame):
         self.cbox_sl_point_density.set('full res')
         self.btn_measure_line.grid(column=4, row=8, columnspan=2)
     
+    def update_cbox(self, event):
+        if self.cbox_sav_scan_plane.get() == 'xy':
+            self.cbox_sav_scan_direction.configure(values=self.scan_direction_list[0])
+            self.cbox_sav_scan_direction.set('x')
+        elif self.cbox_sav_scan_plane.get() == 'yz':
+            self.cbox_sav_scan_direction.configure(values=self.scan_direction_list[1])
+            self.cbox_sav_scan_direction.set('y')
+        elif self.cbox_sav_scan_plane.get() == 'zx':
+            self.cbox_sav_scan_direction.configure(values=self.scan_direction_list[2])
+            self.cbox_sav_scan_direction.set('z')
+
     def scan_area_volume_widgets(self):
         self.lbl_sav_sp = tk.Label(self.frm_scan_area_volume, text='Start Point')
         self.lbl_sav_sp_x = tk.Label(self.frm_scan_area_volume, text='X')
@@ -178,7 +191,9 @@ class MapFrames(tk.Frame):
         self.lbl_sav_pd = tk.Label(self.frm_scan_area_volume, text='Point Density')
         self.cbox_sav_pd = ttk.Combobox(self.frm_scan_area_volume, values=self.density_list, width=9)
         self.lbl_sav_scan_plane = tk.Label(self.frm_scan_area_volume, text='Scan Plane')
+        self.lbl_sav_scan_direction = tk.Label(self.frm_scan_area_volume, text='Scan Direction')
         self.cbox_sav_scan_plane = ttk.Combobox(self.frm_scan_area_volume, values=['xy', 'yz', 'zx'], state='readonly', width=9)
+        self.cbox_sav_scan_direction = ttk.Combobox(self.frm_scan_area_volume, values=self.scan_direction_list[0], state='readonly', width=9)
         self.btn_sav_measure = ttk.Button(self.frm_scan_area_volume, text='Measure', command=self.measure_area_volume)
         self.btn_sav_stop = ttk.Button(self.frm_scan_area_volume, text='Stop')
         # Place widgets within grid
@@ -202,8 +217,12 @@ class MapFrames(tk.Frame):
         self.lbl_sav_scan_plane.grid(column=0, row=5, columnspan=2, pady=(0,5), sticky='e')
         self.cbox_sav_scan_plane.grid(column=2, row=5, columnspan=2, padx=5, pady=(0,5), sticky='w')
         self.cbox_sav_scan_plane.set('xy')
-        self.btn_sav_measure.grid(column=4, row=4, columnspan=2, padx=5, pady=(5,0), sticky='ew')
-        self.btn_sav_stop.grid(column=4, row=5, columnspan=2, padx=5, pady=(0,5), sticky='ew')
+        self.cbox_sav_scan_plane.bind('<<ComboboxSelected>>', self.update_cbox)
+        self.lbl_sav_scan_direction.grid(column=0, row=6, columnspan=2, pady=(0,5), sticky='e')
+        self.cbox_sav_scan_direction.grid(column=2, row=6, columnspan=2, padx=5, pady=(0,5), sticky='w')
+        self.cbox_sav_scan_direction.set('x')
+        self.btn_sav_measure.grid(column=4, row=5, columnspan=2, padx=5, pady=(5,0), sticky='ew')
+        self.btn_sav_stop.grid(column=4, row=6, columnspan=2, padx=5, pady=(0,5), sticky='ew')
 
 if __name__ == '__main__':
     test = tk.Tk()
