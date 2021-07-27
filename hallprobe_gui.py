@@ -3,14 +3,17 @@ from tkinter import ttk
 from tkinter.constants import W
 from tkinter.messagebox import showinfo
 from tkinter.scrolledtext import ScrolledText
+from tkinter import filedialog
+from tkinter.simpledialog import askstring
 from zeisscmm import CMM
 from fsv import fsvWindow
 from cube import CubeWindow
 from zero_gauss import zgWindow
 from mapping import MapFrames
 import numpy as np
+import os
 from os.path import isfile
-
+from pathlib import Path
 import matplotlib
 matplotlib.use("TkAgg")
 from mpl_toolkits.mplot3d import Axes3D
@@ -26,9 +29,7 @@ class HallProbeApp(tk.Frame):
     def __init__(self, master):
         self.master = master
         super().__init__(master)
-        # self.master.resizable(0,0)
-        # self.master.columnconfigure(0, weight=1)
-        # self.master.rowconfigure(0, weight=1)
+        self.master.resizable(0,0)
         self.master.title('Hall Probe CMM Program')
         self.master.iconbitmap('magnet.ico')
         self.master.geometry('1350x900')
@@ -278,6 +279,8 @@ class ProgramControls(ttk.LabelFrame):
     '''
     def __init__(self, parent, title='Program Controls'):
         self.program_controls_parent = parent
+        self.working_directory = os.getcwd()
+        self.measurement_session = None
         super().__init__(parent, text=title, labelanchor='nw')
         self.create_widgets()
 
@@ -294,13 +297,18 @@ class ProgramControls(ttk.LabelFrame):
         self.lbl_controls_status.grid(column=0, row=1, columnspan=3, padx=5, pady=5, sticky='sew')
     
     def new_measurement(self):
-        pass
+        print(os.getcwd())
+        self.measurement_session = 'measurements/' + askstring('New Measurement', 'Create a new measurement session name.')
+        os.mkdir(self.working_directory + '/' + self.measurement_session)
+        if self.measurement_session != 'measurements/':
+            self.lbl_controls_status.configure(text=f'New measurement session created.\n{self.measurement_session}')
 
     def save_measurement(self):
-        self.save_file = tk.filedialog.asksaveasfilename(filetypes=[('Text Files', '*.txt'), ('CSV Files', '*.csv')])
+        pass
 
     def load_measurement(self):
-        pass
+        self.measurement_session = filedialog.askdirectory(initialdir=self.working_directory + '/measurements')
+        self.lbl_controls_status.configure(text=f'Loaded measurement session.\n{self.measurement_session}')
         
 if __name__ == '__main__':
     app = HallProbeApp(tk.Tk())
