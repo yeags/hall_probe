@@ -75,7 +75,7 @@ class HallProbe(HallDAQ):
             self.power_off()
             self.stop_hallsensor_task()
             Bxyz = self.s_matrix@average_sample(remove_outliers(cal_data))
-            return (point, Bxyz)
+            return np.hstack((point, Bxyz))
         else:
             point = point[0]
             self.cmm.cnc_on()
@@ -86,6 +86,7 @@ class HallProbe(HallDAQ):
             self.power_on()
             self.start_hallsensor_task()
             sleep(1)
+            point = self.cmm.get_position()
             self.pulse()
             data = self.read_hallsensor()
             cal_data = calib_data(self.calib_coeffs, data)
@@ -94,16 +95,13 @@ class HallProbe(HallDAQ):
             self.power_off()
             self.stop_hallsensor_task()
             Bxyz = self.s_matrix@average_sample(remove_outliers(cal_data))
-            return (point, Bxyz)
+            return np.hstack((point, Bxyz))
 
-    def scan_line(self, start_point, end_point):
+    def scan_line(self, start_point, end_point, point_density):
         distance = np.linalg.norm(end_point - start_point)
         travel_time = distance / self.scan_speed
         samples = ((travel_time * self.sample_rate) - self.sample_rate).round(0).astype(int)
         speed_direction_vector = 5 * np.abs((end_point - start_point) / np.linalg.norm((end_point - start_point)))
-        print(f'Distance: {distance}')
-        print(f'Travel Time: {travel_time}')
-        print(f'Num Samples: {samples}')
         self.change_sampling(1, samples)
         self.cmm.cnc_on()
         self.cmm.set_speed((20,20,20))
@@ -130,16 +128,12 @@ class HallProbe(HallDAQ):
         for i, sample in enumerate(Bxyz):
             Bxyz[i] = self.s_matrix@sample
         linear = np.linspace(start_pt, end_pt, num=samples)
-        scan_distance = np.linalg.norm(end_pt - start_pt)
-        print(f'Scan Distance: {scan_distance}')
-        print(f'mm / point: {scan_distance / samples}')
-        return (linear, Bxyz)
-        
+        if point_density == 'full res':
+            return np.hstack((linear, Bxyz))
+        else:
+            return self.reduce_scan_density(np.hstack((linear, Bxyz)), scan_interval=point_density)
 
-    def scan_area(self, start_point, x_length, y_length, grid=0.5):
-        pass
-
-    def scan_volume(self):
+    def scan_area_volume(self, start_point, scan_distance, grid=0.5, scan_plane='xy'):
         pass
 
     def shutdown(self):
