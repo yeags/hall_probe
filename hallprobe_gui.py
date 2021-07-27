@@ -239,10 +239,10 @@ class ProbeQualification(ttk.LabelFrame):
         self.txt_instructions.grid(column=1, row=1, rowspan=4, sticky='nw', padx=5, pady=(0,5))
         self.txt_instructions.configure(state='disabled')
 
-    def load_filepath(self, filepath, enable=None):
-        filepath = tk.filedialog.askopenfilename(filetypes=[('Text Files', '*.txt'), ('All Files', '*.*')])
-        if enable != None:
-            enable.configure(state='enabled')
+    # def load_filepath(self, filepath, enable=None):
+    #     filepath = tk.filedialog.askopenfilename(filetypes=[('Text Files', '*.txt'), ('All Files', '*.*')])
+    #     if enable != None:
+    #         enable.configure(state='enabled')
     
     def run_zero_gauss(self):
         zg = zgWindow(self)
@@ -282,57 +282,25 @@ class ProgramControls(ttk.LabelFrame):
         self.create_widgets()
 
     def create_widgets(self):
-        self.btn_load_alignment = ttk.Button(self, text='Load Alignment', command=self.load_alignment)
-        self.btn_start_meas = ttk.Button(self, text='Start Measurement', command=self.start_measurement)
-        self.btn_stop_meas = ttk.Button(self, text='Stop Measurement', command=self.stop_measurement, state='disabled')
+        self.btn_new_meas = ttk.Button(self, text='New Measurement', command=self.new_measurement)
         self.btn_load_meas = ttk.Button(self, text='Load Measurement', command=self.load_measurement)
         self.btn_save_meas = ttk.Button(self, text='Save Measurement', command=self.save_measurement)
         self.lbl_controls_status = tk.Label(self, text='*Program Controls Status*')
         self.lbl_controls_status.config(relief='sunken')
         # Place widgets within grid
-        self.btn_load_alignment.grid(column=0, row=0, padx=5, pady=5, sticky='new')
-        self.btn_start_meas.grid(column=1, row=0, padx=5, pady=5, sticky='new')
-        self.btn_stop_meas.grid(column=2, row=0, padx=5, pady=5, sticky='new')
-        self.btn_load_meas.grid(column=0, row=1, padx=5, pady=5, sticky='new')
-        self.btn_save_meas.grid(column=1, row=1, padx=5, pady=5, sticky='new')
-        self.lbl_controls_status.grid(column=0, row=2, columnspan=3, padx=5, pady=5, sticky='sew')
+        self.btn_new_meas.grid(column=0, row=0, padx=5, pady=5, sticky='new')
+        self.btn_load_meas.grid(column=1, row=0, padx=5, pady=5, sticky='new')
+        self.btn_save_meas.grid(column=2, row=0, padx=5, pady=5, sticky='new')
+        self.lbl_controls_status.grid(column=0, row=1, columnspan=3, padx=5, pady=5, sticky='sew')
     
-    def load_alignment(self):
-        self.alignment_file = tk.filedialog.askopenfilename(filetypes=[('Text Files', '*.txt'), ('All Files', '*.*')])
-        if self.alignment_file != '':
-            self.lbl_controls_status.configure(text=f'Loaded alignment file\n{self.alignment_file}')
-
-    def start_measurement(self):
-        self.btn_start_meas.configure(state='disabled')
-        self.btn_load_alignment.configure(state='disabled')
-        self.btn_load_meas.configure(state='disabled')
-        self.btn_save_meas.configure(state='disabled')
-        self.btn_stop_meas.configure(state='enabled')
-        StartMeasurement(self)
-    
-    def stop_measurement(self):
-        self.program_controls_parent.zeiss_frame.zeiss.send('D99\r\n'.encode('ascii'))
-        self.program_controls_parent.zeiss_frame.disconnect_cmm()
-        self.btn_start_meas.configure(state='enabled')
-        self.btn_load_alignment.configure(state='enabled')
-        self.btn_load_meas.configure(state='enabled')
-        self.btn_stop_meas.configure(state='disabled')
-        self.lbl_controls_status.configure(text='Measurement stopped')
+    def new_measurement(self):
+        pass
 
     def save_measurement(self):
         self.save_file = tk.filedialog.asksaveasfilename(filetypes=[('Text Files', '*.txt'), ('CSV Files', '*.csv')])
 
     def load_measurement(self):
         pass
-
-class StartMeasurement(tk.Frame):
-    '''
-    Empty tk frame used for starting a measurement session based on
-    set parameters and loaded magnet alignment.
-    '''
-    def __init__(self, parent):
-        self.start_meas_parent = parent
-        super().__init__(parent)
         
 if __name__ == '__main__':
     app = HallProbeApp(tk.Tk())
