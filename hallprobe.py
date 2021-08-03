@@ -15,6 +15,21 @@ class HallProbe(HallDAQ):
         '''
         super().__init__(rate, samps_per_chan, start_trigger, acquisition)
         self.__load_coord_diff__(coord_diff)
+        self.direction_index = {
+            'xy': {'x': 1, 'y': 0},
+            'yz': {'y': 2, 'z': 1},
+            'zx': {'z': 0, 'x': 2}
+        }
+        self.scan_direction_v = {
+            'x': 5 * self.rotation[0],
+            'y': 5 * self.rotation[1],
+            'z': 5 * self.rotation[2]
+        }
+        self.scan_length_index = {
+            'x': 0,
+            'y': 1,
+            'z': 2
+        }
         self.calib_coeffs = np.load('zg_calib_coeffs.npy')
         self.s_matrix = np.load('sensitivity.npy')
         self.probe_offset = np.genfromtxt('fsv_offset.txt')
@@ -101,25 +116,28 @@ class HallProbe(HallDAQ):
         distance = np.linalg.norm(end_point - start_point)
         travel_time = distance / self.scan_speed
         samples = ((travel_time * self.sample_rate) - self.sample_rate).round(0).astype(int)
-        speed_direction_vector = 5 * np.abs((end_point - start_point) / np.linalg.norm((end_point - start_point)))
+        # speed_direction_vector = 5 * np.abs((end_point - start_point) / np.linalg.norm((end_point - start_point)))
+        speed_direction_vector = 5 * (end_point - start_point) / np.linalg.norm((end_point - start_point))
         self.change_sampling(1, samples)
         self.cmm.cnc_on()
         self.cmm.set_speed((20,20,20))
         self.cmm.goto_position(start_point)
         while np.linalg.norm(start_point - self.cmm.get_position()) > 0.025:
             pass
-        self.cmm.set_speed(speed_direction_vector)
+        # self.cmm.set_speed(speed_direction_vector)
         self.power_on()
         self.start_hallsensor_task()
         sleep(1)
-        self.cmm.goto_position(end_point)
+        # self.cmm.goto_position(end_point)
+        self.cmm.send(f'G01X{speed_direction_vector[0]}Y{speed_direction_vector[1]}Z{speed_direction_vector[2]}\r\n'.encode('ascii'))
         sleep(1)
         self.pulse()
         start_pt = self.cmm.get_position()
         data = self.read_hallsensor()
         end_pt = self.cmm.get_position()
-        while np.linalg.norm(end_point - self.cmm.get_position()) > 0.025:
-            pass
+        # while np.linalg.norm(end_point - self.cmm.get_position()) > 0.025:
+        #     pass
+        self.cmm.send('G01X0Y0Z0\r\n'.encode('ascii'))
         self.cmm.set_speed((70,70,70))
         self.cmm.cnc_off()
         self.stop_hallsensor_task()
@@ -133,23 +151,43 @@ class HallProbe(HallDAQ):
         else:
             return self.reduce_scan_density(np.hstack((linear, Bxyz)), scan_interval=point_density)
 
-    def scan_area_volume(self, start_point, scan_distance, pt_density, scan_plane, scan_direction):
-        if scan_plane == 'xy':
-            end_point = start_point + scan_distance
-            if scan_direction == 'x':
-                if pt_density != 'full res':
-                    y_start_pts = np.arange(start_point[1], end_point[1]+pt_density, pt_density)
-                else:
-                    y_start_pts = np.arange(start_point[1], end_point[1]+pt_density, 0.5)
-                waypoints = np.zeros((y_start_pts.shape[0], 3))
-                for i, pt in enumerate(y_start_pts):
-                    waypoints[i] = start_point[0], pt, start_point[2]
-            elif scan_direction == 'y':
+    def scan_area(self, start_point, scan_distance, pt_density, scan_plane, scan_direction):
+        start_array = self.create_scan_plane(start_point, scan_distance, pt_density, scan_plane, scan_direction)
+        distance = (np.abs(start_point) + scan_distance)[self.scan_length_index[scan_direction]]
+        travel_time = distance / self.scan_speed
+        samples = ((travel_time * self.sample_rate) - self.sample_rate).round(0).astype(int)
+        self.change_sampling(1, samples)
+        self.cmm.cnc_on()
+        self.cmm.set_speed((20,20,20))
+        for point in start_array:
+            self.cmm.goto_position(point)
+            while np.linalg.norm(start_point - self.cmm.get_position()) > 0.025:
                 pass
-        elif scan_plane == 'yz':
-            pass
-        elif scan_plane == 'zx':
-            pass
+            self.power_on()
+            self.start_hallsensor_task()
+            sleep(1)
+            self.cmm.send(f'G01X{self.scan_direction_v[scan_direction][0]}Y{self.scan_direction_v[scan_direction][1]}Z{self.scan_direction_v[scan_direction][2]}\r\n'.encode('ascii'))
+            sleep(1)
+            self.pulse()
+            start_pt = self.cmm.get_position()
+            data = self.read_hallsensor()
+            end_pt = self.cmm.get_position()
+            
+        self.cmm.send('G01X0Y0Z0\r\n'.encode('ascii'))
+        self.cmm.set_speed((70,70,70))
+        self.cmm.cnc_off()
+        self.stop_hallsensor_task()
+        self.power_off()
+
+
+    def scan_volume(self, start_point, scan_distance, pt_density, scan_plane, scan_direction):
+        pass
+
+    def create_scan_plane(self, start_point, scan_distance, pt_density, scan_plane, scan_direction):
+        points = np.arange(0, scan_distance[self.direction_index[scan_plane][scan_direction]]+pt_density, pt_density)
+        points_array = np.array([start_point]*points.shape[0])
+        points_array[:, self.direction_index[scan_plane][scan_direction]] = points + start_point[scan_plane][scan_direction]
+        return points_array
 
     def shutdown(self):
         self.cmm.close()
@@ -161,20 +199,15 @@ if __name__ == '__main__':
     start_points_y = np.arange(-10, 55.5, 0.5)
     start_xyz = np.zeros((start_points_y.shape[0], 3))
     for i, pt in enumerate(start_points_y):
-        start_xyz[i] = -25, pt, 3
+        start_xyz[i] = -25, pt, 10
     test = HallProbe(r'D:\CMM Programs\Hallprobe Test Magnet\magnet_alignment.txt', 1, 2)
+    empty_np = np.zeros((1,1,6))
     for start_pt in start_xyz:
-        data = test.scan_line(test.pcs2mcs(start_pt), test.pcs2mcs(start_pt + np.array([75, 0, 0])))
-        xyz = data[0]
-        Bxyz = data[1]
-        for i, pt in enumerate(xyz):
-            xyz[i] = test.mcs2pcs(pt)
-        for i, pt in enumerate(Bxyz):
-            Bxyz[i] = pt@np.linalg.inv(test.rotation)
-        h_stack = np.hstack((xyz, Bxyz))
-        reduced_data = test.reduce_scan_density(h_stack)
-        with open('fieldmap_reduced.txt', 'a') as file:
+        data = test.scan_line(test.pcs2mcs(start_pt), test.pcs2mcs(start_pt + np.array([75, 0, 0])), 0.5)
+        for i, pt in enumerate(data):
+            data[i, :3] = test.mcs2pcs(pt[:3])
+            data[i, 3:] = pt[3:]@np.linalg.inv(test.rotation)
+        reduced_data = test.reduce_scan_density(data)
+        with open('fieldmap_ring.txt', 'a') as file:
             np.savetxt(file, reduced_data, fmt='%.6f')
-        # np.save('xyz.npy', xyz, allow_pickle=False)
-        # np.save('Bxyz.npy', Bxyz, allow_pickle=False)
     test.shutdown()
