@@ -2,6 +2,7 @@ from os import remove
 from nicdaq import HallDAQ
 import zeisscmm
 import numpy as np
+np.set_printoptions(suppress=True)
 from time import time, sleep, perf_counter
 from calibration import calib_data, remove_outliers, average_sample
 
@@ -44,6 +45,8 @@ class HallProbe(HallDAQ):
         c_diff = np.genfromtxt(diff_file)
         self.rotation = c_diff[:9].reshape((3,3))
         self.translation = c_diff[9:]
+        print(f'rotation: \n{self.rotation}')
+        print(f'translation: \n{self.translation}')
     
     def __determine_sample_rate__(self):
         self.change_sampling(1, 10000)
@@ -118,6 +121,7 @@ class HallProbe(HallDAQ):
         samples = ((travel_time * self.sample_rate) - self.sample_rate).round(0).astype(int)
         # speed_direction_vector = 5 * np.abs((end_point - start_point) / np.linalg.norm((end_point - start_point)))
         speed_direction_vector = 5 * (end_point - start_point) / np.linalg.norm((end_point - start_point))
+        print(f'speed vector: {speed_direction_vector}')
         self.change_sampling(1, samples)
         self.cmm.cnc_on()
         self.cmm.set_speed((20,20,20))
@@ -129,7 +133,7 @@ class HallProbe(HallDAQ):
         self.start_hallsensor_task()
         sleep(1)
         # self.cmm.goto_position(end_point)
-        self.cmm.send(f'G01X{speed_direction_vector[0]}Y{speed_direction_vector[1]}Z{speed_direction_vector[2]}\r\n'.encode('ascii'))
+        self.cmm.send(f'G01X{speed_direction_vector[0]:.6f}Y{speed_direction_vector[1]:.6f}Z{speed_direction_vector[2]:.6f}\r\n'.encode('ascii'))
         sleep(1)
         self.pulse()
         start_pt = self.cmm.get_position()
@@ -151,17 +155,13 @@ class HallProbe(HallDAQ):
         else:
             return self.reduce_scan_density(np.hstack((linear, Bxyz)), scan_interval=point_density)
 
-    def scan_area(self, start_point, scan_distance, pt_density, scan_plane, scan_direction):
-        start_array = self.create_scan_plane(start_point, scan_distance, pt_density, scan_plane, scan_direction)
-        distance = (np.abs(start_point) + scan_distance)[self.scan_length_index[scan_direction]]
-        travel_time = distance / self.scan_speed
-        samples = ((travel_time * self.sample_rate) - self.sample_rate).round(0).astype(int)
-        self.change_sampling(1, samples)
+    def scan_area(self, start_array, allocated_array, pt_density, num_samples, scan_direction):
+        self.change_sampling(1, num_samples)
         self.cmm.cnc_on()
         self.cmm.set_speed((20,20,20))
-        for point in start_array:
+        for i, point in enumerate(start_array):
             self.cmm.goto_position(point)
-            while np.linalg.norm(start_point - self.cmm.get_position()) > 0.025:
+            while np.linalg.norm(point - self.cmm.get_position()) > 0.025:
                 pass
             self.power_on()
             self.start_hallsensor_task()
@@ -172,12 +172,17 @@ class HallProbe(HallDAQ):
             start_pt = self.cmm.get_position()
             data = self.read_hallsensor()
             end_pt = self.cmm.get_position()
-            
+            Bxyz = calib_data(self.calib_coeffs, data)
+            linear = np.linspace(start_pt, end_pt, num=num_samples)
+            reduced = self.reduce_scan_density(np.hstack((linear, Bxyz)), scan_interval=pt_density)
+            allocated_array[i] = reduced
         self.cmm.send('G01X0Y0Z0\r\n'.encode('ascii'))
         self.cmm.set_speed((70,70,70))
         self.cmm.cnc_off()
         self.stop_hallsensor_task()
         self.power_off()
+        #  return ndarray shape (m, n, 6) (m lines, n samples, 6 columns xyzBxByBz)
+        return allocated_array
 
 
     def scan_volume(self, start_point, scan_distance, pt_density, scan_plane, scan_direction):
@@ -186,7 +191,7 @@ class HallProbe(HallDAQ):
     def create_scan_plane(self, start_point, scan_distance, pt_density, scan_plane, scan_direction):
         points = np.arange(0, scan_distance[self.direction_index[scan_plane][scan_direction]]+pt_density, pt_density)
         points_array = np.array([start_point]*points.shape[0])
-        points_array[:, self.direction_index[scan_plane][scan_direction]] = points + start_point[scan_plane][scan_direction]
+        points_array[:, self.direction_index[scan_plane][scan_direction]] = points + start_point[self.scan_length_index[scan_direction]]
         return points_array
 
     def shutdown(self):
