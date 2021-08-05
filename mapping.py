@@ -3,6 +3,9 @@ from tkinter import ttk
 from tkinter.filedialog import askopenfilename
 import numpy as np
 from hallprobe import HallProbe
+from pathlib import Path
+
+np.set_printoptions(suppress=True)
 
 class MapFrames(tk.Frame):
     def __init__(self, parent):
@@ -70,9 +73,16 @@ class MapFrames(tk.Frame):
         pd = float(self.cbox_sa_pd.get())
         scan_plane = self.cbox_sa_scan_plane.get()
         scan_direction = self.cbox_sa_scan_direction.get()
-        start_point = self.hp.pcs2mcs(np.array([sp_x, sp_y, sp_z]))
-        scan_distance = np.array([sd_x, sd_y, sd_z])@self.hp.rotation
-        return (start_point, scan_distance, pd, scan_plane, scan_direction)
+        start_point = np.array([sp_x, sp_y, sp_z])
+        scan_distance = np.array([sd_x, sd_y, sd_z])
+        start_array = self.hp.create_scan_plane(start_point, scan_distance, pd, scan_plane, scan_direction)
+        for i, point in enumerate(start_array):
+            start_array[i] = self.hp.pcs2mcs(point)
+        distance = (np.abs(start_point) + scan_distance)[self.hp.scan_length_index[scan_direction]]
+        travel_time = distance / self.hp.scan_speed
+        samples = ((travel_time * self.hp.sample_rate) - self.hp.sample_rate).round(0).astype(int)
+        allocated_array = np.zeros((start_array.shape[0], samples, 6))
+        return (start_array, allocated_array, pd, samples, scan_direction)
     
     def load_frame(self, frame: tk.Frame):
         if self.grid_slaves(column=1, row=0):
@@ -81,11 +91,13 @@ class MapFrames(tk.Frame):
 
     def load_part_alignment(self):
         cdiff = askopenfilename(filetypes=[('Text Files', '*.txt'), ('All Files', '*.*')])
-        if cdiff != '':
+        if cdiff != '' and self.hp is None:
             self.hp = HallProbe(cdiff, 1, 2)
             self.btn_scan_point.configure(state='enabled')
             self.btn_scan_line.configure(state='enabled')
             self.btn_scan_area_volume.configure(state='enabled')
+        elif cdiff != '' and self.hp is not None:
+            self.hp.__load_coord_diff__(cdiff)
     
     def measure_point(self):
         point = self.get_point()
@@ -93,6 +105,8 @@ class MapFrames(tk.Frame):
         xyz_Bxyz[:3] = self.hp.mcs2pcs(xyz_Bxyz[:3])
         xyz_Bxyz[3:] = xyz_Bxyz[3:]@np.linalg.inv(self.hp.rotation)
         print(xyz_Bxyz)
+        with open('points.txt', 'a') as file:
+            file.write(f'{xyz_Bxyz[0]} {xyz_Bxyz[1]} {xyz_Bxyz[2]} {xyz_Bxyz[3]} {xyz_Bxyz[4]} {xyz_Bxyz[5]}\n')
     
     def measure_line(self):
         line_args = self.get_line()
@@ -101,10 +115,14 @@ class MapFrames(tk.Frame):
             data[i, :3] = self.hp.mcs2pcs(data[i, :3])
             data[i, 3:] = data[i, 3:]@np.linalg.inv(self.hp.rotation)
         print(data.shape)
+        np.save('line.npy', data, allow_pickle=False)
 
     def measure_area(self):
-        sav_args = self.get_area()
-        data = self.hp.scan_area(*sav_args)
+        filename = Path('area.npy')
+        sa_args = self.get_area()
+        data = self.hp.scan_area(*sa_args)
+        with filename.open('ab') as file:
+            np.save(file, np.array([data]), allow_pickle=False)
 
     def scan_point_widgets(self):
         self.lbl_scan_point = tk.Label(self.frm_scan_point, text='Scan Point')
