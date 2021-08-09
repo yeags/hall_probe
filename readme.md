@@ -65,7 +65,7 @@ All libraries are installable via pip.  For example:
 
 ### **Graphical Interface**
 
-The graphical interface was built with pythons included library, tkinter.  The main purpose of the GUI is to simplify the magnet measurement process.  The interface is broken down into the following sections:
+The graphical interface was built with python's included library, tkinter.  The main purpose of the GUI is to simplify the magnet measurement process.  The interface is broken down into the following sections:
 
 * Magnet Information
   * Enter in part and serial number information as well as any relevant notes that pertain to the part in question.
@@ -82,3 +82,15 @@ The graphical interface was built with pythons included library, tkinter.  The m
   * This section is still a work in progress
 * TBD - Alignment Analysis
   * Still TBD, but possibly output data useful for alignment purposes.
+
+### **Zeiss Calypso CMM Software**
+
+The main use of the Calypso CMM software is to physically measure the part in order to determine the relationship between the PCS and MCS so that the hall probe can accurately travel to known points in space in relation to the aligned part system.  PCM (an optional add-on to the standard Calypso package) is used in order to generate a text file containing the transformation matrix needed for hallprobe scanning.  
+The PCM script is entered into Calypso's measurement plan post-settings PCM window.  
+```
+if fileExists("alignment.txt"):
+	deleteFile("alignment.txt")
+endif
+writeDiffCoordSysToFile("MCS", "PCS", "alignment.txt")
+```
+If PCM is not installed, one can manually execute the `writeDiffCoordSysToFile` function using a Result Element characteristic and executing a formula.
