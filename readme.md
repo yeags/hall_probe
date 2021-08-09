@@ -43,9 +43,10 @@ The orthogonal cube helps correct any non-orthogonality due to sensor placement 
 
 The entire project is written in Python.  So far this is still a work in progress and code may break or change in the meantime.  GUI started out as an empty proof of concept and is slowly being modified to contain actual functionality.  Currently only the probe qualification routines are integrated and working within the graphical interface.
 
-### Prerequisites
+### **Prerequisites**
 
-National Instruments NI-DAQmx drivers must be installed.
+National Instruments NI-DAQmx drivers must be installed.  Software version 20.0 is used here.  Newer versions have not been tested with this system.  
+Driver software can be found from NI's website [here](https://www.ni.com/en-us/support/downloads/drivers/download.ni-daqmx.html#346240).  
 Device names in the python scripts are static and must be renamed in NI MAX to the following:
 * cDAQ-9185 "MagnetcDAQ"
 * NI-9212 "MagnetTemp"
@@ -61,3 +62,23 @@ Third party python libraries utilized are:
 All libraries are installable via pip.  For example:
 
 >`pip install nidaqmx`
+
+### **Graphical Interface**
+
+The graphical interface was built with pythons included library, tkinter.  The main purpose of the GUI is to simplify the magnet measurement process.  The interface is broken down into the following sections:
+
+* Magnet Information
+  * Enter in part and serial number information as well as any relevant notes that pertain to the part in question.
+* Probe Qualification
+  * Contains a step-by-step guide for qualifying a newly setup hall probe.
+* Measurement Controls
+  * Input parameters to perform magnet measurements
+  * Only point and line measurements are complete and functional.  Area mapping is still a work in progress.
+* Program Controls
+  * Buttons for creating a new measurement plan, saving, or opening an existing one.
+  * No functional controls yet.  This section is still a work in progress.
+* Visualization Controls
+  * Create various plots from the measurement results
+  * This section is still a work in progress
+* TBD - Alignment Analysis
+  * Still TBD, but possibly output data useful for alignment purposes.
