@@ -8,20 +8,36 @@ Instead of using a start-and-stop method of mapping a magnetic field, this syste
 ## Equipment and Hardware
 ![Image](images/overview.jpg)
 
-### Zeiss Accura CMM
-Placeholder description...
-### National Instruments cDAQ
+### **Zeiss Accura CMM**
+The CMM used here is a Zeiss Accura model with a VAST Gold measurement sensor.  The controller box is C99.  The commands python sends to the controller are relatively basic compared to its native communication with Calypso, however, it tends to do the job nicely.  
+This setup will work with other Zeiss CMMs so long as a C99 controller box is used, which is most likely the case unless it is a very old machine.  The CMM used here is about 15 years old.
+
+### **National Instruments cDAQ**
 * cDAQ-9185 CompactDAQ Chassis, 4-slot
 * NI-9212 C Series Temperature Input Module
 * NI-9229 C Series Voltage Input Module
 * NI-9263 C Series Voltage Output Module
 
-### Senis Electronic Control Box
-Placeholder description...
-### Field Sensitive Volume (FSV) Tool
-Placeholder description...
-### Orthogonal Cube
-Placeholder description...
+The two main modules of the NI cDAQ are the voltage input and output.
+The voltage input module is used to read the ± 12 V analog signal and convert it to digital values.  It also reads the on-board temperature sensor of the hall probe.  
+The voltage output module sends a 1.3 V signal to turn on the electronic control box and 5 V signals to turn on the current for the FSV tool and select the sensitivity range of the hall sensor.
+
+### **Senis Electronic Control Box**
+This electronic control box performs the following tasks:
+
+* Takes in the signals generated from the hall sensor and outputs a ± 12 V analog signal.
+* Supplies current to the FSV tool.
+* Takes input in the form of 5 V to switch on/off the box itself, current for the FSV tool, and select sensitivity range of the hall sensor.
+
+### **Field Sensitive Volume (FSV) Tool**
+![Image](images/fsv_readme.jpg)
+
+The FSV tool is used to determine the x, y, and z spatial offset relative to the master probe.  Since all travel commands sent to the CMM are with respect to the master probe, those coordinates need to take the different position of the hallprobe into consideration.  A Calypso CMM program is used to establish a local coordinate system of the FSV tool.  The FSV tool does not need to be aligned with the machine coordinate system (MCS) for qualification to take place.  A Calypso PCM script is used to generate rotation and translation values between the local part coordinate system (PCS) and the MCS.
+
+### **Orthogonal Cube**
+![Image](images/cube_readme.jpg)
+
+The orthogonal cube helps correct any non-orthogonality due to sensor placement within the ceramic probe.  This, alongside an additional Calypso program helps establish rotational correction with respect to the MCS.
 
 ## Software
 
