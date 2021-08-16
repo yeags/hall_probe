@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter.filedialog import askopenfilename
+from tkinter.messagebox import showerror
 import numpy as np
 from hallprobe import HallProbe
 from pathlib import Path
@@ -42,48 +43,57 @@ class MapFrames(tk.Frame):
         self.btn_scan_area_volume.grid(column=0, row=3, sticky='new', padx=5, pady=(0,5))
 
     def get_point(self):
-        x = float(self.ent_sp_x.get())
-        y = float(self.ent_sp_y.get())
-        z = float(self.ent_sp_z.get())
-        point = self.hp.pcs2mcs(np.array([x, y, z]))
-        return point
+        try:
+            x = float(self.ent_sp_x.get())
+            y = float(self.ent_sp_y.get())
+            z = float(self.ent_sp_z.get())
+            point = self.hp.pcs2mcs(np.array([x, y, z]))
+            return point
+        except ValueError:
+            return None
 
     def get_line(self):
-        sp_x = float(self.ent_slsp_x.get())
-        sp_y = float(self.ent_slsp_y.get())
-        sp_z = float(self.ent_slsp_z.get())
-        ep_x = float(self.ent_slep_x.get())
-        ep_y = float(self.ent_slep_y.get())
-        ep_z = float(self.ent_slep_z.get())
-        sp = self.hp.pcs2mcs(np.array([sp_x, sp_y, sp_z]))
-        ep = self.hp.pcs2mcs(np.array([ep_x, ep_y, ep_z]))
-        pd = self.cbox_sl_point_density.get()
-        if pd == 'full res':
-            pass
-        else:
-            pd = float(pd)
-        return (sp, ep, pd)
+        try:
+            sp_x = float(self.ent_slsp_x.get())
+            sp_y = float(self.ent_slsp_y.get())
+            sp_z = float(self.ent_slsp_z.get())
+            ep_x = float(self.ent_slep_x.get())
+            ep_y = float(self.ent_slep_y.get())
+            ep_z = float(self.ent_slep_z.get())
+            sp = self.hp.pcs2mcs(np.array([sp_x, sp_y, sp_z]))
+            ep = self.hp.pcs2mcs(np.array([ep_x, ep_y, ep_z]))
+            pd = self.cbox_sl_point_density.get()
+            if pd == 'full res':
+                pass
+            else:
+                pd = float(pd)
+            return (sp, ep, pd)
+        except ValueError:
+            return None
 
     def get_area(self):
-        sp_x = float(self.ent_sa_sp_x.get())
-        sp_y = float(self.ent_sa_sp_y.get())
-        sp_z = float(self.ent_sa_sp_z.get())
-        sd_x = float(self.ent_sa_sd_x.get())
-        sd_y = float(self.ent_sa_sd_y.get())
-        sd_z = float(self.ent_sa_sd_z.get())
-        pd = float(self.cbox_sa_pd.get())
-        scan_plane = self.cbox_sa_scan_plane.get()
-        scan_direction = self.cbox_sa_scan_direction.get()
-        start_point = np.array([sp_x, sp_y, sp_z])
-        scan_distance = np.array([sd_x, sd_y, sd_z])
-        start_array = self.hp.create_scan_plane(start_point, scan_distance, pd, scan_plane, scan_direction)
-        for i, point in enumerate(start_array):
-            start_array[i] = self.hp.pcs2mcs(point)
-        distance = (np.abs(start_point) + scan_distance)[self.hp.scan_length_index[scan_direction]]
-        travel_time = distance / self.hp.scan_speed
-        samples = ((travel_time * self.hp.sample_rate) - self.hp.sample_rate).round(0).astype(int)
-        allocated_array = np.zeros((start_array.shape[0], samples, 6))
-        return (start_array, allocated_array, pd, samples, scan_direction)
+        try:
+            sp_x = float(self.ent_sa_sp_x.get())
+            sp_y = float(self.ent_sa_sp_y.get())
+            sp_z = float(self.ent_sa_sp_z.get())
+            sd_x = float(self.ent_sa_sd_x.get())
+            sd_y = float(self.ent_sa_sd_y.get())
+            sd_z = float(self.ent_sa_sd_z.get())
+            pd = float(self.cbox_sa_pd.get())
+            scan_plane = self.cbox_sa_scan_plane.get()
+            scan_direction = self.cbox_sa_scan_direction.get()
+            start_point = np.array([sp_x, sp_y, sp_z])
+            scan_distance = np.array([sd_x, sd_y, sd_z])
+            start_array = self.hp.create_scan_plane(start_point, scan_distance, pd, scan_plane, scan_direction)
+            for i, point in enumerate(start_array):
+                start_array[i] = self.hp.pcs2mcs(point)
+            distance = (np.abs(start_point) + scan_distance)[self.hp.scan_length_index[scan_direction]]
+            travel_time = distance / self.hp.scan_speed
+            samples = ((travel_time * self.hp.sample_rate) - self.hp.sample_rate).round(0).astype(int)
+            allocated_array = np.zeros((start_array.shape[0], samples, 6))
+            return (start_array, allocated_array, pd, samples, scan_direction)
+        except ValueError:
+            return None
     
     def load_frame(self, frame: tk.Frame):
         if self.grid_slaves(column=1, row=0):
@@ -102,28 +112,37 @@ class MapFrames(tk.Frame):
     
     def measure_point(self):
         point = self.get_point()
-        xyz_Bxyz = self.hp.scan_point(point)
-        xyz_Bxyz[:3] = self.hp.mcs2pcs(xyz_Bxyz[:3])
-        xyz_Bxyz[3:] = xyz_Bxyz[3:]@np.linalg.inv(self.hp.rotation)
-        print(xyz_Bxyz)
-        with open('points.txt', 'a') as file:
-            file.write(f'{xyz_Bxyz[0]} {xyz_Bxyz[1]} {xyz_Bxyz[2]} {xyz_Bxyz[3]} {xyz_Bxyz[4]} {xyz_Bxyz[5]}\n')
+        if point is None:
+            showerror(title='Entry Error', message='Entries should be integer or float values.')
+        else:
+            xyz_Bxyz = self.hp.scan_point(point)
+            xyz_Bxyz[:3] = self.hp.mcs2pcs(xyz_Bxyz[:3])
+            xyz_Bxyz[3:] = xyz_Bxyz[3:]@np.linalg.inv(self.hp.rotation)
+            print(xyz_Bxyz)
+            with open('points.txt', 'a') as file:
+                file.write(f'{xyz_Bxyz[0]} {xyz_Bxyz[1]} {xyz_Bxyz[2]} {xyz_Bxyz[3]} {xyz_Bxyz[4]} {xyz_Bxyz[5]}\n')
     
     def measure_line(self):
         line_args = self.get_line()
-        data = self.hp.scan_line(*line_args)
-        for i, sample in enumerate(data):
-            data[i, :3] = self.hp.mcs2pcs(data[i, :3])
-            data[i, 3:] = data[i, 3:]@np.linalg.inv(self.hp.rotation)
-        print(data.shape)
-        np.save('line.npy', data, allow_pickle=False)
+        if line_args is None:
+            showerror(title='Entry Error', message='Entries should be integer or float values.')
+        else:
+            data = self.hp.scan_line(*line_args)
+            for i, sample in enumerate(data):
+                data[i, :3] = self.hp.mcs2pcs(data[i, :3])
+                data[i, 3:] = data[i, 3:]@np.linalg.inv(self.hp.rotation)
+            print(data.shape)
+            np.save('line.npy', data, allow_pickle=False)
 
     def measure_area(self):
-        filename = Path('area.npy')
+        filename = 'area.npy'
         sa_args = self.get_area()
-        data = self.hp.scan_area(*sa_args)
-        with filename.open('ab') as file:
-            np.save(file, np.array([data]), allow_pickle=False)
+        if sa_args is None:
+            showerror(title='Entry Error', message='Entries should be integer or float values.')
+        else:
+            data = self.hp.scan_area(*sa_args)
+            with filename.open('ab') as file:
+                np.save(file, np.array([data]), allow_pickle=False)
 
     def scan_point_widgets(self):
         self.lbl_scan_point = tk.Label(self.frm_scan_point, text='Scan Point')
