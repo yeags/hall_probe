@@ -91,6 +91,8 @@ class MapFrames(tk.Frame):
             travel_time = distance / self.hp.scan_speed
             samples = ((travel_time * self.hp.sample_rate) - self.hp.sample_rate).round(0).astype(int)
             allocated_array = np.zeros((start_array.shape[0], samples, 6))
+            # print(f'samples: {samples}')
+            # print(f'allocated_array shape: {allocated_array.shape}')
             return (start_array, allocated_array, pd, samples, scan_direction)
         except ValueError:
             return None
@@ -135,7 +137,7 @@ class MapFrames(tk.Frame):
             np.save('line.npy', data, allow_pickle=False)
 
     def measure_area(self):
-        filename = 'area.npy'
+        filename = Path('area.npy')
         sa_args = self.get_area()
         if sa_args is None:
             showerror(title='Entry Error', message='Entries should be integer or float values.')

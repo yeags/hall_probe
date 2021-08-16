@@ -159,11 +159,11 @@ class HallProbe(HallDAQ):
         self.change_sampling(1, num_samples)
         self.cmm.cnc_on()
         self.cmm.set_speed((20,20,20))
+        self.power_on()
         for i, point in enumerate(start_array):
             self.cmm.goto_position(point)
             while np.linalg.norm(point - self.cmm.get_position()) > 0.025:
                 pass
-            self.power_on()
             self.start_hallsensor_task()
             sleep(1)
             self.cmm.send(f'G01X{self.scan_direction_v[scan_direction][0]:.6f}Y{self.scan_direction_v[scan_direction][1]:.6f}Z{self.scan_direction_v[scan_direction][2]:.6f}\r\n'.encode('ascii'))
@@ -172,17 +172,21 @@ class HallProbe(HallDAQ):
             start_pt = self.cmm.get_position()
             data = self.read_hallsensor()
             end_pt = self.cmm.get_position()
+            self.stop_hallsensor_task()
             Bxyz = calib_data(self.calib_coeffs, data)
             linear = np.linspace(start_pt, end_pt, num=num_samples)
-            reduced = self.reduce_scan_density(np.hstack((linear, Bxyz)), scan_interval=pt_density)
-            allocated_array[i] = reduced
+            # reduced = self.reduce_scan_density(np.hstack((linear, Bxyz)), scan_interval=pt_density)
+            # allocated_array[i] = reduced
+            allocated_array[i] = np.hstack((linear, Bxyz))
         self.cmm.send('G01X0Y0Z0\r\n'.encode('ascii'))
         self.cmm.set_speed((70,70,70))
         self.cmm.cnc_off()
-        self.stop_hallsensor_task()
         self.power_off()
+        reduced_array_list = []
+        for line in allocated_array:
+            reduced_array_list.append(self.reduce_scan_density(line, scan_interval=pt_density))
         #  return ndarray shape (m, n, 6) (m lines, n samples, 6 columns xyzBxByBz)
-        return allocated_array
+        return np.array(reduced_array_list)
 
 
     def scan_volume(self, start_point, scan_distance, pt_density, scan_plane, scan_direction):
