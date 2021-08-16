@@ -166,7 +166,7 @@ class HallProbe(HallDAQ):
             self.power_on()
             self.start_hallsensor_task()
             sleep(1)
-            self.cmm.send(f'G01X{self.scan_direction_v[scan_direction][0]}Y{self.scan_direction_v[scan_direction][1]}Z{self.scan_direction_v[scan_direction][2]}\r\n'.encode('ascii'))
+            self.cmm.send(f'G01X{self.scan_direction_v[scan_direction][0]:.6f}Y{self.scan_direction_v[scan_direction][1]:.6f}Z{self.scan_direction_v[scan_direction][2]:.6f}\r\n'.encode('ascii'))
             sleep(1)
             self.pulse()
             start_pt = self.cmm.get_position()
