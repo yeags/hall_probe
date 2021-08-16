@@ -28,6 +28,9 @@ class HallProbeApp(tk.Frame):
     '''
     def __init__(self, master):
         self.master = master
+        self.working_dir = Path(os.getcwd())
+        self.measurement_plan = None
+        self.images_dir = self.working_dir / 'images'
         super().__init__(master)
         self.master.resizable(0,0)
         self.master.title('Hall Probe CMM Program')
@@ -279,7 +282,7 @@ class ProgramControls(ttk.LabelFrame):
     '''
     def __init__(self, parent, title='Program Controls'):
         self.program_controls_parent = parent
-        self.working_directory = os.getcwd()
+        self.working_directory = Path(os.getcwd())
         self.measurement_session = None
         super().__init__(parent, text=title, labelanchor='nw')
         self.create_widgets()

@@ -11,6 +11,7 @@ class MapFrames(tk.Frame):
     def __init__(self, parent):
         self.hp = None
         self.mapframes_parent = parent
+        # self.meas_plan_dir = meas_plan_dir
         super().__init__(parent)
         self.density_list = ['0.1', '0.25', '0.5', '1.0', '2.0', 'full res']
         self.density_list_area = ['0.1', '0.25', '0.5', '1.0', '2.0']
