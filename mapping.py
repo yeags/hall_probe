@@ -85,11 +85,14 @@ class MapFrames(tk.Frame):
             start_point = np.array([sp_x, sp_y, sp_z])
             scan_distance = np.array([sd_x, sd_y, sd_z])
             start_array = self.hp.create_scan_plane(start_point, scan_distance, pd, scan_plane, scan_direction)
+            distance_dict = {'x': sd_x, 'y': sd_y, 'z': sd_z}
+            print(f'start point: {start_point}\n\nstart array: {start_array}')
             for i, point in enumerate(start_array):
                 start_array[i] = self.hp.pcs2mcs(point)
-            distance = (np.abs(start_point) + scan_distance)[self.hp.scan_length_index[scan_direction]]
+            distance = distance_dict[scan_direction]
             travel_time = distance / self.hp.scan_speed
-            samples = ((travel_time * self.hp.sample_rate) - self.hp.sample_rate).round(0).astype(int)
+            samples = np.array(((travel_time * self.hp.sample_rate) - self.hp.sample_rate)).round(0).astype(int)
+            print(f'samples changed to: {samples}')
             allocated_array = np.zeros((start_array.shape[0], samples, 6))
             # print(f'samples: {samples}')
             # print(f'allocated_array shape: {allocated_array.shape}')
@@ -144,6 +147,8 @@ class MapFrames(tk.Frame):
         else:
             data = self.hp.scan_area(*sa_args)
             with filename.open('ab') as file:
+                # saves array shape(w, m, n, 6)
+                # w planes, m scan lines, n samples, 6 columns (x,y,z,Bx,By,Bz)
                 np.save(file, np.array([data]), allow_pickle=False)
 
     def scan_point_widgets(self):
