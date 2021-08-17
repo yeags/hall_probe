@@ -175,8 +175,10 @@ class HallProbe(HallDAQ):
             self.stop_hallsensor_task()
             Bxyz = calib_data(self.calib_coeffs, data)
             linear = np.linspace(start_pt, end_pt, num=num_samples)
-            # reduced = self.reduce_scan_density(np.hstack((linear, Bxyz)), scan_interval=pt_density)
-            # allocated_array[i] = reduced
+            for j, sample in enumerate(linear):
+                linear[j] = self.mcs2pcs(sample)
+            for j, sample in enumerate(Bxyz):
+                Bxyz[j] = self.s_matrix@sample
             allocated_array[i] = np.hstack((linear, Bxyz))
         self.cmm.send('G01X0Y0Z0\r\n'.encode('ascii'))
         self.cmm.set_speed((70,70,70))
@@ -195,7 +197,7 @@ class HallProbe(HallDAQ):
     def create_scan_plane(self, start_point, scan_distance, pt_density, scan_plane, scan_direction):
         points = np.arange(0, scan_distance[self.direction_index[scan_plane][scan_direction]]+pt_density, pt_density)
         points_array = np.array([start_point]*points.shape[0])
-        points_array[:, self.direction_index[scan_plane][scan_direction]] = points + start_point[self.scan_length_index[scan_direction]]
+        points_array[:, self.direction_index[scan_plane][scan_direction]] = points + start_point[self.direction_index[scan_plane][scan_direction]]
         return points_array
 
     def shutdown(self):
