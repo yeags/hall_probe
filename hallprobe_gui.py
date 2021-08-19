@@ -302,7 +302,7 @@ class ProgramControls(ttk.LabelFrame):
     def new_measurement(self):
         print(os.getcwd())
         self.measurement_session = 'measurements/' + askstring('New Measurement', 'Create a new measurement session name.')
-        os.mkdir(self.working_directory + '/' + self.measurement_session)
+        os.mkdir(self.working_directory / self.measurement_session)
         if self.measurement_session != 'measurements/':
             self.lbl_controls_status.configure(text=f'New measurement session created.\n{self.measurement_session}')
 

@@ -2,7 +2,6 @@ from os import remove
 from nicdaq import HallDAQ
 import zeisscmm
 import numpy as np
-np.set_printoptions(suppress=True)
 from time import time, sleep, perf_counter
 from calibration import calib_data, remove_outliers, average_sample
 
