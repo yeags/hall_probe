@@ -6,8 +6,6 @@ import numpy as np
 from hallprobe import HallProbe
 from pathlib import Path
 
-np.set_printoptions(suppress=True)
-
 class MapFrames(tk.Frame):
     def __init__(self, parent):
         self.hp = None
