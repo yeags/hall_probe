@@ -10,6 +10,8 @@ from fsv import fsvWindow
 from cube import CubeWindow
 from zero_gauss import zgWindow
 from mapping import MapFrames
+from session_db import Session
+import visuals
 import numpy as np
 import os
 from os.path import isfile
@@ -26,11 +28,8 @@ class HallProbeApp(tk.Frame):
     '''
     Master tk frame to place all containers in.
     '''
-    def __init__(self, master):
+    def __init__(self, master: tk.Tk):
         self.master = master
-        self.working_dir = Path(os.getcwd())
-        self.measurement_plan = None
-        self.images_dir = self.working_dir / 'images'
         super().__init__(master)
         self.master.resizable(0,0)
         self.master.title('Hall Probe CMM Program')
@@ -40,13 +39,13 @@ class HallProbeApp(tk.Frame):
     
     def create_frames(self):
         self.controls = ControlsFrame(self)
-        self.visuals = VisualsFrame(self)
+        self.visuals_frame = VisualsFrame(self)
         self.grid(column=0, row=0, sticky='nsew')
         self.controls.grid(column=0, row=0, padx=5, pady=5, sticky='nsew')
-        self.visuals.grid(column=1, row=0, padx=(0,5), pady=(5,0), sticky='nsew')
+        self.visuals_frame.grid(column=1, row=0, padx=(0,5), pady=(5,0), sticky='nsew')
     
     def update_graph_labels(self):
-        self.visuals.temp_plot.temp_frame_parent.temp_plot.update_labels()
+        self.visuals_frame.temp_plot.temp_frame_parent.temp_plot.update_labels()
     
     def on_closing(self):
         if tk.messagebox.askokcancel('Quit', 'Do you want to quit?'):
@@ -57,7 +56,7 @@ class ControlsFrame(tk.Frame):
     '''
     Parent tk frame for inputs, parameters, and controls options.
     '''
-    def __init__(self, parent):
+    def __init__(self, parent: HallProbeApp):
         self.controls_frame_parent = parent
         super().__init__(parent)
         self.create_frames()
@@ -77,7 +76,7 @@ class VisualsFrame(tk.Frame):
     '''
     Parent tk frame for graphical plots.
     '''
-    def __init__(self, parent):
+    def __init__(self, parent: HallProbeApp):
         self.visuals_frame_parent = parent
         super().__init__(parent)
         self.create_frames()
@@ -117,7 +116,7 @@ class MapField(ttk.LabelFrame):
     tk frame for inputting measurement parameters such as
     starting coordinate, scan length, speed, and measurement interval
     '''
-    def __init__(self, parent, title='Field Mapping'):
+    def __init__(self, parent: ControlsFrame, title='Field Mapping'):
         self.map_field_parent = parent
         super().__init__(parent, text=title, labelanchor='nw')
         self.create_frame()
@@ -211,7 +210,7 @@ class ProbeQualification(ttk.LabelFrame):
         * xyz offset using fsv tool
         * sensor orthogonalization using cube tool
     '''
-    def __init__(self, parent):
+    def __init__(self, parent: ControlsFrame):
         self.calib_tools_parent = parent
         super().__init__(parent, text='Hall Sensor Qualification', labelanchor='nw')
         self.fsv_filepath = tk.StringVar()
@@ -243,11 +242,6 @@ class ProbeQualification(ttk.LabelFrame):
         self.txt_instructions.grid(column=1, row=1, rowspan=4, sticky='nw', padx=5, pady=(0,5))
         self.txt_instructions.configure(state='disabled')
 
-    # def load_filepath(self, filepath, enable=None):
-    #     filepath = tk.filedialog.askopenfilename(filetypes=[('Text Files', '*.txt'), ('All Files', '*.*')])
-    #     if enable != None:
-    #         enable.configure(state='enabled')
-    
     def run_zero_gauss(self):
         zg = zgWindow(self)
     
@@ -280,38 +274,47 @@ class ProgramControls(ttk.LabelFrame):
     loading magnet alignment, start/stop measurement,
     saving a measurement and loading a previously saved measurement
     '''
-    def __init__(self, parent, title='Program Controls'):
+    def __init__(self, parent: ControlsFrame, title='Program Controls'):
         self.program_controls_parent = parent
-        self.working_directory = Path(os.getcwd())
-        self.measurement_session = None
+        self.measurement_directory = Path(os.getcwd()) / 'measurements'
         super().__init__(parent, text=title, labelanchor='nw')
+        self.measurement_session = Session(self, self.measurement_directory)
         self.create_widgets()
 
     def create_widgets(self):
         self.btn_new_meas = ttk.Button(self, text='New Measurement', command=self.new_measurement)
         self.btn_load_meas = ttk.Button(self, text='Load Measurement', command=self.load_measurement)
         self.btn_save_meas = ttk.Button(self, text='Save Measurement', command=self.save_measurement)
+        self.btn_plot_2d = ttk.Button(self, text='Plot 2D Map', command=self.display_2d)
+        self.btn_plot_3d = ttk.Button(self, text='Plot 3D Map', command=None)
+        self.btn_plot_pointcloud = ttk.Button(self, text='Plot Point Cloud', command=None)
         self.lbl_controls_status = tk.Label(self, text='*Program Controls Status*')
         self.lbl_controls_status.config(relief='sunken')
         # Place widgets within grid
         self.btn_new_meas.grid(column=0, row=0, padx=5, pady=5, sticky='new')
         self.btn_load_meas.grid(column=1, row=0, padx=5, pady=5, sticky='new')
         self.btn_save_meas.grid(column=2, row=0, padx=5, pady=5, sticky='new')
-        self.lbl_controls_status.grid(column=0, row=1, columnspan=3, padx=5, pady=5, sticky='sew')
+        self.btn_plot_2d.grid(column=0, row=1, padx=5, pady=(0,5), sticky='new')
+        self.btn_plot_3d.grid(column=1, row=1, padx=5, pady=(0,5), sticky='new')
+        self.btn_plot_pointcloud.grid(column=2, row=1, padx=5, pady=(0,5), sticky='new')
+        self.lbl_controls_status.grid(column=0, row=2, columnspan=3, padx=5, pady=5, sticky='sew')
     
     def new_measurement(self):
-        print(os.getcwd())
-        self.measurement_session = 'measurements/' + askstring('New Measurement', 'Create a new measurement session name.')
-        os.mkdir(self.working_directory / self.measurement_session)
-        if self.measurement_session != 'measurements/':
-            self.lbl_controls_status.configure(text=f'New measurement session created.\n{self.measurement_session}')
+        self.measurement_session.new_session()
+
+    def load_measurement(self):
+        pass
 
     def save_measurement(self):
         pass
 
-    def load_measurement(self):
-        self.measurement_session = filedialog.askdirectory(initialdir=self.working_directory + '/measurements')
-        self.lbl_controls_status.configure(text=f'Loaded measurement session.\n{self.measurement_session}')
+    def display_2d(self):
+        if self.program_controls_parent.controls_frame_parent.visuals_frame.field_plot.grid_slaves(column=0, row=0):
+            self.program_controls_parent.controls_frame_parent.visuals_frame.field_plot.grid_forget()
+        plot = visuals.PlotField2D(self.program_controls_parent.controls_frame_parent.visuals_frame.field_plot)
+        plot.create_plot(np.genfromtxt('fieldmap_reduced.txt'), 'xy')
+
+    
         
 if __name__ == '__main__':
     app = HallProbeApp(tk.Tk())
