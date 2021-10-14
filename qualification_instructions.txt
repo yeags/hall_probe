@@ -1,0 +1,10 @@
+Complete the following steps in order:
+
+1.  Zero Gauss Chamber
+2.  FSV Offset Qualification
+3.  Orthogonal Cube Qualification
+
+or:
+
+Use existing qualification by
+clicking "Verify Qualification"
