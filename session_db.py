@@ -15,13 +15,12 @@ class Session:
 
     def create_db(self, db_name):
         try:
-            conn = sqlite3.connect(db_name)
-            self.__init_tables__(conn)
-            self.db = conn
+            self.db = sqlite3.connect(db_name)
+            self.__init_tables__(self.db)
         except Error as e:
             showerror('Database Error', e)
     
-    def __init_tables__(self, db_conn):
+    def __init_tables__(self):
         sql_part_info = \
             """
             CREATE TABLE IF NOT EXISTS part_info(
@@ -97,12 +96,13 @@ class Session:
             """
         # Create Part Info table
         try:
-            c = db_conn.cursor()
+            c = self.db.cursor()
             c.execute(sql_part_info)
             c.execute(sql_magnet_temp)
             c.execute(sql_scan_point)
             c.execute(sql_scan_line)
             c.execute(sql_scan_area)
+            c.close()
         except Error as e:
             showerror('Table Initialization', e)
 
@@ -129,6 +129,9 @@ class Session:
             pass
         else:
             pass
+    
+    def load_measurement(self):
+        pass
 
     def load_session(self, filepath: Path):
         if self.session_changes:

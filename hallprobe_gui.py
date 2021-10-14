@@ -282,12 +282,15 @@ class ProgramControls(ttk.LabelFrame):
         self.create_widgets()
 
     def create_widgets(self):
-        self.btn_new_meas = ttk.Button(self, text='New Measurement', command=self.new_measurement)
+        tv_headings = None
+        self.btn_new_meas = ttk.Button(self, text='New Session', command=self.new_measurement)
         self.btn_load_meas = ttk.Button(self, text='Load Measurement', command=self.load_measurement)
+        self.btn_load_session = ttk.Button(self, text='Load Session', command=self.btn_load_session)
         self.btn_save_meas = ttk.Button(self, text='Save Measurement', command=self.save_measurement)
         self.btn_plot_2d = ttk.Button(self, text='Plot 2D Map', command=self.display_2d)
         self.btn_plot_3d = ttk.Button(self, text='Plot 3D Map', command=None)
         self.btn_plot_pointcloud = ttk.Button(self, text='Plot Point Cloud', command=None)
+        self.tv_measurement = ttk.Treeview(self, columns=None, show='headings')
         self.lbl_controls_status = tk.Label(self, text='*Program Controls Status*')
         self.lbl_controls_status.config(relief='sunken')
         # Place widgets within grid
@@ -303,6 +306,9 @@ class ProgramControls(ttk.LabelFrame):
         self.measurement_session.new_session()
 
     def load_measurement(self):
+        pass
+
+    def load_session(self):
         pass
 
     def save_measurement(self):
