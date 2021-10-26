@@ -95,6 +95,7 @@ class FSV:
         current_pos_fsv = self.mcs2fsv(self.cmm.get_position())
         start_pos_mcs = self.fsv2mcs(current_pos_fsv - half_length)
         end_pos_mcs = self.fsv2mcs(current_pos_fsv + half_length)
+        self.daq.change_sensitivity(sensitivity='100MT')
         # Scan +
         speed_direction_vector = 5 * np.abs((end_pos_mcs - start_pos_mcs) / np.linalg.norm(end_pos_mcs - start_pos_mcs))
         start_p, end_p, data_p = self.perform_scan(start_pos_mcs, end_pos_mcs, speed=speed_direction_vector)
@@ -106,6 +107,8 @@ class FSV:
         # Combine CMM and hallsensor data into one array
         combined_p = np.insert(data_p, 0, x_p, axis=1) # (x, Bx, By, Bz)
         combined_n = np.insert(data_n, 0, x_n, axis=1) # (x, Bx, By, Bz)
+        # np.save('fsv_test_x_pos.npy', combined_p, allow_pickle=False)
+        # np.save('fsv_test_x_neg.npy', combined_n, allow_pickle=False)
         data_pn_offset = self.calc_offset(combined_p[:, [0, 3]], combined_n[:, [0, 3]])
         self.x_offset_fsv = data_pn_offset - (self.TRACE_THK/2 + self.GLAZE_THK)
 
@@ -114,6 +117,7 @@ class FSV:
         current_pos_fsv = self.mcs2fsv(self.cmm.get_position())
         start_pos_mcs = self.fsv2mcs(current_pos_fsv - half_length)
         end_pos_mcs = self.fsv2mcs(current_pos_fsv + half_length)
+        self.daq.change_sensitivity(sensitivity='100MT')
         # Scan +
         speed_direction_vector = 5 * np.abs((end_pos_mcs - start_pos_mcs) / np.linalg.norm(end_pos_mcs - start_pos_mcs))
         start_p, end_p, data_p = self.perform_scan(start_pos_mcs, end_pos_mcs, speed=speed_direction_vector)
