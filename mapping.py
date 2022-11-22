@@ -136,6 +136,7 @@ class MapFrames(tk.Frame):
                 data[i, 3:] = data[i, 3:]@np.linalg.inv(self.hp.rotation)
             print(data.shape)
             np.save('line.npy', data, allow_pickle=False)
+            np.savetxt('line_data.txt', data, delimiter=' ', fmt='%.3f')
 
     def measure_area(self):
         filename = Path('area.npy')

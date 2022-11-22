@@ -45,11 +45,18 @@ class FSV:
         # dnf_polyfit = np.polyfit(data_neg[:, 0][dnf_min_index:dnf_max_index], dnf[dnf_min_index:dnf_max_index], 3)
         # diff = dpf_polyfit - dnf_polyfit
         # offset = np.roots(diff)[1]
-        dpf_polyfit = np.polyfit(data_pos[:, 0][dpf_min_index:dpf_max_index], dpf[dpf_min_index:dpf_max_index], 5)
-        dnf_polyfit = np.polyfit(data_neg[:, 0][dnf_min_index:dnf_max_index], dnf[dnf_min_index:dnf_max_index], 5)
+        # np.save('dpf.npy', np.array([data_pos[:, 0][dpf_min_index:dpf_max_index], dpf[dpf_min_index:dpf_max_index]]), allow_pickle=False)
+        # np.save('dnf.npy', np.array([data_neg[:, 0][dnf_min_index:dnf_max_index], dnf[dnf_min_index:dnf_max_index]]), allow_pickle=False)
+        dpf_polyfit = np.polyfit(data_pos[:, 0][dpf_min_index:dpf_max_index], dpf[dpf_min_index:dpf_max_index], 3)
+        dnf_polyfit = np.polyfit(data_neg[:, 0][dnf_min_index:dnf_max_index], dnf[dnf_min_index:dnf_max_index], 3)
         diff = dpf_polyfit - dnf_polyfit
-        offset = np.roots(diff)[2].real
-        # print(f'offset: {offset}')
+        print(f'diff: {diff}')
+        print(f'diff[1]: {diff[1]}')
+        if diff[1] == complex:
+            offset = np.roots(diff)[1].real
+        else:
+            offset = np.roots(diff)[1]
+        # print(f'roots: {offset}')
         return offset
 
     def import_fsv_alignment(self, filename: str):
@@ -64,7 +71,7 @@ class FSV:
     def mcs2fsv(self, coordinate: np.ndarray):
         return coordinate@np.linalg.inv(self.rotation) + self.translation
 
-    def perform_scan(self, start_pt, end_pt, speed=(5,5,5), sensitivity=5, direction='positive'):
+    def perform_scan(self, start_pt, end_pt, speed=(5,5,5), sensitivity=100, direction='positive'):
         '''
         direction can either be 'positive' or 'negative'
         sensitivity should either be 5 V/T or 100 V/T
@@ -102,7 +109,8 @@ class FSV:
         x_p = np.linspace(start_p[0], end_p[0], data_p.shape[0])
         sleep(1)
         # Scan -
-        start_n, end_n, data_n = self.perform_scan(end_pos_mcs, start_pos_mcs, speed=speed_direction_vector, direction='negative')
+        # start_n, end_n, data_n = self.perform_scan(end_pos_mcs, start_pos_mcs, speed=speed_direction_vector, direction='negative')
+        start_n, end_n, data_n = self.perform_scan(self.cmm.get_position(), start_pos_mcs, speed=speed_direction_vector, direction='negative')
         x_n = np.linspace(start_n[0], end_n[0], data_n.shape[0])
         # Combine CMM and hallsensor data into one array
         combined_p = np.insert(data_p, 0, x_p, axis=1) # (x, Bx, By, Bz)
@@ -124,7 +132,8 @@ class FSV:
         y_p = np.linspace(start_p[1], end_p[1], data_p.shape[0])
         sleep(1)
         # Scan -
-        start_n, end_n, data_n = self.perform_scan(end_pos_mcs, start_pos_mcs, speed=speed_direction_vector, direction='negative')
+        # start_n, end_n, data_n = self.perform_scan(end_pos_mcs, start_pos_mcs, speed=speed_direction_vector, direction='negative')
+        start_n, end_n, data_n = self.perform_scan(self.cmm.get_position(), start_pos_mcs, speed=speed_direction_vector, direction='negative')
         y_n = np.linspace(start_n[1], end_n[1], data_n.shape[0])
         combined_p = np.insert(data_p, 0, y_p, axis=1) # (y, Bx, By, Bz)
         combined_n = np.insert(data_n, 0, y_n, axis=1) # (y, Bx, By, Bz)
@@ -144,7 +153,8 @@ class FSV:
         z_p = np.linspace(start_p[2], end_p[2], data_p.shape[0])
         sleep(1)
         # Scan -
-        start_n, end_n, data_n = self.perform_scan(end_pos_mcs, start_pos_mcs, speed=speed_direction_vector, sensitivity=100)
+        # start_n, end_n, data_n = self.perform_scan(end_pos_mcs, start_pos_mcs, speed=speed_direction_vector, sensitivity=100)
+        start_n, end_n, data_n = self.perform_scan(self.cmm.get_position(), start_pos_mcs, speed=speed_direction_vector, sensitivity=100)
         z_n = np.linspace(start_n[2], end_n[2], data_n.shape[0])
         combined_p = np.insert(data_p, 0, z_p, axis=1) # (z, Bx, By, Bz)
         combined_n = np.insert(data_n, 0, z_n, axis=1) # (z, Bx, By, Bz)

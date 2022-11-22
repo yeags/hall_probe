@@ -108,10 +108,11 @@ class CubeWindow(tk.Toplevel):
                 pass
             self.cube.measure(self.keys[self.click_index])
             self.cube.cmm.set_speed((20,20,20))
-            self.cube.cmm.goto_position(self.cube.cube2mcs(self.manual_origin_cube + np.array([0, 0, 135])))
+            self.cube.cmm.goto_position(self.cube.cube2mcs(self.manual_origin_cube + np.array([0, 0, 85])))
             self.cube.cmm.set_speed((70,70,70))
             self.cube.cmm.cnc_off()
             if self.click_index == 11:
+                print(f'cube center data:\n{self.cube.cube_dict.values()}')
                 s_matrix = orthogonalize(np.array([i for i in self.cube.cube_dict.values()]))
                 s_matrix_mcs = self.cube.rotation.T@s_matrix
                 np.save('sensitivity.npy', s_matrix_mcs, allow_pickle=False)
