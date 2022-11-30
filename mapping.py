@@ -33,7 +33,7 @@ class MapFrames(tk.Frame):
         self.btn_load_part_alignment = ttk.Button(self.frm_fm_buttons, text='Load Part Alignment', command=self.load_part_alignment)
         self.btn_scan_point = ttk.Button(self.frm_fm_buttons, text='Scan Point', state='disabled', command=lambda: self.load_frame(self.frm_scan_point))
         self.btn_scan_line = ttk.Button(self.frm_fm_buttons, text='Scan Line', state='disabled', command=lambda: self.load_frame(self.frm_scan_line))
-        self.btn_scan_area_volume = ttk.Button(self.frm_fm_buttons, text='Scan Area', state='enabled', command=lambda: self.load_frame(self.frm_scan_area))
+        self.btn_scan_area_volume = ttk.Button(self.frm_fm_buttons, text='Scan Area', state='disabled', command=lambda: self.load_frame(self.frm_scan_area))
         # Place widgets within grid
         self.btn_load_part_alignment.grid(column=0, row=0, sticky='new', padx=5, pady=5)
         self.btn_scan_point.grid(column=0, row=1, sticky='new', padx=5, pady=(0,5))
