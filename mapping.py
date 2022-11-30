@@ -33,7 +33,7 @@ class MapFrames(tk.Frame):
         self.btn_load_part_alignment = ttk.Button(self.frm_fm_buttons, text='Load Part Alignment', command=self.load_part_alignment)
         self.btn_scan_point = ttk.Button(self.frm_fm_buttons, text='Scan Point', state='disabled', command=lambda: self.load_frame(self.frm_scan_point))
         self.btn_scan_line = ttk.Button(self.frm_fm_buttons, text='Scan Line', state='disabled', command=lambda: self.load_frame(self.frm_scan_line))
-        self.btn_scan_area_volume = ttk.Button(self.frm_fm_buttons, text='Scan Area', state='disabled', command=lambda: self.load_frame(self.frm_scan_area))
+        self.btn_scan_area_volume = ttk.Button(self.frm_fm_buttons, text='Scan Area', state='enabled', command=lambda: self.load_frame(self.frm_scan_area))
         # Place widgets within grid
         self.btn_load_part_alignment.grid(column=0, row=0, sticky='new', padx=5, pady=5)
         self.btn_scan_point.grid(column=0, row=1, sticky='new', padx=5, pady=(0,5))
@@ -145,10 +145,11 @@ class MapFrames(tk.Frame):
             showerror(title='Entry Error', message='Entries should be integer or float values.')
         else:
             data = self.hp.scan_area(*sa_args)
-            with filename.open('ab') as file:
-                # saves array shape(w, m, n, 6)
-                # w planes, m scan lines, n samples, 6 columns (x,y,z,Bx,By,Bz)
-                np.save(file, np.array([data]), allow_pickle=False)
+            with filename.open('b') as file:
+                # saves array shape(m, n, 6)
+                # m scan lines, n samples, 6 columns (x,y,z,Bx,By,Bz)
+                np.save(file, data, allow_pickle=False)
+            np.savetxt('area.txt', data, fmt='%.3f', delimiter=' ')
 
     def scan_point_widgets(self):
         self.lbl_scan_point = tk.Label(self.frm_scan_point, text='Scan Point')

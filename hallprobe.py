@@ -3,7 +3,7 @@ from nicdaq import HallDAQ
 import zeisscmm
 import numpy as np
 from time import time, sleep, perf_counter
-from calibration import calib_data, remove_outliers, average_sample
+from calibration import calib_data, remove_outliers, average_sample, filter_data
 
 class HallProbe(HallDAQ):
     def __init__(self, coord_diff: str, rate: int, samps_per_chan: int, start_trigger=True, acquisition='finite'):
@@ -71,6 +71,8 @@ class HallProbe(HallDAQ):
     def reduce_scan_density(self, scan_data: np.ndarray, scan_interval=0.5):
         '''
         scan_data is (n, 6) array (x, y, z, Bx, By, Bz)
+        or
+        (m, n, 6) array (m scan lines, n, samples per line, 6 columns)
         '''
         scan_distance = np.linalg.norm(scan_data[-1, :3] - scan_data[0, :3])
         pts_mm = scan_data.shape[0] / scan_distance
@@ -80,9 +82,10 @@ class HallProbe(HallDAQ):
             reduced_data.append(scan_data[i])
         return np.array(reduced_data)
 
-    def scan_point(self, *point):
+
+    def scan_point(self, point):
         if not point:
-            point = self.cmm.get_position()
+            point = self.mcs2pcs(self.cmm.get_position())
             self.power_on()
             self.start_hallsensor_task()
             sleep(1)
@@ -92,26 +95,29 @@ class HallProbe(HallDAQ):
             self.power_off()
             self.stop_hallsensor_task()
             Bxyz = self.s_matrix@average_sample(remove_outliers(cal_data))
+            print(f'xyz: {point}\tBxyz: {Bxyz}')
             return np.hstack((point, Bxyz))
         else:
-            point = point[0]
+            # point = point[0]
             self.cmm.cnc_on()
             self.cmm.set_speed((40,40,40))
-            self.cmm.goto_position(point)
+            self.cmm.goto_position(self.pcs2mcs(point))
             while np.linalg.norm(point - self.cmm.get_position()) > 0.025:
                 pass
             self.power_on()
             self.start_hallsensor_task()
             sleep(1)
-            point = self.cmm.get_position()
+            point = self.mcs2pcs(self.cmm.get_position())
             self.pulse()
             data = self.read_hallsensor()
+            print(f'raw point samples: {len(data)}')
             cal_data = calib_data(self.calib_coeffs, data)
             self.cmm.set_speed((70,70,70))
             self.cmm.cnc_off()
             self.power_off()
             self.stop_hallsensor_task()
             Bxyz = self.s_matrix@average_sample(remove_outliers(cal_data))
+            print(f'xyz: {point}\tBxyz: {Bxyz}')
             return np.hstack((point, Bxyz))
 
     def scan_line(self, start_point, end_point, point_density):
@@ -152,7 +158,13 @@ class HallProbe(HallDAQ):
         if point_density == 'full res':
             return np.hstack((linear, Bxyz))
         else:
-            return self.reduce_scan_density(np.hstack((linear, Bxyz)), scan_interval=point_density)
+            filt_cutoff = 500
+            for column in range(3):
+                filt_column = filter_data(Bxyz[:, column], filt_cutoff)
+                Bxyz[:, column] = filt_column
+            filt_array = np.hstack((linear, Bxyz))
+            filt_array = filt_array[filt_cutoff:-filt_cutoff]
+            return self.reduce_scan_density(filt_array, scan_interval=point_density)
 
     def scan_area(self, start_array, allocated_array, pt_density, num_samples, scan_direction):
         self.change_sampling(1, num_samples)
@@ -178,7 +190,13 @@ class HallProbe(HallDAQ):
                 linear[j] = self.mcs2pcs(sample)
             for j, sample in enumerate(Bxyz):
                 Bxyz[j] = self.s_matrix@sample
-            allocated_array[i] = np.hstack((linear, Bxyz))
+            filt_cutoff = 500
+            for column in range(3):
+                filt_column = filter_data(Bxyz[:, column], filt_cutoff)
+                Bxyz[:, column] = filt_column
+            filt_array = np.hstack((linear, Bxyz))
+            filt_array = filt_array[filt_cutoff:-filt_cutoff]
+            allocated_array[i] = filt_array
         self.cmm.send('G01X0Y0Z0\r\n'.encode('ascii'))
         self.cmm.set_speed((70,70,70))
         self.cmm.cnc_off()

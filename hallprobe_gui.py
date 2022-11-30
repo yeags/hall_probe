@@ -149,7 +149,8 @@ class PlotField(tk.Frame):
         self.ax.set_xlabel('x axis [mm]')
         self.ax.set_ylabel('y axis [mm]')
         self.ax.set_zlabel('Field Strength [mT]')
-        plot3d = self.ax.scatter(cmm_xyz[:, 0], cmm_xyz[:, 1], Bxyz_norm, c=Bxyz_norm, cmap='rainbow', marker='.')
+        plot3d = self.ax.scatter(cmm_xyz[:, 0], cmm_xyz[:, 1], Bxyz_norm,
+                                 c=Bxyz_norm, cmap='rainbow', marker='.')
         self.fig.colorbar(plot3d, ax=self.ax, label='mT', pad=0.1)
         self.toolbar = NavigationToolbar2Tk(self.canvas, self.plotfield_parent)
         self.toolbar.update()
