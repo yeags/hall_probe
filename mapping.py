@@ -45,7 +45,7 @@ class MapFrames(tk.Frame):
             x = float(self.ent_sp_x.get())
             y = float(self.ent_sp_y.get())
             z = float(self.ent_sp_z.get())
-            point = self.hp.pcs2mcs(np.array([x, y, z]))
+            point = np.array([x, y, z])
             return point
         except ValueError:
             return None
@@ -120,8 +120,15 @@ class MapFrames(tk.Frame):
         else:
             xyz_Bxyz = self.hp.scan_point(point)
             xyz_Bxyz[:3] = self.hp.mcs2pcs(xyz_Bxyz[:3])
-            xyz_Bxyz[3:] = xyz_Bxyz[3:]@np.linalg.inv(self.hp.rotation)
-            print(xyz_Bxyz)
+            # xyz_Bxyz[3:] = xyz_Bxyz[3:]@np.linalg.inv(self.hp.rotation)
+            # New method to transform Bxyz.  Values are with respect to part coordinate system
+            # xyz_Bxyz[3:] = np.linalg.inv(self.hp.rotation)@xyz_Bxyz[3:]@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
+            # xyz_Bxyz[3:] = xyz_Bxyz[3:]@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
+            with open('points Bxyz raw.txt', 'a') as raw_file:
+                raw_file.write(f'{xyz_Bxyz[0]} {xyz_Bxyz[1]} {xyz_Bxyz[2]} {xyz_Bxyz[3]} {xyz_Bxyz[4]} {xyz_Bxyz[5]}\n')
+            # xyz_Bxyz[3:] = xyz_Bxyz[3:]@self.hp.s_matrix
+            xyz_Bxyz[3:] = xyz_Bxyz[3:]@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
+            print(f'x {xyz_Bxyz[0]} y {xyz_Bxyz[1]} z {xyz_Bxyz[2]} Bx {xyz_Bxyz[3]} By {xyz_Bxyz[4]} Bz {xyz_Bxyz[5]}')
             with open('points.txt', 'a') as file:
                 file.write(f'{xyz_Bxyz[0]} {xyz_Bxyz[1]} {xyz_Bxyz[2]} {xyz_Bxyz[3]} {xyz_Bxyz[4]} {xyz_Bxyz[5]}\n')
     
@@ -131,10 +138,15 @@ class MapFrames(tk.Frame):
             showerror(title='Entry Error', message='Entries should be integer or float values.')
         else:
             data = self.hp.scan_line(*line_args)
+            data_xyz_pcs = np.array([self.hp.mcs2pcs(i) for i in data[:, :3]])
+            data_raw = np.hstack((data_xyz_pcs, data[:, 3:]))
+            np.savetxt('line_data_raw_Bxyz.txt', data_raw, delimiter=' ', fmt='%.3f')
             for i, sample in enumerate(data):
                 data[i, :3] = self.hp.mcs2pcs(data[i, :3])
-                data[i, 3:] = data[i, 3:]@np.linalg.inv(self.hp.rotation)
-            print(data.shape)
+                # data[i, 3:] = data[i, 3:]@np.linalg.inv(self.hp.rotation)
+                # New method to transform Bxyz.  Values are with respect to part coordinate system
+                # data[i, 3:] = np.linalg.inv(self.hp.rotation)@data[i, 3:]@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
+                data[i, 3:] = data[i, 3:]@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
             np.save('line.npy', data, allow_pickle=False)
             np.savetxt('line_data.txt', data, delimiter=' ', fmt='%.3f')
 
@@ -145,11 +157,22 @@ class MapFrames(tk.Frame):
             showerror(title='Entry Error', message='Entries should be integer or float values.')
         else:
             data = self.hp.scan_area(*sa_args)
-            with filename.open('b') as file:
+            # with filename.open('wb') as file:
                 # saves array shape(m, n, 6)
                 # m scan lines, n samples, 6 columns (x,y,z,Bx,By,Bz)
-                np.save(file, data, allow_pickle=False)
-            np.savetxt('area.txt', data, fmt='%.3f', delimiter=' ')
+            np.save(filename, data)
+            # data_text = data.reshape((data.shape[0]*data.shape[1], 6))
+            # np.savetxt('area.txt', data_text, fmt='%.3f', delimiter=' ')
+            data_2d = data.reshape((data.shape[0]*data.shape[1], data.shape[2]))
+            for i, point in enumerate(data_2d):
+                data_2d[i, :3] = self.hp.mcs2pcs(point[:3])
+                # data_2d[i, 3:] = np.linalg.inv(self.hp.rotation)@point@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
+                data_2d[i, 3:] = point[3:]@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
+            # npy_data = np.load('area.npy', allow_pickle=True)
+            # for line in npy_data:
+            #     with open('area.txt', 'a') as file:
+            #         np.savetxt(file, line, delimiter=' ', fmt='%.3f')
+            np.savetxt('area.txt', data_2d, delimiter=' ', fmt='%.3f')
 
     def scan_point_widgets(self):
         self.lbl_scan_point = tk.Label(self.frm_scan_point, text='Scan Point')

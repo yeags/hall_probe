@@ -41,10 +41,6 @@ class FSV:
         dpf_max_index = np.where(dpf_cutoff == dpf_cutoff.max())[0][0] + filter_cutoff - fit_lc
         dnf_min_index = np.where(dnf_cutoff == dnf_cutoff.min())[0][0] + filter_cutoff + fit_lc
         dnf_max_index = np.where(dnf_cutoff == dnf_cutoff.max())[0][0] + filter_cutoff - fit_lc
-        # dpf_polyfit = np.polyfit(data_pos[:, 0][dpf_min_index:dpf_max_index], dpf[dpf_min_index:dpf_max_index], 3)
-        # dnf_polyfit = np.polyfit(data_neg[:, 0][dnf_min_index:dnf_max_index], dnf[dnf_min_index:dnf_max_index], 3)
-        # diff = dpf_polyfit - dnf_polyfit
-        # offset = np.roots(diff)[1]
         # np.save('dpf.npy', np.array([data_pos[:, 0][dpf_min_index:dpf_max_index], dpf[dpf_min_index:dpf_max_index]]), allow_pickle=False)
         # np.save('dnf.npy', np.array([data_neg[:, 0][dnf_min_index:dnf_max_index], dnf[dnf_min_index:dnf_max_index]]), allow_pickle=False)
         dpf_polyfit = np.polyfit(data_pos[:, 0][dpf_min_index:dpf_max_index], dpf[dpf_min_index:dpf_max_index], 3)
@@ -77,10 +73,16 @@ class FSV:
         sensitivity should either be 5 V/T or 100 V/T
         '''
         self.cmm.cnc_on()
-        self.cmm.set_speed(speed)
+        self.cmm.set_speed((5,5,5))
         self.cmm.goto_position(start_pt)
+        # print('Performing scan...')
         while np.linalg.norm(start_pt - self.cmm.get_position()) > 0.025:
-            pass
+            print(f'waiting for CMM to reach start position: {np.linalg.norm(start_pt - self.cmm.get_position())}')
+            sleep(0.2)
+        print(f'CMM speed limits: X {round(speed[0], 1)}\tY {round(speed[1], 1)}\TZ {round(speed[2], 1)}')
+        # Temporary speed limit fix
+        speed = (5,5,5)
+        self.cmm.set_speed(speed)
         self.daq.fsv_on(v=direction)
         self.daq.start_hallsensor_task()
         sleep(1) # Allow time for task to start.
@@ -94,6 +96,7 @@ class FSV:
         self.daq.stop_hallsensor_task()
         self.cmm.set_speed((70,70,70))
         self.cmm.cnc_off()
+        # print('scan complete')
         cal_data = calib_data(self.calibration_coeffs, data, sensitivity=sensitivity)
         return (start_position, end_position, cal_data)
 
@@ -115,8 +118,6 @@ class FSV:
         # Combine CMM and hallsensor data into one array
         combined_p = np.insert(data_p, 0, x_p, axis=1) # (x, Bx, By, Bz)
         combined_n = np.insert(data_n, 0, x_n, axis=1) # (x, Bx, By, Bz)
-        # np.save('fsv_test_x_pos.npy', combined_p, allow_pickle=False)
-        # np.save('fsv_test_x_neg.npy', combined_n, allow_pickle=False)
         data_pn_offset = self.calc_offset(combined_p[:, [0, 3]], combined_n[:, [0, 3]])
         self.x_offset_fsv = data_pn_offset - (self.TRACE_THK/2 + self.GLAZE_THK)
 
@@ -186,13 +187,18 @@ class fsvWindow(tk.Toplevel):
         self.img_fsv_z = ImageTk.PhotoImage(Image.open('images/fsv_z.jpg'))
         self.create_widgets()
     
+    def __shutdown_tasks__(self):
+        if self.fsv:
+            self.fsv.shutdown()
+        self.destroy()
+    
     def create_widgets(self):
         self.btn_load_alignment = ttk.Button(self.frm_fsv_window, text='Load FSV Alignment', command=self.load_alignment)
         self.btn_load_calibration = ttk.Button(self.frm_fsv_window, text='Load Sensor Calibration', command=self.load_calibration)
         self.btn_run_x = ttk.Button(self.frm_fsv_window, text='Run X Offset', command=lambda: self.run_fsv(offset='x'), state='disabled')
         self.btn_run_y = ttk.Button(self.frm_fsv_window, text='Run Y Offset', command=lambda: self.run_fsv(offset='y'), state='disabled')
         self.btn_run_z = ttk.Button(self.frm_fsv_window, text='Run Z Offset', command=lambda: self.run_fsv(offset='z'), state='disabled')
-        self.btn_close = ttk.Button(self.frm_fsv_window, text='Close', command=self.destroy)
+        self.btn_close = ttk.Button(self.frm_fsv_window, text='Close', command=self.__shutdown_tasks__)
         self.btn_load_alignment.grid(column=0, row=0, padx=5, pady=5)
         self.btn_load_calibration.grid(column=0, row=1, padx=5, pady=5)
         self.btn_run_x.grid(column=0, row=2, padx=5, pady=5)
@@ -251,7 +257,7 @@ class fsvWindow(tk.Toplevel):
                 self.fsv.run_z_routine()
                 self.btn_run_z.configure(state='disabled')
                 self.fsv.save_probe_offset()
-                self.fsv.shutdown()
+                # self.fsv.shutdown()
                 self.lbl_desc.configure(text='xyz offset routines complete.  You may now close the window.')
 
 

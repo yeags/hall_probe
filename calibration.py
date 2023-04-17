@@ -88,19 +88,51 @@ def fit_linear(x, y):
     b = y_m - m * x_m
     return np.array([m, b])
 
+
+# def orthogonalize(cube_data: np.ndarray):
+#     '''
+#     cube_data is a (12, 3) array
+#     function returns (3,3) array
+#     '''
+#     v1 = np.mean(cube_data[:4], axis=0)
+#     v2 = np.mean(cube_data[4:8], axis=0)
+#     v3 = np.mean(cube_data[8:], axis=0)
+#     e_hat1 = v1/np.linalg.norm(v1)
+#     e2 = v2 - np.dot(v2, e_hat1)*e_hat1
+#     e_hat2 = e2/np.linalg.norm(e2)
+#     e3 = v3 - np.dot(v3, e_hat1)*e_hat1 - np.dot(v3, e_hat2)*e_hat2
+#     e_hat3 = e3/np.linalg.norm(e3)
+#     S = np.array([e_hat1, e_hat2, e_hat3])
+#     return S
+
+# def orthogonalize(cube_data: np.ndarray):
+#     '''
+#     cube_data is a (12, 3) array
+#     function returns (3,3) array
+#     Rewritten March 7, Erik Wallen
+#     '''
+#     v1 = np.mean(cube_data[:4], axis=0)
+#     v2 = np.mean(cube_data[4:8], axis=0)
+#     v3 = np.mean(cube_data[8:], axis=0)
+#     e_hat1 = v1/np.linalg.norm(v1)
+#     e_hat2 = v2/np.linalg.norm(v2)
+#     e_hat3 = v3/np.linalg.norm(v3)
+#     S = np.linalg.inv(np.array([e_hat1, e_hat2, e_hat3]))
+#     return S
+
 def orthogonalize(cube_data: np.ndarray):
     '''
     cube_data is a (12, 3) array
     function returns (3,3) array
+    Rewritten March 8, Erik Wallen
     '''
     v1 = np.mean(cube_data[:4], axis=0)
     v2 = np.mean(cube_data[4:8], axis=0)
     v3 = np.mean(cube_data[8:], axis=0)
-    e_hat1 = v1/np.linalg.norm(v1)
-    e2 = v2 - np.dot(v2, e_hat1)*e_hat1
-    e_hat2 = e2/np.linalg.norm(e2)
-    e3 = v3 - np.dot(v3, e_hat1)*e_hat1 - np.dot(v3, e_hat2)*e_hat2
-    e_hat3 = e3/np.linalg.norm(e3)
+    cubefield=np.max(np.abs(cube_data))
+    e_hat1 = v1/cubefield
+    e_hat2 = v2/cubefield
+    e_hat3 = v3/cubefield
     S = np.array([e_hat1, e_hat2, e_hat3])
     return S
 

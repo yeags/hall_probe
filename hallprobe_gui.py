@@ -136,7 +136,7 @@ class PlotField(tk.Frame):
         self.create_plot()
 
     def create_plot(self):
-        data = np.genfromtxt('fieldmap_reduced.txt')
+        data = np.genfromtxt('area1.txt')
         cmm_xyz = data[:, :3]
         Bxyz = data[:, 3:]
         Bxyz_norm = np.linalg.norm(Bxyz, axis=1)
@@ -147,9 +147,9 @@ class PlotField(tk.Frame):
         self.fig.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.95)
         self.ax.set_title(' Field Strength Map')
         self.ax.set_xlabel('x axis [mm]')
-        self.ax.set_ylabel('y axis [mm]')
+        self.ax.set_ylabel('z axis [mm]')
         self.ax.set_zlabel('Field Strength [mT]')
-        plot3d = self.ax.scatter(cmm_xyz[:, 0], cmm_xyz[:, 1], Bxyz_norm,
+        plot3d = self.ax.scatter(cmm_xyz[:, 0], cmm_xyz[:, 2], Bxyz_norm,
                                  c=Bxyz_norm, cmap='rainbow', marker='.')
         self.fig.colorbar(plot3d, ax=self.ax, label='mT', pad=0.1)
         self.toolbar = NavigationToolbar2Tk(self.canvas, self.plotfield_parent)
