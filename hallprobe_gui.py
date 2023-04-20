@@ -129,7 +129,7 @@ class MagnetInformation(ttk.LabelFrame):
         notes = self.txt_notes.get('1.0', 'end-1c')
         header = [magname, serial, current, notes]
         if magname and serial and current:
-            with open('magnet_info', 'wb') as f:
+            with open('magnet_info.pkl', 'wb') as f:
                 pickle.dump(header, f)
         else:
             tk.messagebox.showerror('Error', 'Please enter all required fields. Notes are optional.')
@@ -305,36 +305,42 @@ class ProgramControls(ttk.LabelFrame):
     '''
     def __init__(self, parent, title='Program Controls'):
         self.program_controls_parent = parent
-        self.working_directory = Path(os.getcwd())
+        self.scans_folder = './scans/'
         self.measurement_session = None
         super().__init__(parent, text=title, labelanchor='nw')
         self.create_widgets()
 
     def create_widgets(self):
-        self.btn_new_meas = ttk.Button(self, text='New Measurement', command=self.new_measurement)
-        self.btn_load_meas = ttk.Button(self, text='Load Measurement', command=self.load_measurement)
-        self.btn_save_meas = ttk.Button(self, text='Save Measurement', command=self.save_measurement)
+        self.btn_plot = ttk.Button(self, text='Plot Data', command=self.plot_data)
+        # self.btn_new_meas = ttk.Button(self, text='New Measurement', command=self.new_measurement)
+        # self.btn_load_meas = ttk.Button(self, text='Load Measurement', command=self.load_measurement)
+        # self.btn_save_meas = ttk.Button(self, text='Save Measurement', command=self.save_measurement)
         self.lbl_controls_status = tk.Label(self, text='*Program Controls Status*')
         self.lbl_controls_status.config(relief='sunken')
         # Place widgets within grid
-        self.btn_new_meas.grid(column=0, row=0, padx=5, pady=5, sticky='new')
-        self.btn_load_meas.grid(column=1, row=0, padx=5, pady=5, sticky='new')
-        self.btn_save_meas.grid(column=2, row=0, padx=5, pady=5, sticky='new')
+        self.btn_plot.grid(column=0, row=0, padx=5, pady=5, sticky='new')
+        # self.btn_new_meas.grid(column=0, row=0, padx=5, pady=5, sticky='new')
+        # self.btn_load_meas.grid(column=1, row=0, padx=5, pady=5, sticky='new')
+        # self.btn_save_meas.grid(column=2, row=0, padx=5, pady=5, sticky='new')
         self.lbl_controls_status.grid(column=0, row=1, columnspan=3, padx=5, pady=5, sticky='sew')
     
-    def new_measurement(self):
-        print(os.getcwd())
-        self.measurement_session = 'measurements/' + askstring('New Measurement', 'Create a new measurement session name.')
-        os.mkdir(self.working_directory / self.measurement_session)
-        if self.measurement_session != 'measurements/':
-            self.lbl_controls_status.configure(text=f'New measurement session created.\n{self.measurement_session}')
+    def plot_data(self):
+        # Select data file to plot
+        data_file = filedialog.askopenfilename(initialdir=self.scans_folder)
 
-    def save_measurement(self):
-        pass
+    # def new_measurement(self):
+    #     print(os.getcwd())
+    #     self.measurement_session = 'measurements/' + askstring('New Measurement', 'Create a new measurement session name.')
+    #     os.mkdir(self.working_directory / self.measurement_session)
+    #     if self.measurement_session != 'measurements/':
+    #         self.lbl_controls_status.configure(text=f'New measurement session created.\n{self.measurement_session}')
 
-    def load_measurement(self):
-        self.measurement_session = filedialog.askdirectory(initialdir=self.working_directory + '/measurements')
-        self.lbl_controls_status.configure(text=f'Loaded measurement session.\n{self.measurement_session}')
+    # def save_measurement(self):
+    #     pass
+
+    # def load_measurement(self):
+    #     self.measurement_session = filedialog.askdirectory(initialdir=self.working_directory + '/measurements')
+    #     self.lbl_controls_status.configure(text=f'Loaded measurement session.\n{self.measurement_session}')
         
 if __name__ == '__main__':
     app = HallProbeApp(tk.Tk())
