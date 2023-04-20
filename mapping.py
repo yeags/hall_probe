@@ -6,6 +6,7 @@ import numpy as np
 from hallprobe import HallProbe
 import pickle
 import os
+from plots import PlotDashboard
 
 class MapFrames(tk.Frame):
     def __init__(self, parent):
@@ -44,7 +45,7 @@ class MapFrames(tk.Frame):
     def load_magnet_info(self):
         # grab from pickled file
         # entries are in a list 'magnet name', 'serial number', 'current', 'notes'
-        with open('magnet_info.txt', 'rb') as f:
+        with open('magnet_info.pkl', 'rb') as f:
             magnet_info = pickle.load(f)
         return magnet_info
     
