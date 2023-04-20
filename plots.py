@@ -10,20 +10,21 @@ class PlotDashboard:
                    'zx': (2, 0, 'z axis [mm]', 'x axis [mm]')}
     int_across_index = {'x': 0, 'y': 1, 'z': 2}
     def __init__(self):
-        self.generate_header()
+        # self.generate_header()
+        pass
 
     def create_figs(self):
         self.fig_p1 = plt.figure(figsize=(11, 8.5))
         self.fig_p2 = plt.figure(figsize=(11, 8.5))
         self.fig_single_line = plt.figure(figsize=(8.5, 11))
+        self.fig_p2.subplots_adjust(hspace=0.3)
         self.fig_p1.suptitle('3D Plots')
         self.fig_p2.suptitle('2D Plots')
         self.fig_single_line.suptitle('Single line scan')
-        self.fig_p2.subplots_adjust(hspace=0.3)
         # Place text boxes containing header information
-        self.fig_p1.text(0.03, 0.97, f'Magnet: {self.header[0]}-{self.header[1]}\nCurrent: {self.header[2]}', verticalalignment='top', bbox=self.bbox_props)
-        self.fig_p2.text(0.03, 0.97, f'Magnet: {self.header[0]}-{self.header[1]}\nCurrent: {self.header[2]}', verticalalignment='top', bbox=self.bbox_props)
-        self.fig_single_line.text(0.03, 0.97, f'Magnet: {self.header[0]}-{self.header[1]}\nCurrent: {self.header[2]}', verticalalignment='top', bbox=self.bbox_props)
+        # self.fig_p1.text(0.03, 0.97, f'Magnet: {self.header[0]}-{self.header[1]}\nCurrent: {self.header[2]}', verticalalignment='top', bbox=self.bbox_props)
+        # self.fig_p2.text(0.03, 0.97, f'Magnet: {self.header[0]}-{self.header[1]}\nCurrent: {self.header[2]}', verticalalignment='top', bbox=self.bbox_props)
+        # self.fig_single_line.text(0.03, 0.97, f'Magnet: {self.header[0]}-{self.header[1]}\nCurrent: {self.header[2]}', verticalalignment='top', bbox=self.bbox_props)
     
     def create_subplots(self):
         # 3D plots - Page 1
@@ -86,7 +87,7 @@ class PlotDashboard:
             where: tuple ('z', 0) or ('y', 0) or ('x', 0)
         '''
         self.data_3d = data
-        self.data_2d = data[(data[:, self.plane_index[plane][0]] > where[1]-scan_interval/2) & (data[:, self.plane_index[plane][0]] < where[1]+scan_interval/2)]
+        self.data_2d = data[(data[:, self.int_across_index[integrate_across]] > where[1]-scan_interval/2) & (data[:, self.int_across_index[integrate_across]] < where[1]+scan_interval/2)]
         self.plane = plane
         self.integrate_across = integrate_across
         self.from_to = from_to
@@ -222,5 +223,5 @@ class PlotDashboard:
 if __name__ == '__main__':
     data = np.genfromtxt('area 2023-04-19.txt')
     plot = PlotDashboard()
-    plot.plot_area_data(data, 'zx')
+    plot.plot_area_data(data, plane='zx', integrate_across='z', from_to=(-50, 50), where=('x', 0), scan_interval=1)
     plot.show_plots()
