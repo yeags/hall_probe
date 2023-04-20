@@ -4,7 +4,8 @@ from tkinter.filedialog import askopenfilename
 from tkinter.messagebox import showerror
 import numpy as np
 from hallprobe import HallProbe
-from pathlib import Path
+import pickle
+import os
 
 class MapFrames(tk.Frame):
     def __init__(self, parent):
@@ -39,7 +40,14 @@ class MapFrames(tk.Frame):
         self.btn_scan_point.grid(column=0, row=1, sticky='new', padx=5, pady=(0,5))
         self.btn_scan_line.grid(column=0, row=2, sticky='new', padx=5, pady=(0,5))
         self.btn_scan_area_volume.grid(column=0, row=3, sticky='new', padx=5, pady=(0,5))
-
+    
+    def load_magnet_info(self):
+        # grab from pickled file
+        # entries are in a list 'magnet name', 'serial number', 'current', 'notes'
+        with open('magnet_info.txt', 'rb') as f:
+            magnet_info = pickle.load(f)
+        return magnet_info
+    
     def get_point(self):
         try:
             x = float(self.ent_sp_x.get())
@@ -84,16 +92,12 @@ class MapFrames(tk.Frame):
             scan_distance = np.array([sd_x, sd_y, sd_z])
             start_array = self.hp.create_scan_plane(start_point, scan_distance, pd, scan_plane, scan_direction)
             distance_dict = {'x': sd_x, 'y': sd_y, 'z': sd_z}
-            print(f'start point: {start_point}\n\nstart array: {start_array}')
             for i, point in enumerate(start_array):
                 start_array[i] = self.hp.pcs2mcs(point)
             distance = distance_dict[scan_direction]
             travel_time = distance / self.hp.scan_speed
             samples = np.array(((travel_time * self.hp.sample_rate) - self.hp.sample_rate)).round(0).astype(int)
-            print(f'samples changed to: {samples}')
             allocated_array = np.zeros((start_array.shape[0], samples, 6))
-            # print(f'samples: {samples}')
-            # print(f'allocated_array shape: {allocated_array.shape}')
             return (start_array, allocated_array, pd, samples, scan_direction)
         except ValueError:
             return None
@@ -115,64 +119,72 @@ class MapFrames(tk.Frame):
     
     def measure_point(self):
         point = self.get_point()
+        magnet_info = self.load_magnet_info()
+        magname, serial, current, notes = magnet_info
+        mag_folder = f'scans/{magname}-{serial}/'
+        filename = f'{magname}-{serial} points.txt'
+        # Create a subdirectory within the scans folder for the magnet only if it doesn't already exist
+        if not os.path.exists(f'scans/{magname}-{serial}'):
+            os.makedirs(f'scans/{magname}-{serial}')
+        # Verify entries are valid and measure point
         if point is None:
             showerror(title='Entry Error', message='Entries should be integer or float values.')
         else:
             xyz_Bxyz = self.hp.scan_point(point)
+            # Transform xyz points from MCS to PCS
             xyz_Bxyz[:3] = self.hp.mcs2pcs(xyz_Bxyz[:3])
-            # xyz_Bxyz[3:] = xyz_Bxyz[3:]@np.linalg.inv(self.hp.rotation)
-            # New method to transform Bxyz.  Values are with respect to part coordinate system
-            # xyz_Bxyz[3:] = np.linalg.inv(self.hp.rotation)@xyz_Bxyz[3:]@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
-            # xyz_Bxyz[3:] = xyz_Bxyz[3:]@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
-            with open('points Bxyz raw.txt', 'a') as raw_file:
+            with open(mag_folder+f'{magname}-{serial} points Bxyz raw.txt', 'a') as raw_file:
                 raw_file.write(f'{xyz_Bxyz[0]} {xyz_Bxyz[1]} {xyz_Bxyz[2]} {xyz_Bxyz[3]} {xyz_Bxyz[4]} {xyz_Bxyz[5]}\n')
-            # xyz_Bxyz[3:] = xyz_Bxyz[3:]@self.hp.s_matrix
+            # Transform Bxyz to PCS
             xyz_Bxyz[3:] = xyz_Bxyz[3:]@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
+            # Print xyz and Bxyz values wrt PCS
             print(f'x {xyz_Bxyz[0]} y {xyz_Bxyz[1]} z {xyz_Bxyz[2]} Bx {xyz_Bxyz[3]} By {xyz_Bxyz[4]} Bz {xyz_Bxyz[5]}')
-            with open('points.txt', 'a') as file:
+            # Save xyz and Bxyz values wrt PCS
+            with open(mag_folder+filename, 'a') as file:
                 file.write(f'{xyz_Bxyz[0]} {xyz_Bxyz[1]} {xyz_Bxyz[2]} {xyz_Bxyz[3]} {xyz_Bxyz[4]} {xyz_Bxyz[5]}\n')
     
     def measure_line(self):
         line_args = self.get_line()
+        magnet_info = self.load_magnet_info()
+        magname, serial, current, notes = magnet_info
+        mag_folder = f'scans/{magname}-{serial}/'
+        filename = f'{magname}-{serial} line data.txt'
+        # Create a subdirectory within the scans folder for the magnet only if it doesn't already exist
+        if not os.path.exists(f'scans/{magname}-{serial}'):
+            os.makedirs(f'scans/{magname}-{serial}')
+        # Verify entries are valid and measure line
         if line_args is None:
             showerror(title='Entry Error', message='Entries should be integer or float values.')
         else:
             data = self.hp.scan_line(*line_args)
             data_xyz_pcs = np.array([self.hp.mcs2pcs(i) for i in data[:, :3]])
             data_raw = np.hstack((data_xyz_pcs, data[:, 3:]))
-            np.savetxt('line_data_raw_Bxyz.txt', data_raw, delimiter=' ', fmt='%.3f')
+            np.savetxt(mag_folder+f'{magname}-{serial} line_data_raw_Bxyz.txt', data_raw, delimiter=' ', fmt='%.3f')
             for i, sample in enumerate(data):
                 data[i, :3] = self.hp.mcs2pcs(data[i, :3])
-                # data[i, 3:] = data[i, 3:]@np.linalg.inv(self.hp.rotation)
-                # New method to transform Bxyz.  Values are with respect to part coordinate system
-                # data[i, 3:] = np.linalg.inv(self.hp.rotation)@data[i, 3:]@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
                 data[i, 3:] = data[i, 3:]@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
-            np.save('line.npy', data, allow_pickle=False)
-            np.savetxt('line_data.txt', data, delimiter=' ', fmt='%.3f')
+            np.save(mag_folder+f'{magname}-{serial} line.npy', data, allow_pickle=False)
+            np.savetxt(mag_folder+filename, data, delimiter=' ', fmt='%.3f')
 
     def measure_area(self):
-        filename = Path('area.npy')
         sa_args = self.get_area()
+        magnet_info = self.load_magnet_info()
+        magname, serial, current, notes = magnet_info
+        mag_folder = f'scans/{magname}-{serial}/'
+        filename = f'{magname}-{serial} area data.txt'
         if sa_args is None:
             showerror(title='Entry Error', message='Entries should be integer or float values.')
         else:
             data = self.hp.scan_area(*sa_args)
-            # with filename.open('wb') as file:
-                # saves array shape(m, n, 6)
-                # m scan lines, n samples, 6 columns (x,y,z,Bx,By,Bz)
-            np.save(filename, data)
-            # data_text = data.reshape((data.shape[0]*data.shape[1], 6))
-            # np.savetxt('area.txt', data_text, fmt='%.3f', delimiter=' ')
+            # saves array shape(m, n, 6)
+            # m scan lines, n samples, 6 columns (x,y,z,Bx,By,Bz)
+            np.save(mag_folder+f'{magname}-{serial} raw area data.npy', data)
+            # Reshape array to shape(m*n, 6)
             data_2d = data.reshape((data.shape[0]*data.shape[1], data.shape[2]))
             for i, point in enumerate(data_2d):
                 data_2d[i, :3] = self.hp.mcs2pcs(point[:3])
-                # data_2d[i, 3:] = np.linalg.inv(self.hp.rotation)@point@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
                 data_2d[i, 3:] = point[3:]@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
-            # npy_data = np.load('area.npy', allow_pickle=True)
-            # for line in npy_data:
-            #     with open('area.txt', 'a') as file:
-            #         np.savetxt(file, line, delimiter=' ', fmt='%.3f')
-            np.savetxt('area.txt', data_2d, delimiter=' ', fmt='%.3f')
+            np.savetxt(mag_folder+filename, data_2d, delimiter=' ', fmt='%.3f')
 
     def scan_point_widgets(self):
         self.lbl_scan_point = tk.Label(self.frm_scan_point, text='Scan Point')

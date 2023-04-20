@@ -5,7 +5,8 @@ from tkinter.messagebox import showinfo
 from tkinter.scrolledtext import ScrolledText
 from tkinter import filedialog
 from tkinter.simpledialog import askstring
-from zeisscmm import CMM
+import pickle
+# from zeisscmm import CMM
 from fsv import fsvWindow
 from cube import CubeWindow
 from zero_gauss import zgWindow
@@ -98,19 +99,40 @@ class MagnetInformation(ttk.LabelFrame):
         self.create_widgets()
 
     def create_widgets(self):
-        self.lbl_partnum = tk.Label(self, text='Part Number')
+        self.lbl_magname = tk.Label(self, text='Magnet Name')
         self.lbl_serial = tk.Label(self, text='Serial Number')
+        self.lbl_current = tk.Label(self, text='Current (A)')
         self.lbl_notes = tk.Label(self, text='Notes')
-        self.ent_partnum = ttk.Entry(self)
+        self.ent_magname = ttk.Entry(self)
         self.ent_serial = ttk.Entry(self)
+        self.ent_current = ttk.Entry(self)
         self.txt_notes = ScrolledText(self, width=60, height=12)
+        self.btn_save = ttk.Button(self, text='Save', command=self.save_info)
         # Place widgets within grid
-        self.lbl_partnum.grid(column=0, row=0, sticky='w', padx=5)
+        self.lbl_magname.grid(column=0, row=0, sticky='w', padx=5)
         self.lbl_serial.grid(column=1, row=0, sticky='w', padx=5)
+        self.lbl_current.grid(column=2, row=0, sticky='w', padx=5)
         self.lbl_notes.grid(column=0, row=2, sticky='w', padx=5, pady=(5,0))
-        self.ent_partnum.grid(column=0, row=1, sticky='w', padx=5, pady=(0,5))
+        self.ent_magname.grid(column=0, row=1, sticky='w', padx=5, pady=(0,5))
         self.ent_serial.grid(column=1, row=1, sticky='w', padx=5, pady=(0,5))
+        self.ent_current.grid(column=2, row=1, sticky='w', padx=5, pady=(0,5))
         self.txt_notes.grid(column=0, row=3, columnspan=2, sticky='nw', padx=5, pady=(0,5))
+        self.btn_save.grid(column=0, row=4, sticky='e', padx=5, pady=(0,5))
+    
+    def save_info(self):
+        '''
+        Save magnet info to a text file
+        '''
+        magname = self.ent_magname.get()
+        serial = self.ent_serial.get()
+        current = self.ent_current.get()
+        notes = self.txt_notes.get('1.0', 'end-1c')
+        header = [magname, serial, current, notes]
+        if magname and serial and current:
+            with open('magnet_info', 'wb') as f:
+                pickle.dump(header, f)
+        else:
+            tk.messagebox.showerror('Error', 'Please enter all required fields. Notes are optional.')
 
 class MapField(ttk.LabelFrame):
     '''
