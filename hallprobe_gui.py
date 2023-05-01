@@ -1,18 +1,16 @@
 import tkinter as tk
 from tkinter import ttk
-from tkinter.constants import W
-from tkinter.messagebox import showinfo
+from tkinter.messagebox import showinfo, showerror
 from tkinter.scrolledtext import ScrolledText
 from tkinter import filedialog
 from tkinter.simpledialog import askstring
-import pickle
-# from zeisscmm import CMM
 from fsv import fsvWindow
 from cube import CubeWindow
 from zero_gauss import zgWindow
 from mapping import MapFrames
 import numpy as np
 import os
+import pickle
 from os.path import isfile
 from pathlib import Path
 import matplotlib
@@ -116,12 +114,12 @@ class MagnetInformation(ttk.LabelFrame):
         self.ent_magname.grid(column=0, row=1, sticky='w', padx=5, pady=(0,5))
         self.ent_serial.grid(column=1, row=1, sticky='w', padx=5, pady=(0,5))
         self.ent_current.grid(column=2, row=1, sticky='w', padx=5, pady=(0,5))
-        self.txt_notes.grid(column=0, row=3, columnspan=2, sticky='nw', padx=5, pady=(0,5))
-        self.btn_save.grid(column=0, row=4, sticky='e', padx=5, pady=(0,5))
+        self.txt_notes.grid(column=0, row=3, columnspan=3, sticky='nw', padx=5, pady=(0,5))
+        self.btn_save.grid(column=0, row=4, sticky='w', padx=5, pady=(0,5))
     
     def save_info(self):
         '''
-        Save magnet info to a text file
+        Save magnet info to a pickle file
         '''
         magname = self.ent_magname.get()
         serial = self.ent_serial.get()
@@ -132,7 +130,7 @@ class MagnetInformation(ttk.LabelFrame):
             with open('magnet_info.pkl', 'wb') as f:
                 pickle.dump(header, f)
         else:
-            tk.messagebox.showerror('Error', 'Please enter all required fields. Notes are optional.')
+            showerror('Error', 'Please enter all information. Notes are optional.')
 
 class MapField(ttk.LabelFrame):
     '''
@@ -158,7 +156,7 @@ class PlotField(tk.Frame):
         self.create_plot()
 
     def create_plot(self):
-        data = np.genfromtxt('area1.txt')
+        data = np.genfromtxt('area.txt')
         cmm_xyz = data[:, :3]
         Bxyz = data[:, 3:]
         Bxyz_norm = np.linalg.norm(Bxyz, axis=1)
@@ -312,35 +310,14 @@ class ProgramControls(ttk.LabelFrame):
 
     def create_widgets(self):
         self.btn_plot = ttk.Button(self, text='Plot Data', command=self.plot_data)
-        # self.btn_new_meas = ttk.Button(self, text='New Measurement', command=self.new_measurement)
-        # self.btn_load_meas = ttk.Button(self, text='Load Measurement', command=self.load_measurement)
-        # self.btn_save_meas = ttk.Button(self, text='Save Measurement', command=self.save_measurement)
         self.lbl_controls_status = tk.Label(self, text='*Program Controls Status*')
         self.lbl_controls_status.config(relief='sunken')
         # Place widgets within grid
-        self.btn_plot.grid(column=0, row=0, padx=5, pady=5, sticky='new')
-        # self.btn_new_meas.grid(column=0, row=0, padx=5, pady=5, sticky='new')
-        # self.btn_load_meas.grid(column=1, row=0, padx=5, pady=5, sticky='new')
-        # self.btn_save_meas.grid(column=2, row=0, padx=5, pady=5, sticky='new')
+        self.btn_plot.grid(column=0, row=0, sticky='new', padx=5, pady=5)
         self.lbl_controls_status.grid(column=0, row=1, columnspan=3, padx=5, pady=5, sticky='sew')
     
     def plot_data(self):
-        # Select data file to plot
-        data_file = filedialog.askopenfilename(initialdir=self.scans_folder)
-
-    # def new_measurement(self):
-    #     print(os.getcwd())
-    #     self.measurement_session = 'measurements/' + askstring('New Measurement', 'Create a new measurement session name.')
-    #     os.mkdir(self.working_directory / self.measurement_session)
-    #     if self.measurement_session != 'measurements/':
-    #         self.lbl_controls_status.configure(text=f'New measurement session created.\n{self.measurement_session}')
-
-    # def save_measurement(self):
-    #     pass
-
-    # def load_measurement(self):
-    #     self.measurement_session = filedialog.askdirectory(initialdir=self.working_directory + '/measurements')
-    #     self.lbl_controls_status.configure(text=f'Loaded measurement session.\n{self.measurement_session}')
+        scan_filename = filedialog.askopenfilename(initialdir=self.scans_folder, title='Select a data file', filetypes=[('Text Files', '*.txt'), ('All Files', '*.*')])
         
 if __name__ == '__main__':
     app = HallProbeApp(tk.Tk())

@@ -6,13 +6,12 @@ import numpy as np
 from hallprobe import HallProbe
 import pickle
 import os
-from plots import PlotDashboard
+from plots import PlotDashboard, integrate_line
 
 class MapFrames(tk.Frame):
     def __init__(self, parent):
         self.hp = None
         self.mapframes_parent = parent
-        # self.meas_plan_dir = meas_plan_dir
         super().__init__(parent)
         self.density_list = ['0.1', '0.25', '0.5', '1.0', '2.0', 'full res']
         self.density_list_area = ['0.1', '0.25', '0.5', '1.0', '2.0']
@@ -41,10 +40,10 @@ class MapFrames(tk.Frame):
         self.btn_scan_point.grid(column=0, row=1, sticky='new', padx=5, pady=(0,5))
         self.btn_scan_line.grid(column=0, row=2, sticky='new', padx=5, pady=(0,5))
         self.btn_scan_area_volume.grid(column=0, row=3, sticky='new', padx=5, pady=(0,5))
-    
+
     def load_magnet_info(self):
         # grab from pickled file
-        # entries are in a list 'magnet name', 'serial number', 'current', 'notes'
+        # entries are in a list ['magnet name', 'serial number', 'current', 'notes']
         with open('magnet_info.pkl', 'rb') as f:
             magnet_info = pickle.load(f)
         return magnet_info
@@ -125,20 +124,20 @@ class MapFrames(tk.Frame):
         mag_folder = f'scans/{magname}-{serial}/'
         filename = f'{magname}-{serial} points.txt'
         # Create a subdirectory within the scans folder for the magnet only if it doesn't already exist
-        if not os.path.exists(f'scans/{magname}-{serial}'):
-            os.makedirs(f'scans/{magname}-{serial}')
-        # Verify entries are valid and measure point
+        if not os.path.exists(mag_folder):
+            os.makedirs(mag_folder)
+        # Verify entries are valid
         if point is None:
             showerror(title='Entry Error', message='Entries should be integer or float values.')
         else:
             xyz_Bxyz = self.hp.scan_point(point)
-            # Transform xyz points from MCS to PCS
+            # Transform xyz to PCS
             xyz_Bxyz[:3] = self.hp.mcs2pcs(xyz_Bxyz[:3])
-            with open(mag_folder+f'{magname}-{serial} points Bxyz raw.txt', 'a') as raw_file:
+            with open(f'{mag_folder}+{magname}-{serial} points Bxyz raw.txt', 'a') as raw_file:
                 raw_file.write(f'{xyz_Bxyz[0]} {xyz_Bxyz[1]} {xyz_Bxyz[2]} {xyz_Bxyz[3]} {xyz_Bxyz[4]} {xyz_Bxyz[5]}\n')
             # Transform Bxyz to PCS
             xyz_Bxyz[3:] = xyz_Bxyz[3:]@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
-            # Print xyz and Bxyz values wrt PCS
+            # Print xyz and Bxyz wrt PCS
             print(f'x {xyz_Bxyz[0]} y {xyz_Bxyz[1]} z {xyz_Bxyz[2]} Bx {xyz_Bxyz[3]} By {xyz_Bxyz[4]} Bz {xyz_Bxyz[5]}')
             # Save xyz and Bxyz values wrt PCS
             with open(mag_folder+filename, 'a') as file:
@@ -151,21 +150,21 @@ class MapFrames(tk.Frame):
         mag_folder = f'scans/{magname}-{serial}/'
         filename = f'{magname}-{serial} line data.txt'
         # Create a subdirectory within the scans folder for the magnet only if it doesn't already exist
-        if not os.path.exists(f'scans/{magname}-{serial}'):
-            os.makedirs(f'scans/{magname}-{serial}')
-        # Verify entries are valid and measure line
+        if not os.path.exists(mag_folder):
+            os.makedirs(mag_folder)
+        # Verify entries are valid and scan line
         if line_args is None:
             showerror(title='Entry Error', message='Entries should be integer or float values.')
         else:
             data = self.hp.scan_line(*line_args)
             data_xyz_pcs = np.array([self.hp.mcs2pcs(i) for i in data[:, :3]])
             data_raw = np.hstack((data_xyz_pcs, data[:, 3:]))
-            np.savetxt(mag_folder+f'{magname}-{serial} line_data_raw_Bxyz.txt', data_raw, delimiter=' ', fmt='%.3f')
+            np.savetxt('line_data_raw_Bxyz.txt', data_raw, delimiter=' ', fmt='%.3f')
             for i, sample in enumerate(data):
                 data[i, :3] = self.hp.mcs2pcs(data[i, :3])
                 data[i, 3:] = data[i, 3:]@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
-            np.save(mag_folder+f'{magname}-{serial} line.npy', data, allow_pickle=False)
-            np.savetxt(mag_folder+filename, data, delimiter=' ', fmt='%.3f')
+            np.save(mag_folder + f'{magname}-{serial} line.npy', data, allow_pickle=False)
+            np.savetxt(mag_folder + filename, data, delimiter=' ', fmt='%.3f')
 
     def measure_area(self):
         sa_args = self.get_area()
@@ -176,16 +175,19 @@ class MapFrames(tk.Frame):
         if sa_args is None:
             showerror(title='Entry Error', message='Entries should be integer or float values.')
         else:
-            data = self.hp.scan_area(*sa_args)
-            # saves array shape(m, n, 6)
-            # m scan lines, n samples, 6 columns (x,y,z,Bx,By,Bz)
-            np.save(mag_folder+f'{magname}-{serial} raw area data.npy', data)
-            # Reshape array to shape(m*n, 6)
+            data, filtered_array = self.hp.scan_area(*sa_args)
+            np.save(mag_folder + f'{magname}-{serial} raw area data.npy', data)
+            # Reshape array to shape (m*n, 6)
             data_2d = data.reshape((data.shape[0]*data.shape[1], data.shape[2]))
+            filtered_array_2d = filtered_array.reshape((filtered_array.shape[0]*filtered_array.shape[1], filtered_array.shape[2]))
+            for i, point in enumerate(filtered_array_2d):
+                filtered_array_2d[i, :3] = self.hp.mcs2pcs(point[:3])
+                filtered_array_2d[i, 3:] = point[3:]@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
             for i, point in enumerate(data_2d):
                 data_2d[i, :3] = self.hp.mcs2pcs(point[:3])
                 data_2d[i, 3:] = point[3:]@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
-            np.savetxt(mag_folder+filename, data_2d, delimiter=' ', fmt='%.3f')
+            np.savetxt(mag_folder + filename, data_2d, delimiter=' ', fmt='%.3f')
+            np.savetxt(mag_folder + f'{magname}-{serial} area full res lines.txt', filtered_array_2d, delimiter=' ', fmt='%.3f')
 
     def scan_point_widgets(self):
         self.lbl_scan_point = tk.Label(self.frm_scan_point, text='Scan Point')

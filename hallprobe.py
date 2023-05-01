@@ -82,8 +82,9 @@ class HallProbe(HallDAQ):
             reduced_data.append(scan_data[i])
         return np.array(reduced_data)
 
-
-    def scan_point(self, point):
+    def scan_point(self, *point):
+        # print(type(point))
+        # print(point.shape)
         if not point:
             point = self.mcs2pcs(self.cmm.get_position())
             self.power_on()
@@ -94,31 +95,35 @@ class HallProbe(HallDAQ):
             cal_data = calib_data(self.calib_coeffs, data)
             self.power_off()
             self.stop_hallsensor_task()
-            Bxyz = self.s_matrix@average_sample(remove_outliers(cal_data))
-            print(f'xyz: {point}\tBxyz: {Bxyz}')
-            return np.hstack((point, Bxyz))
+            # Moved application of S matrix to mapping.py
+            # Bxyz = self.s_matrix@average_sample(remove_outliers(cal_data))
+            Bxyz = average_sample(remove_outliers(cal_data))
+            # print(f'xyz: {point}\tBxyz: {Bxyz}')
+            return np.hstack((point, Bxyz)).round(3)
         else:
-            # point = point[0]
+            point = self.pcs2mcs(point[0])
             self.cmm.cnc_on()
             self.cmm.set_speed((40,40,40))
-            self.cmm.goto_position(self.pcs2mcs(point))
+            self.cmm.goto_position(point)
+            print('pre-while loop')
             while np.linalg.norm(point - self.cmm.get_position()) > 0.025:
                 pass
+            print('post-while loop')
             self.power_on()
             self.start_hallsensor_task()
             sleep(1)
-            point = self.mcs2pcs(self.cmm.get_position())
+            point = self.cmm.get_position()
             self.pulse()
             data = self.read_hallsensor()
-            print(f'raw point samples: {len(data)}')
+            # print(f'raw point samples: {len(data)}')
             cal_data = calib_data(self.calib_coeffs, data)
             self.cmm.set_speed((70,70,70))
             self.cmm.cnc_off()
             self.power_off()
             self.stop_hallsensor_task()
-            Bxyz = self.s_matrix@average_sample(remove_outliers(cal_data))
-            print(f'xyz: {point}\tBxyz: {Bxyz}')
-            return np.hstack((point, Bxyz))
+            Bxyz = average_sample(remove_outliers(cal_data))
+            # print(f'xyz: {point}\tBxyz: {Bxyz}')
+            return np.hstack((point, Bxyz)).round(3)
 
     def scan_line(self, start_point, end_point, point_density):
         distance = np.linalg.norm(end_point - start_point)
@@ -130,6 +135,8 @@ class HallProbe(HallDAQ):
         self.change_sampling(1, samples)
         self.cmm.cnc_on()
         self.cmm.set_speed((20,20,20))
+        # print(f'start pos: {start_point.shape}')
+        # print(f'current pos: {self.cmm.get_position()}')
         self.cmm.goto_position(start_point)
         while np.linalg.norm(start_point - self.cmm.get_position()) > 0.025:
             pass
@@ -152,8 +159,6 @@ class HallProbe(HallDAQ):
         self.stop_hallsensor_task()
         self.power_off()
         Bxyz = calib_data(self.calib_coeffs, data)
-        for i, sample in enumerate(Bxyz):
-            Bxyz[i] = self.s_matrix@sample
         linear = np.linspace(start_pt, end_pt, num=samples)
         if point_density == 'full res':
             return np.hstack((linear, Bxyz))
@@ -167,6 +172,10 @@ class HallProbe(HallDAQ):
             return self.reduce_scan_density(filt_array, scan_interval=point_density)
 
     def scan_area(self, start_array, allocated_array, pt_density, num_samples, scan_direction):
+        filt_cutoff = 500
+        filt_allocated_array = allocated_array[:, filt_cutoff:-filt_cutoff, :]
+        print(f'alloc array: {allocated_array.shape}')
+        print(f'filt alloc: {filt_allocated_array.shape}')
         self.change_sampling(1, num_samples)
         self.cmm.cnc_on()
         self.cmm.set_speed((20,20,20))
@@ -186,26 +195,20 @@ class HallProbe(HallDAQ):
             self.stop_hallsensor_task()
             Bxyz = calib_data(self.calib_coeffs, data)
             linear = np.linspace(start_pt, end_pt, num=num_samples)
-            for j, sample in enumerate(linear):
-                linear[j] = self.mcs2pcs(sample)
-            for j, sample in enumerate(Bxyz):
-                Bxyz[j] = self.s_matrix@sample
-            filt_cutoff = 500
             for column in range(3):
                 filt_column = filter_data(Bxyz[:, column], filt_cutoff)
                 Bxyz[:, column] = filt_column
             filt_array = np.hstack((linear, Bxyz))
             filt_array = filt_array[filt_cutoff:-filt_cutoff]
-            allocated_array[i] = filt_array
+            filt_allocated_array[i] = filt_array
         self.cmm.send('G01X0Y0Z0\r\n'.encode('ascii'))
         self.cmm.set_speed((70,70,70))
         self.cmm.cnc_off()
         self.power_off()
         reduced_array_list = []
-        for line in allocated_array:
+        for line in filt_allocated_array:
             reduced_array_list.append(self.reduce_scan_density(line, scan_interval=pt_density))
-        #  return ndarray shape (m, n, 6) (m lines, n samples, 6 columns xyzBxByBz)
-        return np.array(reduced_array_list)
+        return (np.array(reduced_array_list), filt_allocated_array)
 
 
     def scan_volume(self, start_point, scan_distance, pt_density, scan_plane, scan_direction):
