@@ -18,6 +18,7 @@ matplotlib.use("TkAgg")
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
+from plots import PlotWindow
 
 from tooltip import ToolTip
 
@@ -309,16 +310,17 @@ class ProgramControls(ttk.LabelFrame):
         self.create_widgets()
 
     def create_widgets(self):
-        self.btn_plot = ttk.Button(self, text='Plot Data', command=self.plot_data)
+        self.btn_plot = ttk.Button(self, text='Plot Data', command=self.plot_window)
         self.lbl_controls_status = tk.Label(self, text='*Program Controls Status*')
         self.lbl_controls_status.config(relief='sunken')
         # Place widgets within grid
         self.btn_plot.grid(column=0, row=0, sticky='new', padx=5, pady=5)
         self.lbl_controls_status.grid(column=0, row=1, columnspan=3, padx=5, pady=5, sticky='sew')
     
-    def plot_data(self):
-        scan_filename = filedialog.askopenfilename(initialdir=self.scans_folder, title='Select a data file', filetypes=[('Text Files', '*.txt'), ('All Files', '*.*')])
-        
+    def plot_window(self):
+        plot = PlotWindow(self)
+
+
 if __name__ == '__main__':
     app = HallProbeApp(tk.Tk())
     app.master.protocol('WM_DELETE_WINDOW', app.on_closing)

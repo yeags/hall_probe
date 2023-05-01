@@ -6,7 +6,6 @@ import numpy as np
 from hallprobe import HallProbe
 import pickle
 import os
-from plots import PlotDashboard, integrate_line
 
 class MapFrames(tk.Frame):
     def __init__(self, parent):

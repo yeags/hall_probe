@@ -1,8 +1,7 @@
-from os import remove
 from nicdaq import HallDAQ
 import zeisscmm
 import numpy as np
-from time import time, sleep, perf_counter
+from time import sleep, perf_counter
 from calibration import calib_data, remove_outliers, average_sample, filter_data
 
 class HallProbe(HallDAQ):
