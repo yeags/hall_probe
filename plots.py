@@ -15,9 +15,9 @@ def integrate_lines_from_area(data: np.ndarray, scan_plane: str, scan_direction:
     returns (n, 4) array of Bxyz integrals of each scan line
     '''
     # Convert mm to cm and mT to Gauss
-    data[:, :3] /= 10
-    data[:, 3:] *= 10
-    scan_spacing /= 10
+    # data[:, :3] /= 10
+    # data[:, 3:] *= 10
+    # scan_spacing /= 10
     # scan_plane_dict = {'xy': (0, 1), 'yz': (1, 2), 'zx': (2, 0)}
     plane_step_across_dict = {'xy': {'x': 1, 'y': 0}, 'yz': {'y': 2, 'z': 1}, 'zx': {'z': 0, 'x': 2}}
     integration_dict = {'x': 0, 'y': 1, 'z': 2, 'Bx': 3, 'By': 4, 'Bz': 5}
@@ -132,7 +132,13 @@ class PlotDashboard:
         self.coeffs_by = np.polyfit(self.data_at_z[:, 0], self.data_at_z[:, 4], 9)
         self.coeffs_ibx = np.polyfit(self.scan_integrals[:, 0], self.scan_integrals[:, 1], 9)
         self.coeffs_iby = np.polyfit(self.scan_integrals[:, 0], self.scan_integrals[:, 2], 9)
-        self.all_coeffs = np.flip(np.vstack((self.coeffs_bx, self.coeffs_by, self.coeffs_ibx, self.coeffs_iby)).T, axis=0)
+        self.all_coeffs = np.flip(np.vstack((self.coeffs_bx, self.coeffs_by, self.coeffs_ibx, self.coeffs_iby)).T, axis=0).round(1)
+        # print coeffs
+        print('Coefficients:')
+        print(f'{self.coeffs_bx=}')
+        print(f'{self.coeffs_by=}')
+        print(f'{self.coeffs_ibx=}')
+        print(f'{self.coeffs_iby=}')
         self.generate_header()
         self.create_figs()
         self.create_subplots()
@@ -143,7 +149,7 @@ class PlotDashboard:
         self.fig_p2 = plt.figure(figsize=(11, 8.5))
         self.fig_p1.suptitle('3D Plots')
         self.fig_p2.suptitle('2D Plots')
-        self.fig_p2.subplots_adjust(hspace=0.3)
+        self.fig_p2.subplots_adjust(hspace=0.3, wspace=0.3,left=0.05, right=0.95, top=0.9, bottom=0.05)
     
     def create_subplots(self):
         # 3D plots - Page 1
@@ -178,6 +184,7 @@ class PlotDashboard:
         self.plot_324.set_title('Bx Integrals')
         # Table
         self.coeffs_table = self.fig_p2.add_subplot(325)
+        self.coeffs_table.axis('tight')
         self.coeffs_table.set_axis_off()
 
     
@@ -259,7 +266,11 @@ class PlotDashboard:
     
     def generate_table(self):
         # Plot table of self.all_coeffs
-        self.coeffs_table.table(cellText=self.all_coeffs, colLabels=self.coeffs_header, rowLabels=[1,2,3,4,5,6,7,8,9,10], loc='center')
+        t = self.coeffs_table.table(cellText=self.all_coeffs, colLabels=self.coeffs_header, rowLabels=[1,2,3,4,5,6,7,8,9,10], loc='center')
+        t.auto_set_font_size(False)
+        t.set_fontsize(12)
+        t.scale(1, 1.2)
+
     def show_plots(self):
         plt.show()
 
