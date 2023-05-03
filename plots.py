@@ -5,6 +5,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
+import os
 
 def integrate_lines_from_area(data: np.ndarray, scan_plane: str, scan_direction: str, scan_spacing: float):
     '''
@@ -14,11 +15,6 @@ def integrate_lines_from_area(data: np.ndarray, scan_plane: str, scan_direction:
     scan_spacing: float (eg. 1.0)
     returns (n, 4) array of Bxyz integrals of each scan line
     '''
-    # Convert mm to cm and mT to Gauss
-    # data[:, :3] /= 10
-    # data[:, 3:] *= 10
-    # scan_spacing /= 10
-    # scan_plane_dict = {'xy': (0, 1), 'yz': (1, 2), 'zx': (2, 0)}
     plane_step_across_dict = {'xy': {'x': 1, 'y': 0}, 'yz': {'y': 2, 'z': 1}, 'zx': {'z': 0, 'x': 2}}
     integration_dict = {'x': 0, 'y': 1, 'z': 2, 'Bx': 3, 'By': 4, 'Bz': 5}
     data_int_min = np.min(data[:, plane_step_across_dict[scan_plane][scan_direction]])
@@ -47,21 +43,15 @@ class PlotWindow(tk.Toplevel):
     def create_widgets(self):
         self.lbl_scan_plane = ttk.Label(self.frm_plotwindow, text='Scan Plane')
         self.lbl_plot_axis = ttk.Label(self.frm_plotwindow, text='Plot Axis')
-        self.lbl_B_axis = ttk.Label(self.frm_plotwindow, text='B Axes')
         self.lbl_scan_direction = ttk.Label(self.frm_plotwindow, text='Scan Direction')
-        self.lbl_z_location = ttk.Label(self.frm_plotwindow, text='z Location [mm]')
         self.lbl_scan_spacing = ttk.Label(self.frm_plotwindow, text='Scan Spacing [mm]')
         
         self.cbox_scan_plane = ttk.Combobox(self.frm_plotwindow, values=['xy', 'yz', 'zx'])
         self.cbox_scan_plane.current(2)
         self.cbox_plot_axis = ttk.Combobox(self.frm_plotwindow, values=['x', 'y', 'z'])
         self.cbox_plot_axis.current(0)
-        self.cbox_B_axes = ttk.Combobox(self.frm_plotwindow, values=['Bx', 'By', 'Bz'])
-        self.cbox_B_axes.current(1)
         self.cbox_scan_direction = ttk.Combobox(self.frm_plotwindow, values=['x', 'y', 'z'])
         self.cbox_scan_direction.current(2)
-        self.ent_z_location = ttk.Entry(self.frm_plotwindow)
-        self.ent_z_location.insert(0, '0')
         self.cbox_scan_spacing = ttk.Combobox(self.frm_plotwindow, values=['0.1', '0.25', '0.5', '1.0', '2.0'])
         self.cbox_scan_spacing.current(3)
 
@@ -70,22 +60,19 @@ class PlotWindow(tk.Toplevel):
 
         self.lbl_scan_plane.grid(row=0, column=0)
         self.lbl_plot_axis.grid(row=1, column=0)
-        self.lbl_B_axis.grid(row=2, column=0)
-        self.lbl_scan_direction.grid(row=3, column=0)
-        self.lbl_scan_spacing.grid(row=4, column=0)
-        self.lbl_z_location.grid(row=5, column=0)
+        self.lbl_scan_direction.grid(row=2, column=0)
+        self.lbl_scan_spacing.grid(row=3, column=0)
         self.cbox_scan_plane.grid(row=0, column=1)
         self.cbox_plot_axis.grid(row=1, column=1)
-        self.cbox_B_axes.grid(row=2, column=1)
-        self.cbox_scan_direction.grid(row=3, column=1)
-        self.cbox_scan_spacing.grid(row=4, column=1)
-        self.ent_z_location.grid(row=5, column=1)
-        self.btn_load_data.grid(row=6, column=0)
-        self.btn_plot.grid(row=6, column=1)
+        self.cbox_scan_direction.grid(row=2, column=1)
+        self.cbox_scan_spacing.grid(row=3, column=1)
+        self.btn_load_data.grid(row=4, column=0, padx=5, pady=5)
+        self.btn_plot.grid(row=4, column=1, padx=5, pady=5)
 
     def load_data(self):
         filename = filedialog.askopenfilename(initialdir='./scans/', title='Select Data File', filetypes=(('Text Files', '*.txt'), ('All Files', '*.*')))
         self.data = np.genfromtxt(filename)
+        self.filepath = os.path.dirname(filename)
         # Convert mm to cm and mT to G
         self.data[:, :3] /= 10
         self.data[:, 3:] *= 10
@@ -94,17 +81,16 @@ class PlotWindow(tk.Toplevel):
     def get_inputs(self):
         scan_plane = self.cbox_scan_plane.get()
         plot_axis = self.cbox_plot_axis.get()
-        b_axes = self.cbox_B_axes.get()
         scan_direction = self.cbox_scan_direction.get()
-        z_location = float(self.ent_z_location.get())
         scan_spacing = float(self.cbox_scan_spacing.get())
-        return scan_plane, plot_axis, b_axes, scan_direction, z_location, scan_spacing
+        return scan_plane, plot_axis, scan_direction, scan_spacing
     
     def generate_plots(self):
         # Get data from comboboxes
         self.get_inputs()
         # Create dashboard instance and pass arguments
-        self.plot_dashboard = PlotDashboard(self.data, *self.get_inputs())
+        self.plot_dashboard = PlotDashboard(self.data, self.filepath, *self.get_inputs())
+        self.plot_dashboard.save_plots()
         self.plot_dashboard.show_plots()
 
 class PlotDashboard:
@@ -116,29 +102,26 @@ class PlotDashboard:
     integrals_index = {'x': 0, 'Bx': 1, 'By': 2, 'Bz': 3}
     coeffs_header = ['Bx', 'By', 'I Bx', 'I By']
 
-    def __init__(self, data, scan_plane, plot_axis, b_axes, scan_direction, z_location, scan_spacing):
+    def __init__(self, data, filepath, scan_plane, plot_axis, scan_direction, scan_spacing):
         self.data = data
+        self.filepath = filepath
         self.scan_plane = scan_plane
         self.plot_axis = plot_axis
-        self.b_axes = b_axes
         self.scan_direction = scan_direction
-        self.z_location = z_location / 10
         self.scan_spacing = scan_spacing / 10
-        self.data_at_z = self.data[(self.data[:, self.args_index[self.scan_direction]] > self.z_location-self.scan_spacing/2)&(self.data[:, self.args_index[self.scan_direction]] < self.z_location+self.scan_spacing/2)]
+        self.data_at_z = self.data[(self.data[:, self.args_index[self.scan_direction]] > 0-self.scan_spacing/2)&(self.data[:, self.args_index[self.scan_direction]] < 0+self.scan_spacing/2)]
+        self.z_location = np.mean(self.data_at_z[:, 2])
         self.data_at_z_by_fit = np.polyfit(self.data_at_z[:, 0], self.data_at_z[:, 4], 1)
-        print(f'Fit: {self.data_at_z_by_fit=}')
         self.scan_integrals = integrate_lines_from_area(self.data, self.scan_plane, self.scan_direction, self.scan_spacing)
         self.coeffs_bx = np.polyfit(self.data_at_z[:, 0], self.data_at_z[:, 3], 9)
         self.coeffs_by = np.polyfit(self.data_at_z[:, 0], self.data_at_z[:, 4], 9)
         self.coeffs_ibx = np.polyfit(self.scan_integrals[:, 0], self.scan_integrals[:, 1], 9)
         self.coeffs_iby = np.polyfit(self.scan_integrals[:, 0], self.scan_integrals[:, 2], 9)
         self.all_coeffs = np.flip(np.vstack((self.coeffs_bx, self.coeffs_by, self.coeffs_ibx, self.coeffs_iby)).T, axis=0).round(1)
-        # print coeffs
-        print('Coefficients:')
-        print(f'{self.coeffs_bx=}')
-        print(f'{self.coeffs_by=}')
-        print(f'{self.coeffs_ibx=}')
-        print(f'{self.coeffs_iby=}')
+        self.integrated_magnetic_value = self.coeffs_iby[8]
+        self.magnetic_length = self.coeffs_iby[8] / self.coeffs_by[8]
+        # self.offset = (self.coeffs_ibx[9] / self.coeffs_ibx[8] * 10, self.coeffs_iby[9] / self.coeffs_iby[8] * 10)
+        self.offset = (99, 99) # Temporary placeholder for offset values
         self.generate_header()
         self.create_figs()
         self.create_subplots()
@@ -149,7 +132,12 @@ class PlotDashboard:
         self.fig_p2 = plt.figure(figsize=(11, 8.5))
         self.fig_p1.suptitle('3D Plots')
         self.fig_p2.suptitle('2D Plots')
-        self.fig_p2.subplots_adjust(hspace=0.3, wspace=0.3,left=0.05, right=0.95, top=0.9, bottom=0.05)
+        self.fig_p2.subplots_adjust(hspace=0.37, wspace=0.3,left=0.1, right=0.95, top=0.9, bottom=0.05)
+    
+    def save_plots(self):
+        # Save plots as pdf docs
+        self.fig_p1.savefig(self.filepath + '/3d_plots.pdf')
+        self.fig_p2.savefig(self.filepath + '/2d_plots.pdf')
     
     def create_subplots(self):
         # 3D plots - Page 1
@@ -175,7 +163,7 @@ class PlotDashboard:
         self.bz_3d.set_zlabel('Bz [G]')
         # 2D plots - Page 2
         self.plot_321 = self.fig_p2.add_subplot(321)
-        self.plot_321.set_title(f'{self.b_axes}')
+        self.plot_321.set_title('By')
         self.plot_322 = self.fig_p2.add_subplot(322)
         self.plot_322.set_title('Bx')
         self.plot_323 = self.fig_p2.add_subplot(323)
@@ -186,6 +174,10 @@ class PlotDashboard:
         self.coeffs_table = self.fig_p2.add_subplot(325)
         self.coeffs_table.axis('tight')
         self.coeffs_table.set_axis_off()
+        # Text Info Box
+        self.text_info = self.fig_p2.add_subplot(326)
+        self.text_info.axis('tight')
+        self.text_info.set_axis_off()
 
     
     def generate_header(self):
@@ -207,6 +199,7 @@ class PlotDashboard:
         self.generate_2d_plot_323()
         self.generate_2d_plot_324()
         self.generate_table()
+        self.generate_text_info()
 
     def plot_3d_abs(self):
         Bxyz_abs = np.linalg.norm(self.data[:, 3:], axis=1)
@@ -241,21 +234,21 @@ class PlotDashboard:
         self.fig_p1.colorbar(self.bz_3d.collections[0], ax=self.bz_3d, pad=0.2)
 
     def generate_2d_plot_321(self):
-        self.plot_321.plot(self.data_at_z[:, self.args_index[self.plot_axis]], self.data_at_z[:, self.args_index[self.b_axes]], marker='.', label=f'{self.b_axes} at z={self.z_location} cm')
-        self.plot_321.set_xlabel(f'{self.plot_axis} axis [cm] at z={self.z_location} cm')
-        self.plot_321.set_ylabel(f'{self.b_axes} [G]')
+        self.plot_321.plot(self.data_at_z[:, self.args_index[self.plot_axis]], self.data_at_z[:, self.args_index['By']], marker='.', label=f'By at z={self.z_location:.3f} cm')
+        self.plot_321.set_xlabel(f'{self.plot_axis} axis [cm] at z={self.z_location:.3f} cm')
+        self.plot_321.set_ylabel('By [G]')
         self.plot_321.grid()
     
     def generate_2d_plot_322(self):
-        self.plot_322.plot(self.data_at_z[:, self.args_index[self.plot_axis]], self.data_at_z[:, self.args_index['Bx']], marker='.', label=f'Bx at z={self.z_location} cm')
-        self.plot_322.set_xlabel(f'{self.plot_axis} axis [cm] at z={self.z_location} cm')
+        self.plot_322.plot(self.data_at_z[:, self.args_index[self.plot_axis]], self.data_at_z[:, self.args_index['Bx']], marker='.', label=f'Bx at z={self.z_location:.3f} cm')
+        self.plot_322.set_xlabel(f'{self.plot_axis} axis [cm] at z={self.z_location:.3f} cm')
         self.plot_322.set_ylabel('Bx [G]')
         self.plot_322.grid()
 
     def generate_2d_plot_323(self):
-        self.plot_323.plot(self.scan_integrals[:, 0], self.scan_integrals[:, self.integrals_index[self.b_axes]], marker='.', label=f'{self.b_axes} Integrals')
+        self.plot_323.plot(self.scan_integrals[:, 0], self.scan_integrals[:, self.integrals_index['By']], marker='.', label='By Integrals')
         self.plot_323.set_xlabel('x axis [cm]')
-        self.plot_323.set_ylabel(f'{self.b_axes} [G$\cdot$cm]')
+        self.plot_323.set_ylabel('By [G$\cdot$cm]')
         self.plot_323.grid()
         
     def generate_2d_plot_324(self):
@@ -270,6 +263,13 @@ class PlotDashboard:
         t.auto_set_font_size(False)
         t.set_fontsize(12)
         t.scale(1, 1.2)
+
+    def generate_text_info(self):
+        # Generate text information
+        info = '\n'.join((f'Integrated Quadrupole: {self.integrated_magnetic_value:.1f} G',
+                          f'Magnetic Length: {self.magnetic_length:.1f} cm',
+                          f'Offset: $\Delta$x: {self.offset[0]:.3f} mm $\Delta$y: {self.offset[1]:.3f} mm'))
+        self.fig_p2.text(0.6, 0.25, info, verticalalignment='top', bbox=self.bbox_props)
 
     def show_plots(self):
         plt.show()
