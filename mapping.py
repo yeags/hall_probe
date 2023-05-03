@@ -132,7 +132,7 @@ class MapFrames(tk.Frame):
             xyz_Bxyz = self.hp.scan_point(point)
             # Transform xyz to PCS
             xyz_Bxyz[:3] = self.hp.mcs2pcs(xyz_Bxyz[:3])
-            with open(f'{mag_folder}+{magname}-{serial} points Bxyz raw.txt', 'a') as raw_file:
+            with open(mag_folder + magname + '-' + serial + ' points Bxyz raw.txt', 'a') as raw_file:
                 raw_file.write(f'{xyz_Bxyz[0]} {xyz_Bxyz[1]} {xyz_Bxyz[2]} {xyz_Bxyz[3]} {xyz_Bxyz[4]} {xyz_Bxyz[5]}\n')
             # Transform Bxyz to PCS
             xyz_Bxyz[3:] = xyz_Bxyz[3:]@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
@@ -148,6 +148,8 @@ class MapFrames(tk.Frame):
         magname, serial, current, notes = magnet_info
         mag_folder = f'scans/{magname}-{serial}/'
         filename = f'{magname}-{serial} line data.txt'
+        if not os.path.exists(mag_folder):
+            os.makedirs(mag_folder)
         # Create a subdirectory within the scans folder for the magnet only if it doesn't already exist
         if not os.path.exists(mag_folder):
             os.makedirs(mag_folder)
@@ -171,6 +173,8 @@ class MapFrames(tk.Frame):
         magname, serial, current, notes = magnet_info
         mag_folder = f'scans/{magname}-{serial}/'
         filename = f'{magname}-{serial} area data.txt'
+        if not os.path.exists(mag_folder):
+            os.makedirs(mag_folder)
         if sa_args is None:
             showerror(title='Entry Error', message='Entries should be integer or float values.')
         else:
