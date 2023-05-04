@@ -127,8 +127,14 @@ class MagnetInformation(ttk.LabelFrame):
         current = self.ent_current.get()
         notes = self.txt_notes.get('1.0', 'end-1c')
         header = [magname, serial, current, notes]
+        # create subdirectory for magnet info if it doesn't exist
+        mag_folder = f'scans/{magname}-{serial}'
+        if not os.path.exists(mag_folder):
+            os.makedirs(mag_folder)
         if magname and serial and current:
             with open('magnet_info.pkl', 'wb') as f:
+                pickle.dump(header, f)
+            with open(f'{mag_folder}/magnet_info.pkl', 'wb') as f:
                 pickle.dump(header, f)
         else:
             showerror('Error', 'Please enter all information. Notes are optional.')
