@@ -148,8 +148,6 @@ class MapFrames(tk.Frame):
         magname, serial, current, notes = magnet_info
         mag_folder = f'scans/{magname}-{serial}/'
         filename = f'{magname}-{serial} line data.txt'
-        if not os.path.exists(mag_folder):
-            os.makedirs(mag_folder)
         # Create a subdirectory within the scans folder for the magnet only if it doesn't already exist
         if not os.path.exists(mag_folder):
             os.makedirs(mag_folder)
@@ -179,6 +177,10 @@ class MapFrames(tk.Frame):
             showerror(title='Entry Error', message='Entries should be integer or float values.')
         else:
             data, filtered_array = self.hp.scan_area(*sa_args)
+            print(f'Raw data shape: {data.shape}')
+            print(f'Filtered data shape: {filtered_array.shape}')
+            print(f'Raw data type: {type(data)}')
+            print(f'Filtered data type: {type(filtered_array)}')
             np.save(mag_folder + f'{magname}-{serial} raw area data.npy', data)
             # Reshape array to shape (m*n, 6)
             data_2d = data.reshape((data.shape[0]*data.shape[1], data.shape[2]))
