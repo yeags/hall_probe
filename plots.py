@@ -5,6 +5,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 import os
+import pickle
 np.set_printoptions(suppress=True)
 
 def integrate_lines_from_area(data: np.ndarray, scan_plane: str, scan_direction: str, scan_spacing: float):
@@ -193,10 +194,12 @@ class PlotDashboard:
 
     
     def generate_header(self):
-        # placeholder for reading text input values from gui
-        self.header = 'AQD-0024\n'+\
-                      'Scan size x: 30 y: 0 z: 343.4\n'+\
-                      'Current: 0.0A'
+        xyz_min = np.min(self.data[:, :3], axis=0)
+        xyz_max = np.max(self.data[:, :3], axis=0)
+        xyz_range = np.round(xyz_max - xyz_min, 2)
+        with open(self.filepath+'/magnet_info.pkl', 'rb') as f:
+            self.magnet_info = pickle.load(f)
+        self.header = f'{self.magnet_info[0]}-{self.magnet_info[1]}\nScan Volume: x: {xyz_range[0]} y: {xyz_range[1]} z: {xyz_range[2]} cm\nCurrent: {self.magnet_info[2]} A'
         self.bbox_props = dict(boxstyle='round', facecolor='grey', alpha=0.3)
     
     def populate_dashboard(self):
