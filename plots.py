@@ -219,8 +219,8 @@ class PlotDashboard:
     def plot_3d_abs(self):
         Bxyz_abs = np.linalg.norm(self.data[:, 3:], axis=1)
         # Place text boxes containing header information
-        self.fig_p1.text(0.03, 0.97, self.header, verticalalignment='top', bbox=self.bbox_props)
-        self.fig_p2.text(0.03, 0.97, self.header, verticalalignment='top', bbox=self.bbox_props)
+        self.fig_p1.text(0.01, 0.99, self.header, verticalalignment='top', bbox=self.bbox_props)
+        self.fig_p2.text(0.01, 0.99, self.header, verticalalignment='top', bbox=self.bbox_props)
         # Plot 3d Absolute values
         self.abs_3d.scatter(self.data[:, self.plane_index[self.scan_plane][0]], self.data[:, self.plane_index[self.scan_plane][1]], Bxyz_abs,
                             marker='.', cmap='rainbow', c=Bxyz_abs)
