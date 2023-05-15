@@ -134,7 +134,7 @@ class PlotDashboard:
         self.all_coeffs = np.flip(np.vstack((self.coeffs_bx, self.coeffs_by, self.coeffs_ibx, self.coeffs_iby)).T, axis=0).round(1)
         self.integrated_magnetic_value = self.coeffs_iby[8]
         self.magnetic_length = self.coeffs_iby[8] / self.coeffs_by[8]
-        self.offset = (self.coeffs_ibx[-1] / self.coeffs_iby[-2] / 10, self.coeffs_iby[-1] / self.coeffs_iby[-2] / 10)
+        self.offset = (self.coeffs_ibx[-1] / self.coeffs_ibx[-2] / 10, self.coeffs_iby[-1] / self.coeffs_iby[-2] / 10)
         self.generate_header()
         self.create_figs()
         self.create_subplots()
