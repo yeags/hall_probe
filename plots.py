@@ -134,7 +134,7 @@ class PlotDashboard:
         self.all_coeffs = np.flip(np.vstack((self.coeffs_bx, self.coeffs_by, self.coeffs_ibx, self.coeffs_iby)).T, axis=0).round(1)
         self.integrated_magnetic_value = self.coeffs_iby[8]
         self.magnetic_length = self.coeffs_iby[8] / self.coeffs_by[8]
-        self.offset = (self.coeffs_ibx[-1] / self.coeffs_ibx[-2] / 10, self.coeffs_iby[-1] / self.coeffs_iby[-2] / 10)
+        self.offset = (self.coeffs_ibx[-1] / self.coeffs_iby[-2] * 10, self.coeffs_iby[-1] / self.coeffs_iby[-2] * 10)
         self.generate_header()
         self.create_figs()
         self.create_subplots()
@@ -282,7 +282,7 @@ class PlotDashboard:
     def generate_text_info(self):
         # Generate text information
         info = '\n'.join((f'Integrated Quadrupole: {self.integrated_magnetic_value:.1f} G',
-                          f'Magnetic Length: {self.magnetic_length:.1f} cm',
+                          f'Magnetic Length: {self.magnetic_length:.3f} cm',
                           f'Offset: $\Delta$x: {self.offset[0]:.3f} mm $\Delta$y: {self.offset[1]:.3f} mm'))
         self.fig_p2.text(0.6, 0.25, info, verticalalignment='top', bbox=self.bbox_props)
 
