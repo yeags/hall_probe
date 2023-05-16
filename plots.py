@@ -293,7 +293,3 @@ if __name__ == '__main__':
     root = tk.Tk()
     pw = PlotWindow(root)
     root.mainloop()
-    # data = np.genfromtxt('area.txt')
-    # plot = PlotDashboard()
-    # plot.plot_data(data, 'zx')
-    # plot.show_plots()

@@ -82,8 +82,6 @@ class HallProbe(HallDAQ):
         return np.array(reduced_data)
 
     def scan_point(self, *point):
-        # print(type(point))
-        # print(point.shape)
         if not point:
             point = self.mcs2pcs(self.cmm.get_position())
             self.power_on()
@@ -94,10 +92,7 @@ class HallProbe(HallDAQ):
             cal_data = calib_data(self.calib_coeffs, data)
             self.power_off()
             self.stop_hallsensor_task()
-            # Moved application of S matrix to mapping.py
-            # Bxyz = self.s_matrix@average_sample(remove_outliers(cal_data))
             Bxyz = average_sample(remove_outliers(cal_data))
-            # print(f'xyz: {point}\tBxyz: {Bxyz}')
             return np.hstack((point, Bxyz)).round(3)
         else:
             point = self.pcs2mcs(point[0])
@@ -114,14 +109,12 @@ class HallProbe(HallDAQ):
             point = self.cmm.get_position()
             self.pulse()
             data = self.read_hallsensor()
-            # print(f'raw point samples: {len(data)}')
             cal_data = calib_data(self.calib_coeffs, data)
             self.cmm.set_speed((70,70,70))
             self.cmm.cnc_off()
             self.power_off()
             self.stop_hallsensor_task()
             Bxyz = average_sample(remove_outliers(cal_data))
-            # print(f'xyz: {point}\tBxyz: {Bxyz}')
             return np.hstack((point, Bxyz)).round(3)
 
     def scan_line(self, start_point, end_point, point_density):
@@ -134,24 +127,18 @@ class HallProbe(HallDAQ):
         self.change_sampling(1, samples)
         self.cmm.cnc_on()
         self.cmm.set_speed((20,20,20))
-        # print(f'start pos: {start_point.shape}')
-        # print(f'current pos: {self.cmm.get_position()}')
         self.cmm.goto_position(start_point)
         while np.linalg.norm(start_point - self.cmm.get_position()) > 0.025:
             pass
-        # self.cmm.set_speed(speed_direction_vector)
         self.power_on()
         self.start_hallsensor_task()
         sleep(1)
-        # self.cmm.goto_position(end_point)
         self.cmm.send(f'G01X{speed_direction_vector[0]:.6f}Y{speed_direction_vector[1]:.6f}Z{speed_direction_vector[2]:.6f}\r\n'.encode('ascii'))
         sleep(1)
         self.pulse()
         start_pt = self.cmm.get_position()
         data = self.read_hallsensor()
         end_pt = self.cmm.get_position()
-        # while np.linalg.norm(end_point - self.cmm.get_position()) > 0.025:
-        #     pass
         self.cmm.send('G01X0Y0Z0\r\n'.encode('ascii'))
         self.cmm.set_speed((70,70,70))
         self.cmm.cnc_off()

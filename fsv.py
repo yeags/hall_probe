@@ -41,8 +41,6 @@ class FSV:
         dpf_max_index = np.where(dpf_cutoff == dpf_cutoff.max())[0][0] + filter_cutoff - fit_lc
         dnf_min_index = np.where(dnf_cutoff == dnf_cutoff.min())[0][0] + filter_cutoff + fit_lc
         dnf_max_index = np.where(dnf_cutoff == dnf_cutoff.max())[0][0] + filter_cutoff - fit_lc
-        # np.save('dpf.npy', np.array([data_pos[:, 0][dpf_min_index:dpf_max_index], dpf[dpf_min_index:dpf_max_index]]), allow_pickle=False)
-        # np.save('dnf.npy', np.array([data_neg[:, 0][dnf_min_index:dnf_max_index], dnf[dnf_min_index:dnf_max_index]]), allow_pickle=False)
         dpf_polyfit = np.polyfit(data_pos[:, 0][dpf_min_index:dpf_max_index], dpf[dpf_min_index:dpf_max_index], 3)
         dnf_polyfit = np.polyfit(data_neg[:, 0][dnf_min_index:dnf_max_index], dnf[dnf_min_index:dnf_max_index], 3)
         diff = dpf_polyfit - dnf_polyfit
@@ -52,7 +50,6 @@ class FSV:
             offset = np.roots(diff)[1].real
         else:
             offset = np.roots(diff)[1]
-        # print(f'roots: {offset}')
         return offset
 
     def import_fsv_alignment(self, filename: str):
@@ -75,7 +72,6 @@ class FSV:
         self.cmm.cnc_on()
         self.cmm.set_speed((5,5,5))
         self.cmm.goto_position(start_pt)
-        # print('Performing scan...')
         while np.linalg.norm(start_pt - self.cmm.get_position()) > 0.025:
             print(f'waiting for CMM to reach start position: {np.linalg.norm(start_pt - self.cmm.get_position())}')
             sleep(0.2)
@@ -96,7 +92,6 @@ class FSV:
         self.daq.stop_hallsensor_task()
         self.cmm.set_speed((70,70,70))
         self.cmm.cnc_off()
-        # print('scan complete')
         cal_data = calib_data(self.calibration_coeffs, data, sensitivity=sensitivity)
         return (start_position, end_position, cal_data)
 
@@ -112,7 +107,6 @@ class FSV:
         x_p = np.linspace(start_p[0], end_p[0], data_p.shape[0])
         sleep(1)
         # Scan -
-        # start_n, end_n, data_n = self.perform_scan(end_pos_mcs, start_pos_mcs, speed=speed_direction_vector, direction='negative')
         start_n, end_n, data_n = self.perform_scan(self.cmm.get_position(), start_pos_mcs, speed=speed_direction_vector, direction='negative')
         x_n = np.linspace(start_n[0], end_n[0], data_n.shape[0])
         # Combine CMM and hallsensor data into one array
@@ -133,7 +127,6 @@ class FSV:
         y_p = np.linspace(start_p[1], end_p[1], data_p.shape[0])
         sleep(1)
         # Scan -
-        # start_n, end_n, data_n = self.perform_scan(end_pos_mcs, start_pos_mcs, speed=speed_direction_vector, direction='negative')
         start_n, end_n, data_n = self.perform_scan(self.cmm.get_position(), start_pos_mcs, speed=speed_direction_vector, direction='negative')
         y_n = np.linspace(start_n[1], end_n[1], data_n.shape[0])
         combined_p = np.insert(data_p, 0, y_p, axis=1) # (y, Bx, By, Bz)
@@ -154,7 +147,6 @@ class FSV:
         z_p = np.linspace(start_p[2], end_p[2], data_p.shape[0])
         sleep(1)
         # Scan -
-        # start_n, end_n, data_n = self.perform_scan(end_pos_mcs, start_pos_mcs, speed=speed_direction_vector, sensitivity=100)
         start_n, end_n, data_n = self.perform_scan(self.cmm.get_position(), start_pos_mcs, speed=speed_direction_vector, sensitivity=100)
         z_n = np.linspace(start_n[2], end_n[2], data_n.shape[0])
         combined_p = np.insert(data_p, 0, z_p, axis=1) # (z, Bx, By, Bz)
@@ -163,7 +155,6 @@ class FSV:
         self.z_offset_fsv = data_pn_offset + self.TRACE_Z_OFFSET
 
     def save_probe_offset(self):
-        # print(f'x_fsv: {self.x_offset_fsv}\ny_fsv: {self.y_offset_fsv}\nz_fsv: {self.z_offset_fsv}')
         offset_mcs = np.array([self.x_offset_fsv, self.y_offset_fsv, self.z_offset_fsv])@self.rotation
         with open('fsv_offset.txt', 'w') as file:
             file.write(f'{offset_mcs[0]} {offset_mcs[1]} {offset_mcs[2]}\n')
@@ -263,5 +254,4 @@ class fsvWindow(tk.Toplevel):
 
 if __name__ == '__main__':
     pass
-    # test = FSV(r'D:\CMM Programs\FSV Calibration\fsv_alignment.txt', r'C:\Users\dyeagly\Documents\hall_probe\hall_probe\Hall probe 444-20')
     

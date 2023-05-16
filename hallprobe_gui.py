@@ -2,8 +2,6 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter.messagebox import showinfo, showerror
 from tkinter.scrolledtext import ScrolledText
-from tkinter import filedialog
-from tkinter.simpledialog import askstring
 from fsv import fsvWindow
 from cube import CubeWindow
 from zero_gauss import zgWindow
@@ -271,11 +269,6 @@ class ProbeQualification(ttk.LabelFrame):
         self.txt_instructions.grid(column=1, row=1, rowspan=4, sticky='nw', padx=5, pady=(0,5))
         self.txt_instructions.configure(state='disabled')
 
-    # def load_filepath(self, filepath, enable=None):
-    #     filepath = tk.filedialog.askopenfilename(filetypes=[('Text Files', '*.txt'), ('All Files', '*.*')])
-    #     if enable != None:
-    #         enable.configure(state='enabled')
-    
     def run_zero_gauss(self):
         zg = zgWindow(self)
     

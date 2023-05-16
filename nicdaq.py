@@ -42,7 +42,6 @@ class HallDAQ:
         self.hallsensor.timing.cfg_samp_clk_timing(self.RATE, sample_mode=self.acquisition_type,
                                                    samps_per_chan=self.SAMPLES_CHAN)
         self.power_relay.ao_channels.add_ao_voltage_chan('AnalogOut/ao0')
-        # self.fsv.ao_channels.add_ao_voltage_chan('AnalogOut/ao3')
         if self.trigger_status:
             self.trigger.ao_channels.add_ao_voltage_chan('AnalogOut/ao2')
             self.hallsensor.triggers.start_trigger.cfg_dig_edge_start_trig('/MagnetcDAQ/PFI0')
@@ -154,9 +153,6 @@ if __name__ == '__main__':
     print('Powered on.  Set to 2 T range.')
     print('Starting task...')
     daq.start_hallsensor_task()
-    # sleep(3)
-    # print('Sending trigger pulse.')
-    # daq.pulse()
     print('Turning on FSV')
     daq.fsv_on()
     print('Reading from hall sensor...')
@@ -166,9 +162,6 @@ if __name__ == '__main__':
     print('Turning off FSV')
     daq.fsv_off()
     print(f'Read {data.shape[0]} samples in {end - start} seconds')
-    print('Saving data as "sample_data.txt"')
-    # np.savetxt('sample_data.txt', data, fmt='%.6f')
-    # print(data)
     print(f' Array shape: {data.shape}')
     print('Stopping task')
     daq.stop_hallsensor_task()
