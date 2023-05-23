@@ -70,7 +70,7 @@ class FSV:
         sensitivity should either be 5 V/T or 100 V/T
         '''
         self.cmm.cnc_on()
-        self.cmm.set_speed((5,5,5))
+        self.cmm.set_speed(speed)
         self.cmm.goto_position(start_pt)
         while np.linalg.norm(start_pt - self.cmm.get_position()) > 0.025:
             print(f'waiting for CMM to reach start position: {np.linalg.norm(start_pt - self.cmm.get_position())}')
