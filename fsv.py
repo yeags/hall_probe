@@ -76,8 +76,6 @@ class FSV:
             print(f'waiting for CMM to reach start position: {np.linalg.norm(start_pt - self.cmm.get_position())}')
             sleep(0.2)
         print(f'CMM speed limits: X {round(speed[0], 1)}\tY {round(speed[1], 1)}\TZ {round(speed[2], 1)}')
-        # Temporary speed limit fix
-        speed = (5,5,5)
         self.cmm.set_speed(speed)
         self.daq.fsv_on(v=direction)
         self.daq.start_hallsensor_task()
