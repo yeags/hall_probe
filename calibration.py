@@ -120,20 +120,36 @@ def fit_linear(x, y):
 #     S = np.linalg.inv(np.array([e_hat1, e_hat2, e_hat3]))
 #     return S
 
+# def orthogonalize(cube_data: np.ndarray):
+#     '''
+#     cube_data is a (12, 3) array
+#     function returns (3,3) array
+#     Rewritten March 8, Erik Wallen
+#     '''
+#     v1 = np.mean(cube_data[:4], axis=0)
+#     v2 = np.mean(cube_data[4:8], axis=0)
+#     v3 = np.mean(cube_data[8:], axis=0)
+#     cubefield=np.max(np.abs(cube_data))
+#     e_hat1 = v1/cubefield
+#     e_hat2 = v2/cubefield
+#     e_hat3 = v3/cubefield
+#     S = np.array([e_hat1, e_hat2, e_hat3])
+#     return S
 def orthogonalize(cube_data: np.ndarray):
     '''
     cube_data is a (12, 3) array
     function returns (3,3) array
-    Rewritten March 8, Erik Wallen
+    Rewritten July 9, Dave Yeagly
     '''
     v1 = np.mean(cube_data[:4], axis=0)
     v2 = np.mean(cube_data[4:8], axis=0)
     v3 = np.mean(cube_data[8:], axis=0)
-    cubefield=np.max(np.abs(cube_data))
-    e_hat1 = v1/cubefield
-    e_hat2 = v2/cubefield
-    e_hat3 = v3/cubefield
-    S = np.array([e_hat1, e_hat2, e_hat3])
+    # cubefield=np.max(np.abs(cube_data))
+    # e_hat1 = v1/cubefield
+    # e_hat2 = v2/cubefield
+    # e_hat3 = v3/cubefield
+    # S = np.array([e_hat1, e_hat2, e_hat3])
+    S = np.array([v1, v2, v3])
     return S
 
 def remove_outliers(sensor_data, stdev=2, iterations=1):

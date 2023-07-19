@@ -66,6 +66,13 @@ class CMM(socket.socket):
         lag = self.recv(1024).decode('ascii')
         lag_np = np.array([float(i) for i in re.findall(r'[-\+]\d*\.\d+', lag)][:3])
         return lag_np
+    
+    def get_workpiece_temp(self):
+        self.send('D07\r\n\x01'.encode('ascii'))
+        response = self.recv(1024).decode('ascii')
+        temp = [float(i) for i in re.findall(r'\d+\.\d+', response)]
+        avg_temp = (temp[2] + temp[3]) / 2
+        return avg_temp
 
 
 def generate_scan_area(start_point, x_length, y_length, grid=0.5):

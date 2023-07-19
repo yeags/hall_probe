@@ -112,9 +112,15 @@ class CubeWindow(tk.Toplevel):
             self.cube.cmm.set_speed((70,70,70))
             self.cube.cmm.cnc_off()
             if self.click_index == 11:
+                nominal_flux_density = 87.84 # mT
+                magnetic_temp_coeff = -0.000043 # mT/degC
+                calib_temp = 23.5 # degC
+                field_cube_angle = 0.7 # deg
+                cube_temp = self.cube.cmm.get_workpiece_temp()
+                calib_magnitude_matrix = np.identity * (nominal_flux_density + magnetic_temp_coeff * (cube_temp - calib_temp))*np.cos(np.deg2rad(field_cube_angle))
                 print(f'cube center data:\n{self.cube.cube_dict.values()}')
-                s_matrix = orthogonalize(np.array([i for i in self.cube.cube_dict.values()]))
-                s_matrix_mcs = self.cube.rotation.T@s_matrix
+                avg_cube_meas = orthogonalize(np.array([i for i in self.cube.cube_dict.values()]))
+                s_matrix_mcs = np.linalg.inv(avg_cube_meas)@calib_magnitude_matrix@self.cube.rotation
                 np.save('sensitivity.npy', s_matrix_mcs, allow_pickle=False)
                 self.lbl_img_desc.configure(text='Cube qualification complete.  Window can now be closed.')
                 self.btn_measure_cube_center.configure(state='disabled')
