@@ -113,7 +113,7 @@ class CubeWindow(tk.Toplevel):
             self.cube.cmm.cnc_off()
             if self.click_index == 11:
                 nominal_flux_density = 87.84 # mT
-                magnetic_temp_coeff = -0.000043 # mT/degC
+                magnetic_temp_coeff = -0.043 # mT/degC
                 calib_temp = 23.5 # degC
                 field_cube_angle = 0.7 # deg
                 cube_temp = self.cube.cmm.get_workpiece_temp()
