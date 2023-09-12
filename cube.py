@@ -117,7 +117,7 @@ class CubeWindow(tk.Toplevel):
                 calib_temp = 23.5 # degC
                 field_cube_angle = 0.7 # deg
                 cube_temp = self.cube.cmm.get_workpiece_temp()
-                calib_magnitude_matrix = np.identity * (nominal_flux_density + magnetic_temp_coeff * (cube_temp - calib_temp))*np.cos(np.deg2rad(field_cube_angle))
+                calib_magnitude_matrix = np.identity(3) * (nominal_flux_density + magnetic_temp_coeff * (cube_temp - calib_temp))*np.cos(np.deg2rad(field_cube_angle))
                 print(f'cube center data:\n{self.cube.cube_dict.values()}')
                 avg_cube_meas = orthogonalize(np.array([i for i in self.cube.cube_dict.values()]))
                 s_matrix_mcs = np.linalg.inv(avg_cube_meas)@calib_magnitude_matrix@self.cube.rotation
