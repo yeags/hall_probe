@@ -44,8 +44,8 @@ class PlotWindow(tk.Toplevel):
     def create_widgets(self):
         self.lbl_scan_plane = ttk.Label(self.frm_plotwindow, text='Scan Plane')
         self.lbl_plot_axis = ttk.Label(self.frm_plotwindow, text='Plot Axis')
-        self.lbl_int_from = ttk.Label(self.frm_plotwindow, text='Integrate From')
-        self.lbl_int_to = ttk.Label(self.frm_plotwindow, text='To')
+        self.lbl_int_from = ttk.Label(self.frm_plotwindow, text='Integrate From [mm]')
+        self.lbl_int_to = ttk.Label(self.frm_plotwindow, text='To [mm]')
         self.lbl_scan_direction = ttk.Label(self.frm_plotwindow, text='Scan Direction')
         self.lbl_scan_spacing = ttk.Label(self.frm_plotwindow, text='Scan Spacing [mm]')
         
@@ -120,12 +120,39 @@ class PlotDashboard:
         self.filepath = filepath
         self.scan_plane = scan_plane
         self.plot_axis = plot_axis
-        self.int_from_to = (int_from_to[0] / 10, int_from_to[1] / 10)
+        self.int_from_to = (int_from_to[0] / 10, int_from_to[1] / 10) # convert inputs from mm to cm
         self.scan_direction = scan_direction
-        self.scan_spacing = scan_spacing / 10
-        self.data_at_z = self.data[(self.data[:, self.args_index[self.scan_direction]] > 0-self.scan_spacing/2)&(self.data[:, self.args_index[self.scan_direction]] < 0+self.scan_spacing/2)]
+        self.scan_spacing = scan_spacing / 10 # convert input from mm to cm
+        self.perform_fit()
+        self.generate_header()
+        self.create_figs()
+        self.create_subplots()
+        self.populate_dashboard()
+    
+    def find_scan_plane(self, xyz):
+        # Fit plane to data and determine scan plane
+        planes = ['xy', 'yz', 'zx']
+        x, y, z = xyz[:, 0], xyz[:, 1], xyz[:, 2]
+        A = np.array([[np.sum(x**2), np.sum(x*y), np.sum(x)],
+              [np.sum(x*y), np.sum(y**2), np.sum(y)],
+              [np.sum(x), np.sum(y), xyz.shape[0]]])
+        b = np.array([np.sum(x*z), np.sum(y*z), np.sum(z)])
+        v = np.dot(np.linalg.inv(A), b)
+        v_hat = v / np.linalg.norm(v)
+        p_arg = np.argmax(np.abs(v_hat))
+        return planes[p_arg]
+    
+    def find_scan_direction(self, xyz):
+        # Determine scan area and find longest scaned axis
+        scan_direction = ['x', 'y', 'z']
+        scan_range = np.max(xyz, axis=0) - np.min(xyz, axis=0)
+        return scan_direction[np.argmax(scan_range)]
+
+    def perform_fit(self):
+        self.data_at_z = self.data[(self.data[:, self.args_index[self.scan_direction]] > -self.scan_spacing/2)&(self.data[:, self.args_index[self.scan_direction]] < self.scan_spacing/2)]
         self.z_location = np.mean(self.data_at_z[:, 2])
-        self.data_at_z_by_fit = np.polyfit(self.data_at_z[:, 0], self.data_at_z[:, 4], 1)
+        # self.data_at_z_bx_fit = np.polyfit(self.data_at_z[:, self.args_index[self.plot_axis]], self.data_at_z[:, self.args_index['Bx']], 9)
+        # self.data_at_z_by_fit = np.polyfit(self.data_at_z[:, self.args_index[self.plot_axis]], self.data_at_z[:, self.args_index[self.args_index['By']]], 9)
         self.scan_integrals = integrate_lines_from_area(self.data[(self.data[:, 0] > self.int_from_to[0]-self.scan_spacing/2) & (self.data[:, 0] < self.int_from_to[1]+self.scan_spacing/2)], self.scan_plane, self.scan_direction, self.scan_spacing)
         self.coeffs_bx = np.polyfit(self.data_at_z[:, 0], self.data_at_z[:, 3], 9)
         self.coeffs_by = np.polyfit(self.data_at_z[:, 0], self.data_at_z[:, 4], 9)
@@ -135,10 +162,6 @@ class PlotDashboard:
         self.integrated_magnetic_value = self.coeffs_iby[8]
         self.magnetic_length = self.coeffs_iby[8] / self.coeffs_by[8]
         self.offset = (self.coeffs_iby[-1] / self.coeffs_iby[-2] * 10, self.coeffs_ibx[-1] / self.coeffs_iby[-2] * 10)
-        self.generate_header()
-        self.create_figs()
-        self.create_subplots()
-        self.populate_dashboard()
     
     def create_figs(self):
         self.fig_p1 = plt.figure(figsize=(11, 8.5))
