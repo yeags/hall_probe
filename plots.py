@@ -102,7 +102,7 @@ class PlotWindow(tk.Toplevel):
         # Get data from comboboxes
         self.get_inputs()
         # Create dashboard instance and pass arguments
-        self.plot_dashboard = PlotDashboard(self.data, self.filepath, *self.get_inputs())
+        self.plot_dashboard = PlotDashboard(self.data, self.filepath)
         self.plot_dashboard.save_plots()
         self.plot_dashboard.show_plots()
 
@@ -110,28 +110,25 @@ class PlotDashboard:
     plane_index = {'xy': (0, 1, 'x axis [cm]', 'y axis[cm]'),
                    'yz': (1, 2, 'y axis [cm]', 'z axis [cm]'),
                    'zx': (2, 0, 'z axis [cm]', 'x axis [cm]')}
-    int_across_index = {'x': 0, 'y': 1, 'z': 2}
     args_index = {'x': 0, 'y': 1, 'z': 2, 'Bx': 3, 'By': 4, 'Bz': 5}
     integrals_index = {'x': 0, 'Bx': 1, 'By': 2, 'Bz': 3}
     coeffs_header = ['Bx', 'By', 'I Bx', 'I By']
 
-    def __init__(self, data, filepath, scan_plane, plot_axis, int_from_to, scan_direction, scan_spacing):
+    def __init__(self, data, filepath):
         self.data = data
         self.filepath = filepath
-        self.scan_plane = scan_plane
-        self.plot_axis = plot_axis
-        self.int_from_to = (int_from_to[0] / 10, int_from_to[1] / 10) # convert inputs from mm to cm
-        self.scan_direction = scan_direction
-        self.scan_spacing = scan_spacing / 10 # convert input from mm to cm
+        self.find_scan_parameters(self.data[:, :3])
         self.perform_fit()
         self.generate_header()
         self.create_figs()
         self.create_subplots()
         self.populate_dashboard()
-    
-    def find_scan_plane(self, xyz):
-        # Fit plane to data and determine scan plane
-        planes = ['xy', 'yz', 'zx']
+
+    def find_scan_parameters(self, xyz):
+        '''
+        Fit plane to data and determine scan plane
+        '''
+        planes = ['yz', 'zx', 'xy']
         x, y, z = xyz[:, 0], xyz[:, 1], xyz[:, 2]
         A = np.array([[np.sum(x**2), np.sum(x*y), np.sum(x)],
               [np.sum(x*y), np.sum(y**2), np.sum(y)],
@@ -139,14 +136,42 @@ class PlotDashboard:
         b = np.array([np.sum(x*z), np.sum(y*z), np.sum(z)])
         v = np.dot(np.linalg.inv(A), b)
         v_hat = v / np.linalg.norm(v)
-        p_arg = np.argmax(np.abs(v_hat))
-        return planes[p_arg]
-    
-    def find_scan_direction(self, xyz):
-        # Determine scan area and find longest scaned axis
+        p_arg = planes[np.argmax(np.abs(v_hat))]
+        '''
+        Determine scan area and find longest scanned axis for scan direction
+        '''
         scan_direction = ['x', 'y', 'z']
         scan_range = np.max(xyz, axis=0) - np.min(xyz, axis=0)
-        return scan_direction[np.argmax(scan_range)]
+        scan_dir_arg = scan_direction[np.argmax(scan_range)]
+        '''
+        Determine scan spacing from scan plane
+        '''
+        plane_index = {'xy': (0, 1), 'yz': (1, 2), 'zx': (2, 0)}
+        delta_a = np.diff(xyz[:, plane_index[p_arg][0]])
+        delta_b = np.diff(xyz[:, plane_index[p_arg][1]])
+        dist = np.sqrt(delta_a**2 + delta_b**2)
+        dist_std = np.std(dist, ddof=1)
+        spacing = np.round(dist[(dist > -dist_std) & (dist < dist_std)].mean(), 3)
+        '''
+        Determine plot axis
+        '''
+        plot_axis = ''.join([i for i in p_arg if i not in scan_dir_arg])
+        '''
+        Determine integration range
+        '''
+        int_across_index = {'x': 0, 'y': 1, 'z': 2}
+        range_tuple = (np.min(xyz[:, int_across_index[plot_axis]]), np.max(xyz[:, int_across_index[plot_axis]]))
+        '''
+        Assign class variables
+        '''
+        self.scan_plane = p_arg
+        self.plot_axis = plot_axis
+        self.scan_direction = scan_dir_arg
+        self.scan_spacing = spacing
+        self.int_from_to = range_tuple
+        print(f'Scan Plane: {self.scan_plane}\nPlot Axis: {self.plot_axis}\nScan Direction: {self.scan_direction}\
+              \nScan Spacing: {self.scan_spacing} cm\nIntegrate From: {self.int_from_to[0]} cm\nIntegrate To: {self.int_from_to[1]} cm')
+    
 
     def perform_fit(self):
         self.data_at_z = self.data[(self.data[:, self.args_index[self.scan_direction]] > -self.scan_spacing/2)&(self.data[:, self.args_index[self.scan_direction]] < self.scan_spacing/2)]
