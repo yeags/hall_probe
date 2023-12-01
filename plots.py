@@ -113,6 +113,7 @@ class PlotDashboard:
     args_index = {'x': 0, 'y': 1, 'z': 2, 'Bx': 3, 'By': 4, 'Bz': 5}
     integrals_index = {'x': 0, 'Bx': 1, 'By': 2, 'Bz': 3}
     coeffs_header = ['Bx', 'By', 'I Bx', 'I By']
+    coefficient_index = {'xy': None, 'yz': (1, 0, 3, 2), 'zx': (0, 1, 2, 3)}
 
     def __init__(self, data, filepath):
         self.data = data
@@ -169,6 +170,7 @@ class PlotDashboard:
         self.scan_direction = scan_dir_arg
         self.scan_spacing = spacing
         self.int_from_to = range_tuple
+        # Print scan parameters
         print(f'Scan Plane: {self.scan_plane}\nPlot Axis: {self.plot_axis}\nScan Direction: {self.scan_direction}\
               \nScan Spacing: {self.scan_spacing} cm\nIntegrate From: {self.int_from_to[0]} cm\nIntegrate To: {self.int_from_to[1]} cm')
     
@@ -176,17 +178,19 @@ class PlotDashboard:
     def perform_fit(self):
         self.data_at_z = self.data[(self.data[:, self.args_index[self.scan_direction]] > -self.scan_spacing/2)&(self.data[:, self.args_index[self.scan_direction]] < self.scan_spacing/2)]
         self.z_location = np.mean(self.data_at_z[:, 2])
-        # self.data_at_z_bx_fit = np.polyfit(self.data_at_z[:, self.args_index[self.plot_axis]], self.data_at_z[:, self.args_index['Bx']], 9)
-        # self.data_at_z_by_fit = np.polyfit(self.data_at_z[:, self.args_index[self.plot_axis]], self.data_at_z[:, self.args_index[self.args_index['By']]], 9)
-        self.scan_integrals = integrate_lines_from_area(self.data[(self.data[:, 0] > self.int_from_to[0]-self.scan_spacing/2) & (self.data[:, 0] < self.int_from_to[1]+self.scan_spacing/2)], self.scan_plane, self.scan_direction, self.scan_spacing)
-        self.coeffs_bx = np.polyfit(self.data_at_z[:, 0], self.data_at_z[:, 3], 9)
-        self.coeffs_by = np.polyfit(self.data_at_z[:, 0], self.data_at_z[:, 4], 9)
+        self.scan_integrals = integrate_lines_from_area(self.data[(self.data[:, self.args_index[self.plot_axis]] > self.int_from_to[0]-self.scan_spacing/2) & (self.data[:, self.args_index[self.plot_axis]] < self.int_from_to[1]+self.scan_spacing/2)], self.scan_plane, self.scan_direction, self.scan_spacing)
+        self.coeffs_bx = np.polyfit(self.data_at_z[:, self.args_index[self.plot_axis]], self.data_at_z[:, 3], 9)
+        self.coeffs_by = np.polyfit(self.data_at_z[:, self.args_index[self.plot_axis]], self.data_at_z[:, 4], 9)
         self.coeffs_ibx = np.polyfit(self.scan_integrals[:, 0], self.scan_integrals[:, 1], 9)
         self.coeffs_iby = np.polyfit(self.scan_integrals[:, 0], self.scan_integrals[:, 2], 9)
         self.all_coeffs = np.flip(np.vstack((self.coeffs_bx, self.coeffs_by, self.coeffs_ibx, self.coeffs_iby)).T, axis=0).round(1)
-        self.integrated_magnetic_value = self.coeffs_iby[8]
-        self.magnetic_length = self.coeffs_iby[8] / self.coeffs_by[8]
-        self.offset = (self.coeffs_iby[-1] / self.coeffs_iby[-2] * 10, self.coeffs_ibx[-1] / self.coeffs_iby[-2] * 10)
+        '''
+        Calculate integrated magnetic value, magnetic length, and offset
+        taking into account the scan parameters (horizontal or vertical plane)
+        '''
+        self.integrated_magnetic_value = self.all_coeffs[1, self.coefficient_index[self.scan_plane][3]]
+        self.magnetic_length = self.all_coeffs[1, self.coefficient_index[self.scan_plane][3]] / self.all_coeffs[1, self.coefficient_index[self.scan_plane][1]]
+        self.offset = (self.all_coeffs[0, self.coefficient_index[self.scan_plane][3]] / self.all_coeffs[1, self.coefficient_index[self.scan_plane][3]] * 10, self.all_coeffs[0, self.coefficient_index[self.scan_plane][2]] / self.all_coeffs[1, self.coefficient_index[self.scan_plane][3]] * 10)
     
     def create_figs(self):
         self.fig_p1 = plt.figure(figsize=(11, 8.5))
@@ -310,13 +314,13 @@ class PlotDashboard:
 
     def generate_2d_plot_323(self):
         self.plot_323.plot(self.scan_integrals[:, 0], self.scan_integrals[:, self.integrals_index['By']], marker='.', label='By Integrals')
-        self.plot_323.set_xlabel('x axis [cm]')
+        self.plot_323.set_xlabel(f'{self.plot_axis} axis [cm]')
         self.plot_323.set_ylabel('By [G$\cdot$cm]')
         self.plot_323.grid()
         
     def generate_2d_plot_324(self):
         self.plot_324.plot(self.scan_integrals[:, 0], self.scan_integrals[:, self.integrals_index['Bx']], marker='.', label='Bx Integrals')
-        self.plot_324.set_xlabel('x axis [cm]')
+        self.plot_324.set_xlabel(f'{self.plot_axis} axis [cm]')
         self.plot_324.set_ylabel('Bx [G$\cdot$cm]')
         self.plot_324.grid()
     
