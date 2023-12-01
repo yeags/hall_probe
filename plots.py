@@ -38,46 +38,47 @@ class PlotWindow(tk.Toplevel):
         super().__init__(parent)
         self.title = 'Plotting Parameters'
         self.frm_plotwindow = ttk.Frame(self)
+        self.geometry('320x240')
         self.frm_plotwindow.pack()
         self.create_widgets()
     
     def create_widgets(self):
-        self.lbl_scan_plane = ttk.Label(self.frm_plotwindow, text='Scan Plane')
-        self.lbl_plot_axis = ttk.Label(self.frm_plotwindow, text='Plot Axis')
-        self.lbl_int_from = ttk.Label(self.frm_plotwindow, text='Integrate From')
-        self.lbl_int_to = ttk.Label(self.frm_plotwindow, text='To')
-        self.lbl_scan_direction = ttk.Label(self.frm_plotwindow, text='Scan Direction')
-        self.lbl_scan_spacing = ttk.Label(self.frm_plotwindow, text='Scan Spacing [mm]')
+        # self.lbl_scan_plane = ttk.Label(self.frm_plotwindow, text='Scan Plane')
+        # self.lbl_plot_axis = ttk.Label(self.frm_plotwindow, text='Plot Axis')
+        # self.lbl_int_from = ttk.Label(self.frm_plotwindow, text='Integrate From [mm]')
+        # self.lbl_int_to = ttk.Label(self.frm_plotwindow, text='To [mm]')
+        # self.lbl_scan_direction = ttk.Label(self.frm_plotwindow, text='Scan Direction')
+        # self.lbl_scan_spacing = ttk.Label(self.frm_plotwindow, text='Scan Spacing [mm]')
         
-        self.cbox_scan_plane = ttk.Combobox(self.frm_plotwindow, values=['xy', 'yz', 'zx'], width=6)
-        self.cbox_scan_plane.current(2)
-        self.cbox_plot_axis = ttk.Combobox(self.frm_plotwindow, values=['x', 'y', 'z'], width=6)
-        self.cbox_plot_axis.current(0)
-        self.cbox_scan_direction = ttk.Combobox(self.frm_plotwindow, values=['x', 'y', 'z'], width=6)
-        self.cbox_scan_direction.current(2)
-        self.cbox_scan_spacing = ttk.Combobox(self.frm_plotwindow, values=['0.1', '0.25', '0.5', '1.0', '2.0'], width=6)
-        self.cbox_scan_spacing.current(3)
+        # self.cbox_scan_plane = ttk.Combobox(self.frm_plotwindow, values=['xy', 'yz', 'zx'], width=6)
+        # self.cbox_scan_plane.current(2)
+        # self.cbox_plot_axis = ttk.Combobox(self.frm_plotwindow, values=['x', 'y', 'z'], width=6)
+        # self.cbox_plot_axis.current(0)
+        # self.cbox_scan_direction = ttk.Combobox(self.frm_plotwindow, values=['x', 'y', 'z'], width=6)
+        # self.cbox_scan_direction.current(2)
+        # self.cbox_scan_spacing = ttk.Combobox(self.frm_plotwindow, values=['0.1', '0.25', '0.5', '1.0', '2.0'], width=6)
+        # self.cbox_scan_spacing.current(3)
 
-        self.ent_int_from = ttk.Entry(self.frm_plotwindow, width=6)
-        self.ent_int_from.insert(0, '-11')
-        self.ent_int_to = ttk.Entry(self.frm_plotwindow, width=6)
-        self.ent_int_to.insert(0, '11')
+        # self.ent_int_from = ttk.Entry(self.frm_plotwindow, width=6)
+        # self.ent_int_from.insert(0, '-11')
+        # self.ent_int_to = ttk.Entry(self.frm_plotwindow, width=6)
+        # self.ent_int_to.insert(0, '11')
 
         self.btn_load_data = ttk.Button(self.frm_plotwindow, text='Load Data', command=self.load_data)
         self.btn_plot = ttk.Button(self.frm_plotwindow, text='Plot Data', command=self.generate_plots, state=tk.DISABLED)
         # place widgets
-        self.lbl_scan_plane.grid(row=0, column=0, sticky='e')
-        self.lbl_plot_axis.grid(row=1, column=0, sticky='e')
-        self.lbl_int_from.grid(row=2, column=0, sticky='e')
-        self.lbl_int_to.grid(row=2, column=2, sticky='e')
-        self.lbl_scan_direction.grid(row=3, column=0, sticky='e')
-        self.lbl_scan_spacing.grid(row=4, column=0, sticky='e')
-        self.cbox_scan_plane.grid(row=0, column=1, sticky='w', padx=5, pady=5)
-        self.cbox_plot_axis.grid(row=1, column=1, sticky='w', padx=5, pady=5)
-        self.ent_int_from.grid(row=2, column=1, sticky='w', padx=5, pady=5)
-        self.ent_int_to.grid(row=2, column=3, sticky='w', padx=5, pady=5)
-        self.cbox_scan_direction.grid(row=3, column=1, sticky='w', padx=5, pady=5)
-        self.cbox_scan_spacing.grid(row=4, column=1, sticky='w', padx=5, pady=5)
+        # self.lbl_scan_plane.grid(row=0, column=0, sticky='e')
+        # self.lbl_plot_axis.grid(row=1, column=0, sticky='e')
+        # self.lbl_int_from.grid(row=2, column=0, sticky='e')
+        # self.lbl_int_to.grid(row=2, column=2, sticky='e')
+        # self.lbl_scan_direction.grid(row=3, column=0, sticky='e')
+        # self.lbl_scan_spacing.grid(row=4, column=0, sticky='e')
+        # self.cbox_scan_plane.grid(row=0, column=1, sticky='w', padx=5, pady=5)
+        # self.cbox_plot_axis.grid(row=1, column=1, sticky='w', padx=5, pady=5)
+        # self.ent_int_from.grid(row=2, column=1, sticky='w', padx=5, pady=5)
+        # self.ent_int_to.grid(row=2, column=3, sticky='w', padx=5, pady=5)
+        # self.cbox_scan_direction.grid(row=3, column=1, sticky='w', padx=5, pady=5)
+        # self.cbox_scan_spacing.grid(row=4, column=1, sticky='w', padx=5, pady=5)
         self.btn_load_data.grid(row=5, column=0, padx=5, pady=5)
         self.btn_plot.grid(row=5, column=1, padx=5, pady=5)
 
@@ -90,19 +91,19 @@ class PlotWindow(tk.Toplevel):
         self.data[:, 3:] *= 10
         self.btn_plot.config(state=tk.NORMAL)
     
-    def get_inputs(self):
-        scan_plane = self.cbox_scan_plane.get()
-        plot_axis = self.cbox_plot_axis.get()
-        scan_direction = self.cbox_scan_direction.get()
-        scan_spacing = float(self.cbox_scan_spacing.get())
-        int_from_to = (float(self.ent_int_from.get()), float(self.ent_int_to.get()))
-        return scan_plane, plot_axis, int_from_to, scan_direction, scan_spacing
+    # def get_inputs(self):
+    #     scan_plane = self.cbox_scan_plane.get()
+    #     plot_axis = self.cbox_plot_axis.get()
+    #     scan_direction = self.cbox_scan_direction.get()
+    #     scan_spacing = float(self.cbox_scan_spacing.get())
+    #     int_from_to = (float(self.ent_int_from.get()), float(self.ent_int_to.get()))
+    #     return scan_plane, plot_axis, int_from_to, scan_direction, scan_spacing
     
     def generate_plots(self):
         # Get data from comboboxes
-        self.get_inputs()
+        # self.get_inputs()
         # Create dashboard instance and pass arguments
-        self.plot_dashboard = PlotDashboard(self.data, self.filepath, *self.get_inputs())
+        self.plot_dashboard = PlotDashboard(self.data, self.filepath)
         self.plot_dashboard.save_plots()
         self.plot_dashboard.show_plots()
 
@@ -110,35 +111,87 @@ class PlotDashboard:
     plane_index = {'xy': (0, 1, 'x axis [cm]', 'y axis[cm]'),
                    'yz': (1, 2, 'y axis [cm]', 'z axis [cm]'),
                    'zx': (2, 0, 'z axis [cm]', 'x axis [cm]')}
-    int_across_index = {'x': 0, 'y': 1, 'z': 2}
     args_index = {'x': 0, 'y': 1, 'z': 2, 'Bx': 3, 'By': 4, 'Bz': 5}
     integrals_index = {'x': 0, 'Bx': 1, 'By': 2, 'Bz': 3}
     coeffs_header = ['Bx', 'By', 'I Bx', 'I By']
+    coefficient_index = {'xy': None, 'yz': (1, 0, 3, 2), 'zx': (0, 1, 2, 3)}
 
-    def __init__(self, data, filepath, scan_plane, plot_axis, int_from_to, scan_direction, scan_spacing):
+    def __init__(self, data, filepath):
         self.data = data
         self.filepath = filepath
-        self.scan_plane = scan_plane
-        self.plot_axis = plot_axis
-        self.int_from_to = (int_from_to[0] / 10, int_from_to[1] / 10)
-        self.scan_direction = scan_direction
-        self.scan_spacing = scan_spacing / 10
-        self.data_at_z = self.data[(self.data[:, self.args_index[self.scan_direction]] > 0-self.scan_spacing/2)&(self.data[:, self.args_index[self.scan_direction]] < 0+self.scan_spacing/2)]
-        self.z_location = np.mean(self.data_at_z[:, 2])
-        self.data_at_z_by_fit = np.polyfit(self.data_at_z[:, 0], self.data_at_z[:, 4], 1)
-        self.scan_integrals = integrate_lines_from_area(self.data[(self.data[:, 0] > self.int_from_to[0]-self.scan_spacing/2) & (self.data[:, 0] < self.int_from_to[1]+self.scan_spacing/2)], self.scan_plane, self.scan_direction, self.scan_spacing)
-        self.coeffs_bx = np.polyfit(self.data_at_z[:, 0], self.data_at_z[:, 3], 9)
-        self.coeffs_by = np.polyfit(self.data_at_z[:, 0], self.data_at_z[:, 4], 9)
-        self.coeffs_ibx = np.polyfit(self.scan_integrals[:, 0], self.scan_integrals[:, 1], 9)
-        self.coeffs_iby = np.polyfit(self.scan_integrals[:, 0], self.scan_integrals[:, 2], 9)
-        self.all_coeffs = np.flip(np.vstack((self.coeffs_bx, self.coeffs_by, self.coeffs_ibx, self.coeffs_iby)).T, axis=0).round(1)
-        self.integrated_magnetic_value = self.coeffs_iby[8]
-        self.magnetic_length = self.coeffs_iby[8] / self.coeffs_by[8]
-        self.offset = (self.coeffs_iby[-1] / self.coeffs_iby[-2] * 10, self.coeffs_ibx[-1] / self.coeffs_iby[-2] * 10)
+        self.find_scan_parameters(self.data[:, :3])
+        self.perform_fit()
         self.generate_header()
         self.create_figs()
         self.create_subplots()
         self.populate_dashboard()
+
+    def find_scan_parameters(self, xyz):
+        '''
+        Fit plane to data and determine scan plane
+        '''
+        planes = ['yz', 'zx', 'xy']
+        x, y, z = xyz[:, 0], xyz[:, 1], xyz[:, 2]
+        A = np.array([[np.sum(x**2), np.sum(x*y), np.sum(x)],
+              [np.sum(x*y), np.sum(y**2), np.sum(y)],
+              [np.sum(x), np.sum(y), xyz.shape[0]]])
+        b = np.array([np.sum(x*z), np.sum(y*z), np.sum(z)])
+        v = np.dot(np.linalg.inv(A), b)
+        v_hat = v / np.linalg.norm(v)
+        p_arg = planes[np.argmax(np.abs(v_hat))]
+        '''
+        Determine scan area and find longest scanned axis for scan direction
+        '''
+        scan_direction = ['x', 'y', 'z']
+        scan_range = np.max(xyz, axis=0) - np.min(xyz, axis=0)
+        scan_dir_arg = scan_direction[np.argmax(scan_range)]
+        '''
+        Determine scan spacing from scan plane
+        '''
+        plane_index = {'xy': (0, 1), 'yz': (1, 2), 'zx': (2, 0)}
+        delta_a = np.diff(xyz[:, plane_index[p_arg][0]])
+        delta_b = np.diff(xyz[:, plane_index[p_arg][1]])
+        dist = np.sqrt(delta_a**2 + delta_b**2)
+        dist_std = np.std(dist, ddof=1)
+        spacing = np.round(dist[(dist > -dist_std) & (dist < dist_std)].mean(), 3)
+        '''
+        Determine plot axis
+        '''
+        plot_axis = ''.join([i for i in p_arg if i not in scan_dir_arg])
+        '''
+        Determine integration range
+        '''
+        int_across_index = {'x': 0, 'y': 1, 'z': 2}
+        range_tuple = (np.min(xyz[:, int_across_index[plot_axis]]), np.max(xyz[:, int_across_index[plot_axis]]))
+        '''
+        Assign class variables
+        '''
+        self.scan_plane = p_arg
+        self.plot_axis = plot_axis
+        self.scan_direction = scan_dir_arg
+        self.scan_spacing = spacing
+        self.int_from_to = range_tuple
+        # Print scan parameters
+        print(f'Scan Plane: {self.scan_plane}\nPlot Axis: {self.plot_axis}\nScan Direction: {self.scan_direction}\
+              \nScan Spacing: {self.scan_spacing} cm\nIntegrate From: {self.int_from_to[0]} cm\nIntegrate To: {self.int_from_to[1]} cm')
+    
+
+    def perform_fit(self):
+        self.data_at_z = self.data[(self.data[:, self.args_index[self.scan_direction]] > -self.scan_spacing/2)&(self.data[:, self.args_index[self.scan_direction]] < self.scan_spacing/2)]
+        self.z_location = np.mean(self.data_at_z[:, 2])
+        self.scan_integrals = integrate_lines_from_area(self.data[(self.data[:, self.args_index[self.plot_axis]] > self.int_from_to[0]-self.scan_spacing/2) & (self.data[:, self.args_index[self.plot_axis]] < self.int_from_to[1]+self.scan_spacing/2)], self.scan_plane, self.scan_direction, self.scan_spacing)
+        self.coeffs_bx = np.polyfit(self.data_at_z[:, self.args_index[self.plot_axis]], self.data_at_z[:, 3], 9)
+        self.coeffs_by = np.polyfit(self.data_at_z[:, self.args_index[self.plot_axis]], self.data_at_z[:, 4], 9)
+        self.coeffs_ibx = np.polyfit(self.scan_integrals[:, 0], self.scan_integrals[:, 1], 9)
+        self.coeffs_iby = np.polyfit(self.scan_integrals[:, 0], self.scan_integrals[:, 2], 9)
+        self.all_coeffs = np.flip(np.vstack((self.coeffs_bx, self.coeffs_by, self.coeffs_ibx, self.coeffs_iby)).T, axis=0).round(1)
+        '''
+        Calculate integrated magnetic value, magnetic length, and offset
+        taking into account the scan parameters (horizontal or vertical plane)
+        '''
+        self.integrated_magnetic_value = self.all_coeffs[1, self.coefficient_index[self.scan_plane][3]]
+        self.magnetic_length = self.all_coeffs[1, self.coefficient_index[self.scan_plane][3]] / self.all_coeffs[1, self.coefficient_index[self.scan_plane][1]]
+        self.offset = (self.all_coeffs[0, self.coefficient_index[self.scan_plane][3]] / self.all_coeffs[1, self.coefficient_index[self.scan_plane][3]] * 10, self.all_coeffs[0, self.coefficient_index[self.scan_plane][2]] / self.all_coeffs[1, self.coefficient_index[self.scan_plane][3]] * 10)
     
     def create_figs(self):
         self.fig_p1 = plt.figure(figsize=(11, 8.5))
@@ -262,13 +315,13 @@ class PlotDashboard:
 
     def generate_2d_plot_323(self):
         self.plot_323.plot(self.scan_integrals[:, 0], self.scan_integrals[:, self.integrals_index['By']], marker='.', label='By Integrals')
-        self.plot_323.set_xlabel('x axis [cm]')
+        self.plot_323.set_xlabel(f'{self.plot_axis} axis [cm]')
         self.plot_323.set_ylabel('By [G$\cdot$cm]')
         self.plot_323.grid()
         
     def generate_2d_plot_324(self):
         self.plot_324.plot(self.scan_integrals[:, 0], self.scan_integrals[:, self.integrals_index['Bx']], marker='.', label='Bx Integrals')
-        self.plot_324.set_xlabel('x axis [cm]')
+        self.plot_324.set_xlabel(f'{self.plot_axis} axis [cm]')
         self.plot_324.set_ylabel('Bx [G$\cdot$cm]')
         self.plot_324.grid()
     
@@ -281,9 +334,15 @@ class PlotDashboard:
 
     def generate_text_info(self):
         # Generate text information
-        info = '\n'.join((f'Integrated Quadrupole: {self.integrated_magnetic_value:.1f} G',
-                          f'Magnetic Length: {self.magnetic_length:.3f} cm',
-                          f'Offset: $\Delta$x: {self.offset[0]:.3f} mm $\Delta$y: {self.offset[1]:.3f} mm'))
+        if self.scan_plane == 'zx':
+            info = '\n'.join((f'Integrated Field: {self.integrated_magnetic_value:.1f} G',
+                            f'Magnetic Length: {self.magnetic_length:.3f} cm',
+                            f'Offset: $\Delta$x: {self.offset[0]:.3f} mm $\Delta$y: {self.offset[1]:.3f} mm'))
+        elif self.scan_plane == 'yz':
+            info = '\n'.join((f'Integrated Field: {self.integrated_magnetic_value:.1f} G',
+                            f'Magnetic Length: {self.magnetic_length:.3f} cm',
+                            f'Offset: $\Delta$x: {self.offset[1]:.3f} mm $\Delta$y: {self.offset[0]:.3f} mm'))
+        
         self.fig_p2.text(0.6, 0.25, info, verticalalignment='top', bbox=self.bbox_props)
 
     def show_plots(self):
