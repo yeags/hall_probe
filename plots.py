@@ -42,42 +42,42 @@ class PlotWindow(tk.Toplevel):
         self.create_widgets()
     
     def create_widgets(self):
-        self.lbl_scan_plane = ttk.Label(self.frm_plotwindow, text='Scan Plane')
-        self.lbl_plot_axis = ttk.Label(self.frm_plotwindow, text='Plot Axis')
-        self.lbl_int_from = ttk.Label(self.frm_plotwindow, text='Integrate From [mm]')
-        self.lbl_int_to = ttk.Label(self.frm_plotwindow, text='To [mm]')
-        self.lbl_scan_direction = ttk.Label(self.frm_plotwindow, text='Scan Direction')
-        self.lbl_scan_spacing = ttk.Label(self.frm_plotwindow, text='Scan Spacing [mm]')
+        # self.lbl_scan_plane = ttk.Label(self.frm_plotwindow, text='Scan Plane')
+        # self.lbl_plot_axis = ttk.Label(self.frm_plotwindow, text='Plot Axis')
+        # self.lbl_int_from = ttk.Label(self.frm_plotwindow, text='Integrate From [mm]')
+        # self.lbl_int_to = ttk.Label(self.frm_plotwindow, text='To [mm]')
+        # self.lbl_scan_direction = ttk.Label(self.frm_plotwindow, text='Scan Direction')
+        # self.lbl_scan_spacing = ttk.Label(self.frm_plotwindow, text='Scan Spacing [mm]')
         
-        self.cbox_scan_plane = ttk.Combobox(self.frm_plotwindow, values=['xy', 'yz', 'zx'], width=6)
-        self.cbox_scan_plane.current(2)
-        self.cbox_plot_axis = ttk.Combobox(self.frm_plotwindow, values=['x', 'y', 'z'], width=6)
-        self.cbox_plot_axis.current(0)
-        self.cbox_scan_direction = ttk.Combobox(self.frm_plotwindow, values=['x', 'y', 'z'], width=6)
-        self.cbox_scan_direction.current(2)
-        self.cbox_scan_spacing = ttk.Combobox(self.frm_plotwindow, values=['0.1', '0.25', '0.5', '1.0', '2.0'], width=6)
-        self.cbox_scan_spacing.current(3)
+        # self.cbox_scan_plane = ttk.Combobox(self.frm_plotwindow, values=['xy', 'yz', 'zx'], width=6)
+        # self.cbox_scan_plane.current(2)
+        # self.cbox_plot_axis = ttk.Combobox(self.frm_plotwindow, values=['x', 'y', 'z'], width=6)
+        # self.cbox_plot_axis.current(0)
+        # self.cbox_scan_direction = ttk.Combobox(self.frm_plotwindow, values=['x', 'y', 'z'], width=6)
+        # self.cbox_scan_direction.current(2)
+        # self.cbox_scan_spacing = ttk.Combobox(self.frm_plotwindow, values=['0.1', '0.25', '0.5', '1.0', '2.0'], width=6)
+        # self.cbox_scan_spacing.current(3)
 
-        self.ent_int_from = ttk.Entry(self.frm_plotwindow, width=6)
-        self.ent_int_from.insert(0, '-11')
-        self.ent_int_to = ttk.Entry(self.frm_plotwindow, width=6)
-        self.ent_int_to.insert(0, '11')
+        # self.ent_int_from = ttk.Entry(self.frm_plotwindow, width=6)
+        # self.ent_int_from.insert(0, '-11')
+        # self.ent_int_to = ttk.Entry(self.frm_plotwindow, width=6)
+        # self.ent_int_to.insert(0, '11')
 
         self.btn_load_data = ttk.Button(self.frm_plotwindow, text='Load Data', command=self.load_data)
         self.btn_plot = ttk.Button(self.frm_plotwindow, text='Plot Data', command=self.generate_plots, state=tk.DISABLED)
         # place widgets
-        self.lbl_scan_plane.grid(row=0, column=0, sticky='e')
-        self.lbl_plot_axis.grid(row=1, column=0, sticky='e')
-        self.lbl_int_from.grid(row=2, column=0, sticky='e')
-        self.lbl_int_to.grid(row=2, column=2, sticky='e')
-        self.lbl_scan_direction.grid(row=3, column=0, sticky='e')
-        self.lbl_scan_spacing.grid(row=4, column=0, sticky='e')
-        self.cbox_scan_plane.grid(row=0, column=1, sticky='w', padx=5, pady=5)
-        self.cbox_plot_axis.grid(row=1, column=1, sticky='w', padx=5, pady=5)
-        self.ent_int_from.grid(row=2, column=1, sticky='w', padx=5, pady=5)
-        self.ent_int_to.grid(row=2, column=3, sticky='w', padx=5, pady=5)
-        self.cbox_scan_direction.grid(row=3, column=1, sticky='w', padx=5, pady=5)
-        self.cbox_scan_spacing.grid(row=4, column=1, sticky='w', padx=5, pady=5)
+        # self.lbl_scan_plane.grid(row=0, column=0, sticky='e')
+        # self.lbl_plot_axis.grid(row=1, column=0, sticky='e')
+        # self.lbl_int_from.grid(row=2, column=0, sticky='e')
+        # self.lbl_int_to.grid(row=2, column=2, sticky='e')
+        # self.lbl_scan_direction.grid(row=3, column=0, sticky='e')
+        # self.lbl_scan_spacing.grid(row=4, column=0, sticky='e')
+        # self.cbox_scan_plane.grid(row=0, column=1, sticky='w', padx=5, pady=5)
+        # self.cbox_plot_axis.grid(row=1, column=1, sticky='w', padx=5, pady=5)
+        # self.ent_int_from.grid(row=2, column=1, sticky='w', padx=5, pady=5)
+        # self.ent_int_to.grid(row=2, column=3, sticky='w', padx=5, pady=5)
+        # self.cbox_scan_direction.grid(row=3, column=1, sticky='w', padx=5, pady=5)
+        # self.cbox_scan_spacing.grid(row=4, column=1, sticky='w', padx=5, pady=5)
         self.btn_load_data.grid(row=5, column=0, padx=5, pady=5)
         self.btn_plot.grid(row=5, column=1, padx=5, pady=5)
 
@@ -90,17 +90,17 @@ class PlotWindow(tk.Toplevel):
         self.data[:, 3:] *= 10
         self.btn_plot.config(state=tk.NORMAL)
     
-    def get_inputs(self):
-        scan_plane = self.cbox_scan_plane.get()
-        plot_axis = self.cbox_plot_axis.get()
-        scan_direction = self.cbox_scan_direction.get()
-        scan_spacing = float(self.cbox_scan_spacing.get())
-        int_from_to = (float(self.ent_int_from.get()), float(self.ent_int_to.get()))
-        return scan_plane, plot_axis, int_from_to, scan_direction, scan_spacing
+    # def get_inputs(self):
+    #     scan_plane = self.cbox_scan_plane.get()
+    #     plot_axis = self.cbox_plot_axis.get()
+    #     scan_direction = self.cbox_scan_direction.get()
+    #     scan_spacing = float(self.cbox_scan_spacing.get())
+    #     int_from_to = (float(self.ent_int_from.get()), float(self.ent_int_to.get()))
+    #     return scan_plane, plot_axis, int_from_to, scan_direction, scan_spacing
     
     def generate_plots(self):
         # Get data from comboboxes
-        self.get_inputs()
+        # self.get_inputs()
         # Create dashboard instance and pass arguments
         self.plot_dashboard = PlotDashboard(self.data, self.filepath)
         self.plot_dashboard.save_plots()
@@ -333,9 +333,15 @@ class PlotDashboard:
 
     def generate_text_info(self):
         # Generate text information
-        info = '\n'.join((f'Integrated Quadrupole: {self.integrated_magnetic_value:.1f} G',
-                          f'Magnetic Length: {self.magnetic_length:.3f} cm',
-                          f'Offset: $\Delta$x: {self.offset[0]:.3f} mm $\Delta$y: {self.offset[1]:.3f} mm'))
+        if self.scan_plane == 'zx':
+            info = '\n'.join((f'Integrated Field: {self.integrated_magnetic_value:.1f} G',
+                            f'Magnetic Length: {self.magnetic_length:.3f} cm',
+                            f'Offset: $\Delta$x: {self.offset[0]:.3f} mm $\Delta$y: {self.offset[1]:.3f} mm'))
+        elif self.scan_plane == 'yz':
+            info = '\n'.join((f'Integrated Field: {self.integrated_magnetic_value:.1f} G',
+                            f'Magnetic Length: {self.magnetic_length:.3f} cm',
+                            f'Offset: $\Delta$x: {self.offset[1]:.3f} mm $\Delta$y: {self.offset[0]:.3f} mm'))
+        
         self.fig_p2.text(0.6, 0.25, info, verticalalignment='top', bbox=self.bbox_props)
 
     def show_plots(self):
