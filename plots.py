@@ -38,6 +38,7 @@ class PlotWindow(tk.Toplevel):
         super().__init__(parent)
         self.title = 'Plotting Parameters'
         self.frm_plotwindow = ttk.Frame(self)
+        self.geometry('320x240')
         self.frm_plotwindow.pack()
         self.create_widgets()
     
