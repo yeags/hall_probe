@@ -190,7 +190,13 @@ class PlotDashboard:
         taking into account the scan parameters (horizontal or vertical plane)
         '''
         self.integrated_magnetic_value = self.all_coeffs[1, self.coefficient_index[self.scan_plane][3]]
-        self.magnetic_length = self.all_coeffs[1, self.coefficient_index[self.scan_plane][3]] / self.all_coeffs[1, self.coefficient_index[self.scan_plane][1]]
+        self.quadrupole_magnetic_length = self.all_coeffs[1, self.coefficient_index[self.scan_plane][3]] / self.all_coeffs[1, self.coefficient_index[self.scan_plane][1]]
+        dml_numerator = self.scan_integrals[(self.scan_integrals[:, 0] > -self.scan_spacing / 2) & (self.scan_integrals[:, 0] < self.scan_spacing / 2)]
+        dml_denominator = self.data_at_z[(self.data_at_z[:, 0] > -self.scan_spacing / 2) & (self.data_at_z[:, 0] < self.scan_spacing / 2)]
+        self.dipole_magnetic_length = dml_numerator[0][2] / dml_denominator[0][4]
+        # print(f'dml_numerator shape: {self.dml_numerator.shape}\ndml_denominator shape: {self.dml_denominator.shape}')
+        # print(f'dml_numerator: {self.dml_numerator}\ndml_denominator: {self.dml_denominator}')
+        print(f'dml: {self.dipole_magnetic_length:.3f} cm')
         self.offset = (self.all_coeffs[0, self.coefficient_index[self.scan_plane][3]] / self.all_coeffs[1, self.coefficient_index[self.scan_plane][3]] * 10, self.all_coeffs[0, self.coefficient_index[self.scan_plane][2]] / self.all_coeffs[1, self.coefficient_index[self.scan_plane][3]] * 10)
     
     def create_figs(self):
@@ -336,11 +342,12 @@ class PlotDashboard:
         # Generate text information
         if self.scan_plane == 'zx':
             info = '\n'.join((f'Integrated Field: {self.integrated_magnetic_value:.1f} G',
-                            f'Magnetic Length: {self.magnetic_length:.3f} cm',
+                            f'Quadrupole Magnetic Length: {self.quadrupole_magnetic_length:.3f} cm',
+                            f'Dipole Magnetic Length: {self.dipole_magnetic_length:.3f} cm',
                             f'Offset: $\Delta$x: {self.offset[0]:.3f} mm $\Delta$y: {self.offset[1]:.3f} mm'))
         elif self.scan_plane == 'yz':
             info = '\n'.join((f'Integrated Field: {self.integrated_magnetic_value:.1f} G',
-                            f'Magnetic Length: {self.magnetic_length:.3f} cm',
+                            f'Magnetic Length: {self.quadrupole_magnetic_length:.3f} cm',
                             f'Offset: $\Delta$x: {self.offset[1]:.3f} mm $\Delta$y: {self.offset[0]:.3f} mm'))
         
         self.fig_p2.text(0.6, 0.25, info, verticalalignment='top', bbox=self.bbox_props)
