@@ -171,7 +171,7 @@ class PlotDashboard:
     def create_subplots(self):
         # 3D plots - Page 1
         self.abs_3d = self.fig_p1.add_subplot(221, projection='3d')
-        self.abs_3d.set_title('Absolute value')
+        self.abs_3d.set_title('Absolute Magnitude')
         self.abs_3d.set_xlabel(self.plane_index[self.scan_plane][2])
         self.abs_3d.set_ylabel(self.plane_index[self.scan_plane][3])
         self.abs_3d.set_zlabel('B [G]')
@@ -196,9 +196,9 @@ class PlotDashboard:
         self.plot_322 = self.fig_p2.add_subplot(322)
         self.plot_322.set_title('Bx')
         self.plot_323 = self.fig_p2.add_subplot(323)
-        self.plot_323.set_title('By Integrals')
+        self.plot_323.set_title('$\int$By')
         self.plot_324 = self.fig_p2.add_subplot(324)
-        self.plot_324.set_title('Bx Integrals')
+        self.plot_324.set_title('$\int$Bx')
         # Table
         self.coeffs_table = self.fig_p2.add_subplot(325)
         self.coeffs_table.axis('tight')
