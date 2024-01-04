@@ -46,10 +46,11 @@ class FSV:
         diff = dpf_polyfit - dnf_polyfit
         print(f'diff: {diff}')
         print(f'diff[1]: {diff[1]}')
+        roots = np.roots(diff)
         if diff[1] == complex:
-            offset = np.roots(diff)[1].real
+            offset = roots[(roots > np.min(roots)) & (roots < np.max(roots))].real
         else:
-            offset = np.roots(diff)[1]
+            offset = roots[(roots > np.min(roots)) & (roots < np.max(roots))]
         return offset
 
     def import_fsv_alignment(self, filename: str):
