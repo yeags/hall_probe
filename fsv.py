@@ -44,8 +44,8 @@ class FSV:
         dpf_polyfit = np.polyfit(data_pos[:, 0][dpf_min_index:dpf_max_index], dpf[dpf_min_index:dpf_max_index], 3)
         dnf_polyfit = np.polyfit(data_neg[:, 0][dnf_min_index:dnf_max_index], dnf[dnf_min_index:dnf_max_index], 3)
         diff = dpf_polyfit - dnf_polyfit
-        print(f'diff: {diff}')
-        print(f'diff[1]: {diff[1]}')
+        # print(f'diff: {diff}')
+        # print(f'diff[1]: {diff[1]}')
         roots = np.roots(diff)
         if diff[1] == complex:
             offset = roots[(roots > np.min(roots)) & (roots < np.max(roots))].real
@@ -163,7 +163,7 @@ class FSV:
         self.z_offset_fsv = data_pn_offset + self.TRACE_Z_OFFSET
 
     def save_probe_offset(self):
-        offset_mcs = np.array([self.x_offset_fsv, self.y_offset_fsv, self.z_offset_fsv])@self.rotation
+        offset_mcs = np.array([self.x_offset_fsv, self.y_offset_fsv, self.z_offset_fsv]).reshape((3,))@self.rotation
         with open('fsv_offset.txt', 'w') as file:
             file.write(f'{offset_mcs[0]} {offset_mcs[1]} {offset_mcs[2]}\n')
 
