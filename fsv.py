@@ -110,6 +110,9 @@ class FSV:
         # Combine CMM and hallsensor data into one array
         combined_p = np.insert(data_p, 0, x_p, axis=1) # (x, Bx, By, Bz)
         combined_n = np.insert(data_n, 0, x_n, axis=1) # (x, Bx, By, Bz)
+        # save data to file
+        np.savetxt('fsv_x_pos.txt', combined_p, delimiter=' ', fmt='%.3f')
+        np.savetxt('fsv_x_neg.txt', combined_n, delimiter=' ', fmt='%.3f')
         data_pn_offset = self.calc_offset(combined_p[:, [0, 3]], combined_n[:, [0, 3]])
         self.x_offset_fsv = data_pn_offset - (self.TRACE_THK/2 + self.GLAZE_THK)
 
@@ -129,6 +132,9 @@ class FSV:
         y_n = np.linspace(start_n[1], end_n[1], data_n.shape[0])
         combined_p = np.insert(data_p, 0, y_p, axis=1) # (y, Bx, By, Bz)
         combined_n = np.insert(data_n, 0, y_n, axis=1) # (y, Bx, By, Bz)
+        # Save data to file
+        np.savetxt('fsv_y_pos.txt', combined_p, delimiter=' ', fmt='%.3f')
+        np.savetxt('fsv_y_neg.txt', combined_n, delimiter=' ', fmt='%.3f')
         data_pn_offset = self.calc_offset(combined_p[:, [0, 3]], combined_n[:, [0, 3]])
         self.y_offset_fsv = data_pn_offset - (self.TRACE_THK/2 + self.GLAZE_THK)
 
@@ -149,6 +155,9 @@ class FSV:
         z_n = np.linspace(start_n[2], end_n[2], data_n.shape[0])
         combined_p = np.insert(data_p, 0, z_p, axis=1) # (z, Bx, By, Bz)
         combined_n = np.insert(data_n, 0, z_n, axis=1) # (z, Bx, By, Bz)
+        # Save data to file
+        np.savetxt('fsv_z_pos.txt', combined_p, delimiter=' ', fmt='%.3f')
+        np.savetxt('fsv_z_neg.txt', combined_n, delimiter=' ', fmt='%.3f')
         data_pn_offset = self.calc_offset(combined_p[:, [0, 1]], combined_n[:, [0, 1]])
         self.z_offset_fsv = data_pn_offset + self.TRACE_Z_OFFSET
 
