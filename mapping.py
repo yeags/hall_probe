@@ -156,7 +156,8 @@ class MapFrames(tk.Frame):
             showerror(title='Entry Error', message='Entries should be integer or float values.')
         else:
             data = self.hp.scan_line(*line_args)
-            data_xyz_pcs = np.array([self.hp.mcs2pcs(i) for i in data[:, :3]])
+            # data_xyz_pcs = np.array([self.hp.mcs2pcs(i) for i in data[:, :3]])
+            data_xyz_pcs = self.hp.mcs2pcs(data[:, :3])
             data_raw = np.hstack((data_xyz_pcs, data[:, 3:]))
             np.savetxt('line_data_raw_Bxyz.txt', data_raw, delimiter=' ', fmt='%.3f')
             for i, sample in enumerate(data):
@@ -185,12 +186,17 @@ class MapFrames(tk.Frame):
             # Reshape array to shape (m*n, 6)
             data_2d = data.reshape((data.shape[0]*data.shape[1], data.shape[2]))
             filtered_array_2d = filtered_array.reshape((filtered_array.shape[0]*filtered_array.shape[1], filtered_array.shape[2]))
-            for i, point in enumerate(filtered_array_2d):
-                filtered_array_2d[i, :3] = self.hp.mcs2pcs(point[:3])
-                filtered_array_2d[i, 3:] = point[3:]@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
-            for i, point in enumerate(data_2d):
-                data_2d[i, :3] = self.hp.mcs2pcs(point[:3])
-                data_2d[i, 3:] = point[3:]@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
+            # for i, point in enumerate(filtered_array_2d):
+            #     filtered_array_2d[i, :3] = self.hp.mcs2pcs(point[:3])
+            #     filtered_array_2d[i, 3:] = point[3:]@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
+            # for i, point in enumerate(data_2d):
+            #     data_2d[i, :3] = self.hp.mcs2pcs(point[:3])
+            #     data_2d[i, 3:] = point[3:]@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
+            # Removed for loops for performance boost
+            filtered_array_2d[:, :3] = self.hp.mcs2pcs(filtered_array_2d[:, :3])
+            filtered_array_2d[:, 3:] = filtered_array_2d[:, 3:]@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
+            data_2d[:, :3] = self.hp.mcs2pcs(data_2d[:, :3])
+            data_2d[:, 3:] = data_2d[:, 3:]@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
             np.savetxt(mag_folder + filename, data_2d, delimiter=' ', fmt='%.3f')
             np.savetxt(mag_folder + f'{magname}-{serial} area full res lines.txt', filtered_array_2d, delimiter=' ', fmt='%.3f')
 
