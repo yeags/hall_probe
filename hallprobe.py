@@ -1,5 +1,6 @@
 from nicdaq import HallDAQ
 import zeisscmm
+import os
 import numpy as np
 from time import sleep, perf_counter
 from calibration import calib_data, remove_outliers, average_sample, filter_data
@@ -158,6 +159,13 @@ class HallProbe(HallDAQ):
             return self.reduce_scan_density(filt_array, scan_interval=point_density)
 
     def scan_area(self, start_array, allocated_array, pt_density, num_samples, scan_direction):
+        in_process_fn = 'area_in-process.txt'
+        # Check to see if in-process file exists.  If so, increment filename.
+        if in_process_fn in os.listdir():
+            i = 1
+            while f'{in_process_fn[:-4]}_{i}.txt' in os.listdir():
+                i += 1
+            in_process_fn = f'{in_process_fn[:-4]}_{i}.txt'
         filt_cutoff = 500
         filt_allocated_array = allocated_array[:, filt_cutoff:-filt_cutoff, :]
         print(f'alloc array: {allocated_array.shape}')
@@ -186,6 +194,9 @@ class HallProbe(HallDAQ):
                 Bxyz[:, column] = filt_column
             filt_array = np.hstack((linear, Bxyz))
             filt_array = filt_array[filt_cutoff:-filt_cutoff]
+            # Append filtered scan line data to file
+            with open(in_process_fn, 'a') as in_process_file:
+                np.savetxt(in_process_file, filt_array, fmt='%.6f', delimiter=' ')
             filt_allocated_array[i] = filt_array
         self.cmm.send('G01X0Y0Z0\r\n'.encode('ascii'))
         self.cmm.set_speed((70,70,70))
