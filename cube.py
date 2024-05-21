@@ -99,16 +99,20 @@ class CubeWindow(tk.Toplevel):
             self.cube = Cube(self.cube_filename, self.calib_array, 'fsv_offset.txt')
             self.manual_position = self.cube.mcs2cube(self.cube.cmm.get_position())
             # self.probe_offset_cube = self.cube.probe_offset@self.cube.rotation
-            self.cube_origin_fsv_offset = self.cube.cube2mcs(np.zeros((3,))) + self.cube.probe_offset
+            self.cube_origin_fsv_offset = self.cube.cube2mcs(np.zeros((3,))) + self.cube.probe_offset # cube origin wrt mcs + fsv offset wrt mcs
         if self.click_index < 12:
             self.cube.cmm.cnc_on()
             self.cube.cmm.set_speed((5,5,5))
+            print(f'moving to: {self.cube_origin_fsv_offset}')
             self.cube.cmm.goto_position(self.cube_origin_fsv_offset)
-            while np.linalg.norm(self.cube_origin_fsv_offset - (self.cube.cmm.get_position() + self.cube.probe_offset)) > 0.025:
-                pass
+            print('beginning while loop')
+            while np.linalg.norm(self.cube_origin_fsv_offset - self.cube.cmm.get_position()) > 0.040:
+                print(f'distance to target: {np.linalg.norm(self.cube_origin_fsv_offset - self.cube.cmm.get_position())}')
+                sleep(0.1)
+            print('while loop ended')
             self.cube.measure(self.keys[self.click_index])
             self.cube.cmm.set_speed((20,20,20))
-            self.cube.cmm.goto_position(self.cube_origin_fsv_offset + self.cube.cube2mcs(np.array([0, 0, 85])))
+            self.cube.cmm.goto_position(self.cube.cube2mcs(np.array([0, 0, 85])) + self.cube.probe_offset)
             self.cube.cmm.set_speed((70,70,70))
             self.cube.cmm.cnc_off()
             if self.click_index == 11:
