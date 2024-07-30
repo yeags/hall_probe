@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import RBFInterpolator
 from scipy.integrate import simps
 
-def interpolate_grid(filename, ds=0.0005):
+def interpolate_grid(data, ds=0.0005):
     '''
     Read hall probe data from file, create a uniform grid,
     and generate interpolated field values on the grid.
@@ -11,7 +11,7 @@ def interpolate_grid(filename, ds=0.0005):
             ds step (in meters)
     Output: (interpolation object, grid data, x mesh, z mesh, B field grid)
     '''
-    xyzB = np.genfromtxt(filename)
+    xyzB = data
     xyzB /= 1000 # convert to SI units (m and T)
     hp_interp = RBFInterpolator(xyzB[:, :3], xyzB[:, 3:], kernel='thin_plate_spline')
     xyz_min = np.min(xyzB[:, :3], axis=0)

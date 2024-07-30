@@ -6,6 +6,7 @@ from tkinter import ttk
 from tkinter import filedialog
 import os
 import pickle
+import beamcalc as bc
 np.set_printoptions(suppress=True)
 
 def integrate_lines_from_area(data: np.ndarray, scan_plane: str, scan_direction: str, scan_spacing: float):
@@ -37,34 +38,90 @@ class PlotWindow(tk.Toplevel):
     def __init__(self, parent):
         super().__init__(parent)
         self.title = 'Plotting Parameters'
-        self.frm_plotwindow = ttk.Frame(self)
-        self.geometry('320x240')
-        self.frm_plotwindow.pack()
+        self.frm_quad_plot = ttk.LabelFrame(self, text='Quadrupole Plotting')
+        self.frm_dipole_plot = ttk.LabelFrame(self, text='Dipole Plotting')
+        self.geometry('520x300')
+        self.frm_quad_plot.grid(row=0, column=0, sticky='nsew', padx=5, pady=5)
+        self.frm_dipole_plot.grid(row=1, column=0, sticky='nsew', padx=5, pady=5)
         self.create_widgets()
     
     def create_widgets(self):
-        self.btn_load_data = ttk.Button(self.frm_plotwindow, text='Load Data', command=self.load_data)
-        self.btn_plot = ttk.Button(self.frm_plotwindow, text='Plot Data', command=self.generate_plots, state=tk.DISABLED)
+        self.btn_quad_load_data = ttk.Button(self.frm_quad_plot, text='Load Data',
+                                             command=self.load_data)
+        self.btn_quad_plot = ttk.Button(self.frm_quad_plot, text='Plot Data',
+                                        command=self.generate_plots, state=tk.DISABLED)
+        self.btn_dipole_load_data = ttk.Button(self.frm_dipole_plot, text='Load Data',
+                                               command=lambda: self.load_data(convert_to_gauss=False))
+        self.btn_dipole_plot = ttk.Button(self.frm_dipole_plot, text='Plot Data',
+                                          command=lambda: self.generate_plots(mag_type='dipole'), state=tk.DISABLED)
+        self.lbl_dp_x_pos = ttk.Label(self.frm_dipole_plot, text='X Position (mm)', justify=tk.RIGHT)
+        self.ent_dp_x_pos = ttk.Entry(self.frm_dipole_plot, width=6)
+        self.lbl_dp_y_pos = ttk.Label(self.frm_dipole_plot, text='Y Position (mm)', justify=tk.RIGHT)
+        self.ent_dp_y_pos = ttk.Entry(self.frm_dipole_plot, width=6)
+        self.lbl_dp_z_pos = ttk.Label(self.frm_dipole_plot, text='Z Position (mm)', justify=tk.RIGHT)
+        self.ent_dp_z_pos = ttk.Entry(self.frm_dipole_plot, width=6)
+        self.lbl_dp_z_max = ttk.Label(self.frm_dipole_plot, text='Z Max Position (mm)', justify=tk.RIGHT)
+        self.ent_dp_z_max = ttk.Entry(self.frm_dipole_plot, width=6)
+        self.lbl_dp_angle = ttk.Label(self.frm_dipole_plot, text='Bend Angle (degrees)', justify=tk.RIGHT)
+        self.ent_dp_angle = ttk.Entry(self.frm_dipole_plot, width=6)
+        self.lbl_dp_x_min = ttk.Label(self.frm_dipole_plot, text='X Min (mm)', justify=tk.RIGHT)
+        self.ent_dp_x_min = ttk.Entry(self.frm_dipole_plot, width=6)
+        self.lbl_dp_x_max = ttk.Label(self.frm_dipole_plot, text='X Max (mm)', justify=tk.RIGHT)
+        self.ent_dp_x_max = ttk.Entry(self.frm_dipole_plot, width=6)
+        self.lbl_dp_b_rho = ttk.Label(self.frm_dipole_plot, text='Beam Rigidity (T-m)', justify=tk.RIGHT)
+        self.ent_dp_b_rho = ttk.Entry(self.frm_dipole_plot, width=6)
+        self.lbl_dp_z_step = ttk.Label(self.frm_dipole_plot, text='Z Step (mm)', justify=tk.RIGHT)
+        self.ent_dp_z_step = ttk.Entry(self.frm_dipole_plot, width=6)
         # place widgets
-        self.btn_load_data.grid(row=5, column=0, padx=5, pady=5)
-        self.btn_plot.grid(row=5, column=1, padx=5, pady=5)
+        self.btn_quad_load_data.grid(row=5, column=0, padx=5, pady=5)
+        self.btn_quad_plot.grid(row=5, column=1, padx=5, pady=5)
+        self.btn_dipole_load_data.grid(row=5, column=0, padx=5, pady=5)
+        self.btn_dipole_plot.grid(row=5, column=2, padx=5, pady=5)
+        self.lbl_dp_x_pos.grid(row=0, column=0, padx=5, pady=5, sticky='e')
+        self.ent_dp_x_pos.grid(row=0, column=1, padx=5, pady=5, sticky='w')
+        self.lbl_dp_y_pos.grid(row=1, column=0, padx=5, pady=5, sticky='e')
+        self.ent_dp_y_pos.grid(row=1, column=1, padx=5, pady=5, sticky='w')
+        self.lbl_dp_z_pos.grid(row=2, column=0, padx=5, pady=5, sticky='e')
+        self.ent_dp_z_pos.grid(row=2, column=1, padx=5, pady=5, sticky='w')
+        self.lbl_dp_z_max.grid(row=3, column=0, padx=5, pady=5, sticky='e')
+        self.ent_dp_z_max.grid(row=3, column=1, padx=5, pady=5, sticky='w')
+        self.lbl_dp_angle.grid(row=4, column=0, padx=5, pady=5, sticky='e')
+        self.ent_dp_angle.grid(row=4, column=1, padx=5, pady=5, sticky='w')
+        self.lbl_dp_x_min.grid(row=0, column=2, padx=5, pady=5, sticky='e')
+        self.ent_dp_x_min.grid(row=0, column=3, padx=5, pady=5, sticky='w')
+        self.lbl_dp_x_max.grid(row=0, column=4, padx=5, pady=5, sticky='e')
+        self.ent_dp_x_max.grid(row=0, column=5, padx=5, pady=5, sticky='w')
+        self.lbl_dp_z_step.grid(row=2, column=2, padx=5, pady=5, sticky='e')
+        self.ent_dp_z_step.grid(row=2, column=3, padx=5, pady=5, sticky='w')
+        self.lbl_dp_b_rho.grid(row=1, column=2, padx=5, pady=5, sticky='e')
+        self.ent_dp_b_rho.grid(row=1, column=3, padx=5, pady=5, sticky='w')
+        self.ent_dp_angle.insert(0, '10')
+        self.ent_dp_z_step.insert(0, '0.5')
 
-    def load_data(self):
-        filename = filedialog.askopenfilename(initialdir='./scans/', title='Select Data File', filetypes=(('Text Files', '*.txt'), ('All Files', '*.*')))
+    def load_data(self, convert_to_gauss=True):
+        filename = filedialog.askopenfilename(initialdir='./scans/', title='Select Data File',
+                                              filetypes=(('Text Files', '*.txt'), ('All Files', '*.*')))
         self.data = np.genfromtxt(filename)
         self.filepath = os.path.dirname(filename)
-        # Convert mm to cm and mT to G
-        self.data[:, :3] /= 10
-        self.data[:, 3:] *= 10
-        self.btn_plot.config(state=tk.NORMAL)
+        print(f'filename: {filename}\nfilepath: {self.filepath}')
+        if convert_to_gauss:
+            # Convert mm to cm and mT to G
+            self.data[:, :3] /= 10
+            self.data[:, 3:] *= 10
+            self.btn_quad_plot.config(state=tk.NORMAL)
+        else:
+            self.btn_dipole_plot.config(state=tk.NORMAL)
     
-    def generate_plots(self):
-        # Create dashboard instance and pass arguments
-        self.plot_dashboard = PlotDashboard(self.data, self.filepath)
-        self.plot_dashboard.save_plots()
-        self.plot_dashboard.show_plots()
+    def generate_plots(self, mag_type='quadrupole'):
+        if mag_type == 'quadrupole'.lower():
+            # Create dashboard instance and pass arguments
+            self.plot_dashboard = QuadPlotDashboard(self.data, self.filepath)
+            self.plot_dashboard.save_plots()
+            self.plot_dashboard.show_plots()
+        elif mag_type == 'dipole'.lower():
+            self.dipole_plot_dashboard = DipolePlotDashboard(self.data, self.filepath)
 
-class PlotDashboard:
+class QuadPlotDashboard:
     plane_index = {'xy': (0, 1, 'x axis [cm]', 'y axis[cm]'),
                    'yz': (1, 2, 'y axis [cm]', 'z axis [cm]'),
                    'zx': (2, 0, 'z axis [cm]', 'x axis [cm]')}
@@ -320,6 +377,22 @@ class PlotDashboard:
 
     def show_plots(self):
         plt.show()
+
+class DipolePlotDashboard:
+    def __init__(self, data, filepath):
+        self.data = data
+        self.filepath = filepath
+        self.process_data()
+        self.create_plots()
+    
+    def process_data(self):
+        self.hp_interp, self.xyzB_grid, self.x_mesh, self.z_mesh, self.B_grid = bc.interpolate_grid(self.data)
+
+    def create_plots(self):
+        print(f'filepath: {self.filepath}')
+        bc.plot_field_map(self.x_mesh, self.z_mesh, self.B_grid,
+                          save_file=self.filepath + '/Figure 1 colormap.pdf', show_plot=False)
+        
 
 if __name__ == '__main__':
     root = tk.Tk()
