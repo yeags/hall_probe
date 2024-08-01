@@ -147,13 +147,13 @@ def __plot_traj_diff__(start_positions, dtetas, fit_dteta, xc, save_file=None, s
     if show_plot:
         plt.show()
 
-def find_optimal_start(hp_data_interp, xyzB_grid, Teta_in, x_min, x_max, ds, HR, save_plot=False, show_plot=True):
+def find_optimal_start(hp_data_interp, xyzB_grid, Teta_in, x_min, x_max, z_min, z_max, ds, HR, save_plot=False, show_plot=True):
     trajectories = []
     xy_primes = []
     start_positions = np.arange(x_min, x_max + ds, ds)
     print(f'start_positions shape = {start_positions.shape}')
     for start in start_positions:
-        traj, xy_prime = beam_traj(hp_data_interp, xyzB_grid, start, Teta_in, 0, 0, -.246, .246, ds, HR)
+        traj, xy_prime = beam_traj(hp_data_interp, xyzB_grid, start, Teta_in, 0, 0, z_min, z_max, ds, HR)
         trajectories.append(traj)
         xy_primes.append(xy_prime)
     trajectories = np.array(trajectories)
@@ -162,7 +162,7 @@ def find_optimal_start(hp_data_interp, xyzB_grid, Teta_in, x_min, x_max, ds, HR,
     print(f'dtetas shape = {dtetas[:, 0].shape}')
     fit_dteta = np.polyfit(start_positions, dtetas[:, 0], 1)
     xc = np.roots(fit_dteta)[0]
-    opt_traj, opt_xy_prime = beam_traj(hp_data_interp, xyzB_grid, xc, Teta_in, 0, 0, -.246, .246, ds, HR)
+    opt_traj, opt_xy_prime = beam_traj(hp_data_interp, xyzB_grid, xc, Teta_in, 0, 0, z_min, z_max, ds, HR)
     if save_plot:
         plot_trajectory(trajectories, xy_primes, save_file='trajectories.pdf', show_plot=False)
         plot_trajectory(opt_traj, opt_xy_prime, save_file='optimal_trajectory.pdf', show_plot=False)
