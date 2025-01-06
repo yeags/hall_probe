@@ -6,6 +6,7 @@ from time import sleep
 import tkinter as tk
 from tkinter import filedialog, ttk
 from PIL import Image, ImageTk
+from datetime import datetime
 
 class Cube:
     def __init__(self, cube_alignment_filename: str,\
@@ -112,7 +113,8 @@ class CubeWindow(tk.Toplevel):
             print('while loop ended')
             self.cube.measure(self.keys[self.click_index])
             self.cube.cmm.set_speed((20,20,20))
-            self.cube.cmm.goto_position(self.cube.cube2mcs(np.array([0, 0, 85])) + self.cube.probe_offset)
+            #ErWa self.cube.cmm.goto_position(self.cube.cube2mcs(np.array([0, 0, 85])) + self.cube.probe_offset)
+            self.cube.cmm.goto_position(self.cube.cube2mcs(np.array([0, 0, -85])) + self.cube.probe_offset)
             self.cube.cmm.set_speed((70,70,70))
             self.cube.cmm.cnc_off()
             if self.click_index == 11:
@@ -122,10 +124,17 @@ class CubeWindow(tk.Toplevel):
                 field_cube_angle = 0.7 # deg
                 cube_temp = self.cube.cmm.get_workpiece_temp()
                 calib_magnitude_matrix = np.identity(3) * (nominal_flux_density + magnetic_temp_coeff * (cube_temp - calib_temp))*np.cos(np.deg2rad(field_cube_angle))
+                now = datetime.now()
+                now_str = now.strftime('%Y-%m-%d %H-%M-%S')
+                np.save(f'b_magnitude backup {now_str}.npy', calib_magnitude_matrix, allow_pickle=False)
                 print(f'cube center data:\n{self.cube.cube_dict.values()}')
                 avg_cube_meas = orthogonalize(np.array([i for i in self.cube.cube_dict.values()]))
+                np.save(f'avg_vec_columns back {now_str}.npy', avg_cube_meas, allow_pickle=False)
                 s_matrix_mcs = np.linalg.inv(avg_cube_meas)@calib_magnitude_matrix@self.cube.rotation
                 np.save('sensitivity.npy', s_matrix_mcs, allow_pickle=False)
+                np.save(f'sensitivity.npy backup {now_str}', s_matrix_mcs, allow_pickle=False)
+                # save cube alignment
+                np.save(f'cube_align backup {now_str}.npy', self.cube.rotation, allow_pickle=False)
                 self.lbl_img_desc.configure(text='Cube qualification complete.  Window can now be closed.')
                 self.btn_measure_cube_center.configure(state='disabled')
             self.click_index += 1

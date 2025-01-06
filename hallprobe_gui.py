@@ -128,6 +128,7 @@ class MagnetInformation(ttk.LabelFrame):
         # create subdirectory for magnet info if it doesn't exist
         mag_folder = f'scans/{magname}-{serial}'
         if not os.path.exists(mag_folder):
+            print('Creating scan folder')
             os.makedirs(mag_folder)
         if magname and serial and current:
             with open('magnet_info.pkl', 'wb') as f:

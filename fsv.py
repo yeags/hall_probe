@@ -7,6 +7,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 from tkinter import ttk
 from PIL import Image, ImageTk
+from datetime import datetime
 
 class FSV:
     CERAMIC_THK = 1.0
@@ -21,13 +22,13 @@ class FSV:
         self.rotation, self.translation = self.import_fsv_alignment(fsv_filename)
         self.calibration_coeffs = probe_calibration_array
     
-    def calc_offset(self, data_pos: np.ndarray, data_neg: np.ndarray, filter_cutoff=500, fit_lc=175):
+    def calc_offset(self, data_pos: np.ndarray, data_neg: np.ndarray, filter_cutoff=500, fit_lc=125):
         '''
         data_pos: (n, 2) array of sample data (ex. [x, bz])
         data_neg: (n, 2) array of sample data (current reversed)
         filter_cutoff: integer value used for smoothing raw sensor data,
             default set to 500
-        fit_lc: extra samples to cut off for better linear fit
+        fit_lc: extra samples to cut off for better linear fit default set to 175
         returns: offset value for the respective CMM axis
         '''
         # Filter hallsensor data
@@ -41,16 +42,23 @@ class FSV:
         dpf_max_index = np.where(dpf_cutoff == dpf_cutoff.max())[0][0] + filter_cutoff - fit_lc
         dnf_min_index = np.where(dnf_cutoff == dnf_cutoff.min())[0][0] + filter_cutoff + fit_lc
         dnf_max_index = np.where(dnf_cutoff == dnf_cutoff.max())[0][0] + filter_cutoff - fit_lc
-        dpf_polyfit = np.polyfit(data_pos[:, 0][dpf_min_index:dpf_max_index], dpf[dpf_min_index:dpf_max_index], 3)
-        dnf_polyfit = np.polyfit(data_neg[:, 0][dnf_min_index:dnf_max_index], dnf[dnf_min_index:dnf_max_index], 3)
+        try:
+            dpf_polyfit = np.polyfit(data_pos[:, 0][dpf_min_index:dpf_max_index], dpf[dpf_min_index:dpf_max_index], 3)
+            dnf_polyfit = np.polyfit(data_neg[:, 0][dnf_min_index:dnf_max_index], dnf[dnf_min_index:dnf_max_index], 3)
+        except TypeError:
+            dpf_polyfit = np.polyfit(data_pos[:, 0][dpf_max_index:dpf_min_index], dpf[dpf_max_index:dpf_min_index], 3)
+            dnf_polyfit = np.polyfit(data_neg[:, 0][dnf_max_index:dnf_min_index], dnf[dnf_max_index:dnf_min_index], 3)
+        
         diff = dpf_polyfit - dnf_polyfit
         # print(f'diff: {diff}')
         # print(f'diff[1]: {diff[1]}')
         roots = np.roots(diff)
+        print(f'roots: {roots}')
         if diff[1] == complex:
             offset = roots[(roots > np.min(roots)) & (roots < np.max(roots))].real
         else:
             offset = roots[(roots > np.min(roots)) & (roots < np.max(roots))]
+        print(f'offset: {offset}')
         return offset
 
     def import_fsv_alignment(self, filename: str):
@@ -116,6 +124,7 @@ class FSV:
         np.savetxt('fsv_x_neg.txt', combined_n, delimiter=' ', fmt='%.3f')
         data_pn_offset = self.calc_offset(combined_p[:, [0, 3]], combined_n[:, [0, 3]])
         self.x_offset_fsv = data_pn_offset - (self.TRACE_THK/2 + self.GLAZE_THK)
+        print(f'x offset: {self.x_offset_fsv}')
 
     def run_y_routine(self):
         half_length = np.array([0, 20, 0])
@@ -138,6 +147,7 @@ class FSV:
         np.savetxt('fsv_y_neg.txt', combined_n, delimiter=' ', fmt='%.3f')
         data_pn_offset = self.calc_offset(combined_p[:, [0, 3]], combined_n[:, [0, 3]])
         self.y_offset_fsv = data_pn_offset - (self.TRACE_THK/2 + self.GLAZE_THK)
+        print(f'y offset: {self.y_offset_fsv}')
 
     def run_z_routine(self):
         half_length = np.array([0, 0, 20])
@@ -161,10 +171,15 @@ class FSV:
         np.savetxt('fsv_z_neg.txt', combined_n, delimiter=' ', fmt='%.3f')
         data_pn_offset = self.calc_offset(combined_p[:, [0, 1]], combined_n[:, [0, 1]])
         self.z_offset_fsv = data_pn_offset + self.TRACE_Z_OFFSET
+        print(f'z offset: {self.z_offset_fsv}')
 
     def save_probe_offset(self):
         offset_mcs = np.array([self.x_offset_fsv, self.y_offset_fsv, self.z_offset_fsv]).reshape((3,))@self.rotation
+        now = datetime.now()
+        now_str = now.strftime('%Y-%m-%d %H-%M-%S')
         with open('fsv_offset.txt', 'w') as file:
+            file.write(f'{offset_mcs[0]} {offset_mcs[1]} {offset_mcs[2]}\n')
+        with open(f'fsv_offset backup {now_str}.txt', 'w') as file:
             file.write(f'{offset_mcs[0]} {offset_mcs[1]} {offset_mcs[2]}\n')
 
     def shutdown(self):

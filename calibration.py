@@ -149,7 +149,8 @@ def orthogonalize(cube_data: np.ndarray):
     # e_hat2 = v2/cubefield
     # e_hat3 = v3/cubefield
     # S = np.array([e_hat1, e_hat2, e_hat3])
-    S = np.array([v1, v2, v3])
+    #S = np.array([v1, v2, v3]).T
+    S = np.array([v1, v2, v3]) #ErWa 2024-08-21. The matrix should not be transposed
     return S
 
 def remove_outliers(sensor_data, stdev=2, iterations=1):

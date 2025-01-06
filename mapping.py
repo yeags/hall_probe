@@ -85,6 +85,7 @@ class MapFrames(tk.Frame):
             sd_y = float(self.ent_sa_sd_y.get())
             sd_z = float(self.ent_sa_sd_z.get())
             pd = float(self.cbox_sa_pd.get())
+            print(f'sp_x: {sp_x}')
             scan_plane = self.cbox_sa_scan_plane.get()
             scan_direction = self.cbox_sa_scan_direction.get()
             start_point = np.array([sp_x, sp_y, sp_z])
@@ -135,7 +136,9 @@ class MapFrames(tk.Frame):
             with open(mag_folder + magname + '-' + serial + ' points Bxyz raw.txt', 'a') as raw_file:
                 raw_file.write(f'{xyz_Bxyz[0]} {xyz_Bxyz[1]} {xyz_Bxyz[2]} {xyz_Bxyz[3]} {xyz_Bxyz[4]} {xyz_Bxyz[5]}\n')
             # Transform Bxyz to PCS
-            xyz_Bxyz[3:] = xyz_Bxyz[3:]@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
+            #xyz_Bxyz[3:] = xyz_Bxyz[3:] @ self.hp.s_matrix @ self.hp.rotation
+            corr=np.array([[1, 0, 0], [0, 1, -0.00], [0, 0, 1]]) # Overhearing value found on ABEND-35 on date 2024-08-21.
+            xyz_Bxyz[3:] = xyz_Bxyz[3:] @ self.hp.s_matrix @ self.hp.rotation @ corr
             # Print xyz and Bxyz wrt PCS
             print(f'x {xyz_Bxyz[0]} y {xyz_Bxyz[1]} z {xyz_Bxyz[2]} Bx {xyz_Bxyz[3]} By {xyz_Bxyz[4]} Bz {xyz_Bxyz[5]}')
             # Save xyz and Bxyz values wrt PCS
@@ -161,7 +164,9 @@ class MapFrames(tk.Frame):
             np.savetxt('line_data_raw_Bxyz.txt', data_raw, delimiter=' ', fmt='%.3f')
             for i, sample in enumerate(data):
                 data[i, :3] = self.hp.mcs2pcs(data[i, :3])
-                data[i, 3:] = data[i, 3:]@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
+                #data[i, 3:] = data[i, 3:] @ self.hp.s_matrix @ self.hp.rotation
+                corr=np.array([[1, 0, 0], [0, 1, -0.00], [0, 0, 1]]) # Overhearing value found on ABEND-35 on date 2024-08-21.
+                data[i, 3:] = data[i, 3:] @ self.hp.s_matrix @ self.hp.rotation @ corr
             np.save(mag_folder + f'{magname}-{serial} line.npy', data, allow_pickle=False)
             np.savetxt(mag_folder + filename, data, delimiter=' ', fmt='%.3f')
 
@@ -187,10 +192,12 @@ class MapFrames(tk.Frame):
             filtered_array_2d = filtered_array.reshape((filtered_array.shape[0]*filtered_array.shape[1], filtered_array.shape[2]))
             for i, point in enumerate(filtered_array_2d):
                 filtered_array_2d[i, :3] = self.hp.mcs2pcs(point[:3])
-                filtered_array_2d[i, 3:] = point[3:]@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
+                filtered_array_2d[i, 3:] = point[3:] @ self.hp.s_matrix @ self.hp.rotation
             for i, point in enumerate(data_2d):
                 data_2d[i, :3] = self.hp.mcs2pcs(point[:3])
-                data_2d[i, 3:] = point[3:]@self.hp.s_matrix@np.linalg.inv(self.hp.rotation)
+                #dat   a_2d[i, 3:] = point[3:] @ self.hp.s_matrix @ self.hp.rotation
+                corr=np.array([[1, 0, 0], [0, 1, -0.00], [0, 0, 1]]) # Overhearing value found on ABEND-35 on date 2024-08-21.
+                data_2d[i, 3:] = point[3:] @ self.hp.s_matrix @ self.hp.rotation @ corr
             np.savetxt(mag_folder + filename, data_2d, delimiter=' ', fmt='%.3f')
             np.savetxt(mag_folder + f'{magname}-{serial} area full res lines.txt', filtered_array_2d, delimiter=' ', fmt='%.3f')
 
@@ -319,7 +326,7 @@ class MapFrames(tk.Frame):
         self.ent_sa_sd_z.grid(column=5, row=3, padx=(5,10), sticky='w')
         self.lbl_sa_pd.grid(column=0, row=4, columnspan=2, pady=(10,5), sticky='e')
         self.cbox_sa_pd.grid(column=2, row=4, columnspan=2, padx=5, pady=(10,5), sticky='w')
-        self.cbox_sa_pd.set('0.5')
+        self.cbox_sa_pd.set('1.0')
         self.lbl_sa_scan_plane.grid(column=0, row=5, columnspan=2, pady=(0,5), sticky='e')
         self.cbox_sa_scan_plane.grid(column=2, row=5, columnspan=2, padx=5, pady=(0,5), sticky='w')
         self.cbox_sa_scan_plane.set('xy')

@@ -121,7 +121,6 @@ class HallProbe(HallDAQ):
         distance = np.linalg.norm(end_point - start_point)
         travel_time = distance / self.scan_speed
         samples = ((travel_time * self.sample_rate) - self.sample_rate).round(0).astype(int)
-        # speed_direction_vector = 5 * np.abs((end_point - start_point) / np.linalg.norm((end_point - start_point)))
         speed_direction_vector = 5 * (end_point - start_point) / np.linalg.norm((end_point - start_point))
         print(f'speed vector: {speed_direction_vector}')
         self.change_sampling(1, samples)
@@ -129,7 +128,7 @@ class HallProbe(HallDAQ):
         self.cmm.set_speed((20,20,20))
         self.cmm.goto_position(start_point)
         while np.linalg.norm(start_point - self.cmm.get_position()) > 0.025:
-            pass
+            sleep(0.05)
         self.power_on()
         self.start_hallsensor_task()
         sleep(1)
