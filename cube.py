@@ -113,8 +113,7 @@ class CubeWindow(tk.Toplevel):
             print('while loop ended')
             self.cube.measure(self.keys[self.click_index])
             self.cube.cmm.set_speed((20,20,20))
-            #ErWa self.cube.cmm.goto_position(self.cube.cube2mcs(np.array([0, 0, 85])) + self.cube.probe_offset)
-            self.cube.cmm.goto_position(self.cube.cube2mcs(np.array([0, 0, -85])) + self.cube.probe_offset)
+            self.cube.cmm.goto_position(self.cube.cube2mcs(np.array([0, 0, 85])) + self.cube.probe_offset)
             self.cube.cmm.set_speed((70,70,70))
             self.cube.cmm.cnc_off()
             if self.click_index == 11:
