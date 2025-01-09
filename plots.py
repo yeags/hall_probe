@@ -6,6 +6,8 @@ from tkinter import ttk
 from tkinter import filedialog
 import os
 import pickle
+import beamcalc as bc
+import scipy.constants as const
 np.set_printoptions(suppress=True)
 
 def integrate_lines_from_area(data: np.ndarray, scan_plane: str, scan_direction: str, scan_spacing: float):
@@ -37,34 +39,104 @@ class PlotWindow(tk.Toplevel):
     def __init__(self, parent):
         super().__init__(parent)
         self.title = 'Plotting Parameters'
-        self.frm_plotwindow = ttk.Frame(self)
-        self.geometry('320x240')
-        self.frm_plotwindow.pack()
+        self.frm_quad_plot = ttk.LabelFrame(self, text='Quadrupole Plotting')
+        self.frm_dipole_plot = ttk.LabelFrame(self, text='Dipole Plotting')
+        self.geometry('520x300')
+        self.frm_quad_plot.grid(row=0, column=0, sticky='nsew', padx=5, pady=5)
+        self.frm_dipole_plot.grid(row=1, column=0, sticky='nsew', padx=5, pady=5)
         self.create_widgets()
     
     def create_widgets(self):
-        self.btn_load_data = ttk.Button(self.frm_plotwindow, text='Load Data', command=self.load_data)
-        self.btn_plot = ttk.Button(self.frm_plotwindow, text='Plot Data', command=self.generate_plots, state=tk.DISABLED)
+        self.btn_quad_load_data = ttk.Button(self.frm_quad_plot, text='Load Data',
+                                             command=self.load_data)
+        self.btn_quad_plot = ttk.Button(self.frm_quad_plot, text='Plot Data',
+                                        command=self.generate_plots, state=tk.DISABLED)
+        self.btn_dipole_load_data = ttk.Button(self.frm_dipole_plot, text='Load Data',
+                                               command=lambda: self.load_data(convert_to_gauss=False))
+        self.btn_dipole_plot = ttk.Button(self.frm_dipole_plot, text='Plot Data',
+                                          command=lambda: self.generate_plots(mag_type='dipole'), state=tk.DISABLED)
+        self.lbl_dp_x_pos = ttk.Label(self.frm_dipole_plot, text='X Position (mm)', justify=tk.RIGHT)
+        self.ent_dp_x_pos = ttk.Entry(self.frm_dipole_plot, width=6)
+        self.lbl_dp_y_pos = ttk.Label(self.frm_dipole_plot, text='Y Position (mm)', justify=tk.RIGHT)
+        self.ent_dp_y_pos = ttk.Entry(self.frm_dipole_plot, width=6)
+        self.lbl_dp_z_pos = ttk.Label(self.frm_dipole_plot, text='Z Position (mm)', justify=tk.RIGHT)
+        self.ent_dp_z_pos = ttk.Entry(self.frm_dipole_plot, width=6)
+        self.lbl_dp_z_max = ttk.Label(self.frm_dipole_plot, text='Z Max Position (mm)', justify=tk.RIGHT)
+        self.ent_dp_z_max = ttk.Entry(self.frm_dipole_plot, width=6)
+        self.lbl_dp_angle = ttk.Label(self.frm_dipole_plot, text='Bend Angle (deg)', justify=tk.RIGHT)
+        self.ent_dp_angle = ttk.Entry(self.frm_dipole_plot, width=6)
+        self.lbl_dp_x_min = ttk.Label(self.frm_dipole_plot, text='X Min (mm)', justify=tk.RIGHT)
+        self.ent_dp_x_min = ttk.Entry(self.frm_dipole_plot, width=6)
+        self.lbl_dp_x_max = ttk.Label(self.frm_dipole_plot, text='X Max (mm)', justify=tk.RIGHT)
+        self.ent_dp_x_max = ttk.Entry(self.frm_dipole_plot, width=6)
+        self.lbl_dp_b_rho = ttk.Label(self.frm_dipole_plot, text='Beam Rigidity (T-m)', justify=tk.RIGHT)
+        self.ent_dp_b_rho = ttk.Entry(self.frm_dipole_plot, width=6)
+        self.lbl_dp_z_step = ttk.Label(self.frm_dipole_plot, text='Z Step (mm)', justify=tk.RIGHT)
+        self.ent_dp_z_step = ttk.Entry(self.frm_dipole_plot, width=6)
         # place widgets
-        self.btn_load_data.grid(row=5, column=0, padx=5, pady=5)
-        self.btn_plot.grid(row=5, column=1, padx=5, pady=5)
+        self.btn_quad_load_data.grid(row=5, column=0, padx=5, pady=5)
+        self.btn_quad_plot.grid(row=5, column=1, padx=5, pady=5)
+        self.btn_dipole_load_data.grid(row=5, column=0, padx=5, pady=5)
+        self.btn_dipole_plot.grid(row=5, column=2, padx=5, pady=5)
+        self.lbl_dp_x_pos.grid(row=0, column=0, padx=5, pady=5, sticky='e')
+        self.ent_dp_x_pos.grid(row=0, column=1, padx=5, pady=5, sticky='w')
+        self.lbl_dp_y_pos.grid(row=1, column=0, padx=5, pady=5, sticky='e')
+        self.ent_dp_y_pos.grid(row=1, column=1, padx=5, pady=5, sticky='w')
+        self.lbl_dp_z_pos.grid(row=2, column=0, padx=5, pady=5, sticky='e')
+        self.ent_dp_z_pos.grid(row=2, column=1, padx=5, pady=5, sticky='w')
+        self.lbl_dp_z_max.grid(row=3, column=0, padx=5, pady=5, sticky='e')
+        self.ent_dp_z_max.grid(row=3, column=1, padx=5, pady=5, sticky='w')
+        self.lbl_dp_angle.grid(row=4, column=0, padx=5, pady=5, sticky='e')
+        self.ent_dp_angle.grid(row=4, column=1, padx=5, pady=5, sticky='w')
+        self.lbl_dp_x_min.grid(row=0, column=2, padx=5, pady=5, sticky='e')
+        self.ent_dp_x_min.grid(row=0, column=3, padx=5, pady=5, sticky='w')
+        self.lbl_dp_x_max.grid(row=0, column=4, padx=5, pady=5, sticky='e')
+        self.ent_dp_x_max.grid(row=0, column=5, padx=5, pady=5, sticky='w')
+        self.lbl_dp_z_step.grid(row=2, column=2, padx=5, pady=5, sticky='e')
+        self.ent_dp_z_step.grid(row=2, column=3, padx=5, pady=5, sticky='w')
+        self.lbl_dp_b_rho.grid(row=1, column=2, padx=5, pady=5, sticky='e')
+        self.ent_dp_b_rho.grid(row=1, column=3, padx=5, pady=5, sticky='w')
+        self.ent_dp_angle.insert(0, '10')
+        self.ent_dp_z_step.insert(0, '0.5')
+        self.ent_dp_b_rho.insert(0, str(2.0 * 1e9 / const.c))
 
-    def load_data(self):
-        filename = filedialog.askopenfilename(initialdir='./scans/', title='Select Data File', filetypes=(('Text Files', '*.txt'), ('All Files', '*.*')))
+    def load_data(self, convert_to_gauss=True):
+        filename = filedialog.askopenfilename(initialdir='./scans/', title='Select Data File',
+                                              filetypes=(('Text Files', '*.txt'), ('All Files', '*.*')))
         self.data = np.genfromtxt(filename)
         self.filepath = os.path.dirname(filename)
-        # Convert mm to cm and mT to G
-        self.data[:, :3] /= 10
-        self.data[:, 3:] *= 10
-        self.btn_plot.config(state=tk.NORMAL)
+        print(f'filename: {filename}\nfilepath: {self.filepath}')
+        if convert_to_gauss:
+            # Convert mm to cm and mT to G
+            self.data[:, :3] /= 10
+            self.data[:, 3:] *= 10
+            self.btn_quad_plot.config(state=tk.NORMAL)
+        else:
+            self.btn_dipole_plot.config(state=tk.NORMAL)
     
-    def generate_plots(self):
-        # Create dashboard instance and pass arguments
-        self.plot_dashboard = PlotDashboard(self.data, self.filepath)
-        self.plot_dashboard.save_plots()
-        self.plot_dashboard.show_plots()
+    def generate_plots(self, mag_type='quadrupole'):
+        if mag_type == 'quadrupole'.lower():
+            # Create dashboard instance and pass arguments
+            self.plot_dashboard = QuadPlotDashboard(self.data, self.filepath)
+            self.plot_dashboard.save_plots()
+            self.plot_dashboard.show_plots()
+        elif mag_type == 'dipole'.lower():
+            # Get dipole plotting parameters and validate input
+            try:
+                x_pos = float(self.ent_dp_x_pos.get())
+                y_pos = float(self.ent_dp_y_pos.get())
+                z_pos = float(self.ent_dp_z_pos.get())
+                z_max = float(self.ent_dp_z_max.get())
+                angle = float(self.ent_dp_angle.get())
+                x_min = float(self.ent_dp_x_min.get())
+                x_max = float(self.ent_dp_x_max.get())
+                b_rho = float(self.ent_dp_b_rho.get())
+                z_step = float(self.ent_dp_z_step.get())
+                self.dipole_plot_dashboard = DipolePlotDashboard(self.data, self.filepath, x_pos, y_pos, z_pos, z_max, angle, x_min, x_max, b_rho, z_step)
+            except ValueError:
+                tk.messagebox.showerror('Invalid Input', 'Please enter valid numbers')
 
-class PlotDashboard:
+class QuadPlotDashboard:
     plane_index = {'xy': (0, 1, 'x axis [cm]', 'y axis[cm]'),
                    'yz': (1, 2, 'y axis [cm]', 'z axis [cm]'),
                    'zx': (2, 0, 'z axis [cm]', 'x axis [cm]')}
@@ -167,6 +239,8 @@ class PlotDashboard:
         # Save plots as pdf docs
         self.fig_p1.savefig(self.filepath + '/3d_plots.pdf')
         self.fig_p2.savefig(self.filepath + '/2d_plots.pdf')
+        self.fig_p1.savefig(self.filepath + '/3d_plots.png')
+        self.fig_p2.savefig(self.filepath + '/2d_plots.png')
     
     def create_subplots(self):
         # 3D plots - Page 1
@@ -176,25 +250,25 @@ class PlotDashboard:
         self.abs_3d.set_ylabel(self.plane_index[self.scan_plane][3])
         self.abs_3d.set_zlabel('B [G]')
         self.bx_3d = self.fig_p1.add_subplot(222, projection='3d')
-        self.bx_3d.set_title('Bx')
+        self.bx_3d.set_title('$B_x$')
         self.bx_3d.set_xlabel(self.plane_index[self.scan_plane][2])
         self.bx_3d.set_ylabel(self.plane_index[self.scan_plane][3])
-        self.bx_3d.set_zlabel('Bx [G]')
+        self.bx_3d.set_zlabel('$B_x$ [G]')
         self.by_3d = self.fig_p1.add_subplot(223, projection='3d')
-        self.by_3d.set_title('By')
+        self.by_3d.set_title('$B_y$')
         self.by_3d.set_xlabel(self.plane_index[self.scan_plane][2])
         self.by_3d.set_ylabel(self.plane_index[self.scan_plane][3])
-        self.by_3d.set_zlabel('By [G]')
+        self.by_3d.set_zlabel('$B_y$ [G]')
         self.bz_3d = self.fig_p1.add_subplot(224, projection='3d')
-        self.bz_3d.set_title('Bz')
+        self.bz_3d.set_title('$B_z$')
         self.bz_3d.set_xlabel(self.plane_index[self.scan_plane][2])
         self.bz_3d.set_ylabel(self.plane_index[self.scan_plane][3])
-        self.bz_3d.set_zlabel('Bz [G]')
+        self.bz_3d.set_zlabel('$B_z$ [G]')
         # 2D plots - Page 2
         self.plot_321 = self.fig_p2.add_subplot(321)
-        self.plot_321.set_title('By')
+        self.plot_321.set_title('$B_y$')
         self.plot_322 = self.fig_p2.add_subplot(322)
-        self.plot_322.set_title('Bx')
+        self.plot_322.set_title('$B_x$')
         self.plot_323 = self.fig_p2.add_subplot(323)
         self.plot_323.set_title('$\int$By')
         self.plot_324 = self.fig_p2.add_subplot(324)
@@ -320,6 +394,31 @@ class PlotDashboard:
 
     def show_plots(self):
         plt.show()
+
+class DipolePlotDashboard:
+    def __init__(self, data, filepath, *args):
+        self.data = data
+        self.filepath = filepath
+        self.x_pos = args[0]
+        self.y_pos = args[1]
+        self.z_pos = args[2]
+        self.z_max = args[3]
+        self.angle = args[4]
+        self.x_min = args[5]
+        self.x_max = args[6]
+        self.b_rho = args[7]
+        self.z_step = args[8]
+        self.process_data()
+        self.create_plots()
+    
+    def process_data(self):
+        self.hp_interp, self.xyzB_grid, self.x_mesh, self.z_mesh, self.B_grid = bc.interpolate_grid(self.data)
+
+    def create_plots(self):
+        print(f'filepath: {self.filepath}')
+        bc.plot_field_map(self.x_mesh, self.z_mesh, self.B_grid,
+                          save_file=self.filepath + '/Figure 1 colormap.pdf', show_plot=False)
+        
 
 if __name__ == '__main__':
     root = tk.Tk()
