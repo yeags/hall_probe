@@ -129,7 +129,12 @@ class CubeWindow(tk.Toplevel):
                 print(f'cube center data:\n{self.cube.cube_dict.values()}')
                 avg_cube_meas = orthogonalize(np.array([i for i in self.cube.cube_dict.values()]))
                 np.save(f'avg_vec_columns back {now_str}.npy', avg_cube_meas, allow_pickle=False)
-                s_matrix_mcs = np.linalg.inv(avg_cube_meas)@calib_magnitude_matrix@self.cube.rotation
+                # s_matrix_mcs = np.linalg.inv(avg_cube_meas)@calib_magnitude_matrix@self.cube.rotation
+                # Finding transformation matrix T
+                # T * avg_cube_meas = calib_magnitude_matrix
+                T, _, _, _ = np.linalg.lstsq(avg_cube_meas.T, calib_magnitude_matrix.T, rcond=None)
+                T = T.T
+                s_matrix_mcs = np.linalg.inv(self.cube.rotation) @ T
                 np.save('sensitivity.npy', s_matrix_mcs, allow_pickle=False)
                 np.save(f'sensitivity.npy backup {now_str}', s_matrix_mcs, allow_pickle=False)
                 # save cube alignment
