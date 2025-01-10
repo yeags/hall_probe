@@ -3,19 +3,20 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import RBFInterpolator
 from scipy.integrate import simps
 
-def interpolate_grid(data, ds=0.0005, n=1):
+def interpolate_grid(filename, ds=0.0005, neighbors=12, downsample_factor=1, dtype=np.float32):
     '''
     Read hall probe data from file, create a uniform grid,
     and generate interpolated field values on the grid.
     Input:  filename (file path to hall probe data)
             ds step (in meters)
-            n (downsampling factor)
+            n (downsample factor)
+            dtype (data type)
     Output: (interpolation object, grid data, x mesh, z mesh, B field grid)
     '''
-    xyzB = data
+    xyzB = np.genfromtxt(filename, dtype=dtype)
     xyzB /= 1000 # convert to SI units (m and T)
-    xyzB = xyzB[::n] # downsample data
-    hp_interp = RBFInterpolator(xyzB[:, :3], xyzB[:, 3:], kernel='thin_plate_spline')
+    xyzB = xyzB[::downsample_factor] # downsample data
+    hp_interp = RBFInterpolator(xyzB[:, [0, 2]], xyzB[:, 3:], neighbors=neighbors, kernel='cubic')
     xyz_min = np.min(xyzB[:, :3], axis=0)
     xyz_max = np.max(xyzB[:, :3], axis=0)
     x = np.arange(xyz_min[0], xyz_max[0], ds)
@@ -24,7 +25,7 @@ def interpolate_grid(data, ds=0.0005, n=1):
     for i, x_value in enumerate(x):
         for j, z_value in enumerate(z):
             xyzB_grid[i*len(z) + j] = [x_value, 0, z_value, 0, 0, 0]
-    xyzB_grid[:, 3:] = hp_interp(xyzB_grid[:, :3])
+    xyzB_grid[:, 3:] = hp_interp(xyzB_grid[:, [0, 2]])
     x_mesh, z_mesh = np.meshgrid(x, z)
     Bx = np.zeros_like(x_mesh)
     By = np.zeros_like(x_mesh)
@@ -83,7 +84,8 @@ def beam_traj(hp_interp, xyzB, xb, xb_prime, yb, yb_prime, zb, zb_max, ds, hr):
     xp[0] = xb_prime
     yp[0] = yb_prime
     for i, z_step in enumerate(xyzB_traj):
-        xyzB_traj[i, 3:] = hp_interp(z_step[:3].reshape((1,3)))
+        # xyzB_traj[i, 3:] = hp_interp(z_step[:3].reshape((1,3)))
+        xyzB_traj[i, 3:] = hp_interp(z_step[[0, 2]].reshape((1,2)))
         if i < len(z) - 1:
             xyzB_traj[i+1, 0] = xyzB_traj[i, 0] + ds * xp[i]
             xyzB_traj[i+1, 1] = xyzB_traj[i, 1] + ds * yp[i]
@@ -132,7 +134,7 @@ def plot_trajectory(xyzB_traj, xy_prime, save_file=None, show_plot=True):
     if show_plot:
         plt.show()
 
-def __plot_traj_diff__(start_positions, dtetas, fit_dteta, xc, save_file=None, show_plot=True):
+def plot_traj_diff(start_positions, dtetas, fit_dteta, xc, save_file=None, show_plot=True):
     fig, ax = plt.subplots(figsize=(11, 8.5))
     ax.scatter(start_positions, dtetas[:, 0], marker='o', label='data')
     ax.plot(start_positions, np.polyval(fit_dteta, start_positions), 'r--', label='fit')
@@ -143,7 +145,7 @@ def __plot_traj_diff__(start_positions, dtetas, fit_dteta, xc, save_file=None, s
     ax.legend()
     plt.tight_layout()
     if save_file:
-        plt.savefig(save_file, format='pdf', dpi=300)
+        plt.savefig(save_file + '.pdf', format='pdf', dpi=300)
     if show_plot:
         plt.show()
 
@@ -166,11 +168,11 @@ def find_optimal_start(hp_data_interp, xyzB_grid, Teta_in, x_min, x_max, z_min, 
     if save_plot:
         plot_trajectory(trajectories, xy_primes, save_file='trajectories.pdf', show_plot=False)
         plot_trajectory(opt_traj, opt_xy_prime, save_file='optimal_trajectory.pdf', show_plot=False)
-        __plot_traj_diff__(start_positions, dtetas, fit_dteta, xc)
-    if show_plot:
+        plot_traj_diff(start_positions, dtetas, fit_dteta, xc, save_file='dteta_fit')
+    elif show_plot:
         plot_trajectory(trajectories, xy_primes)
         plot_trajectory(opt_traj, opt_xy_prime)
-        __plot_traj_diff__(start_positions, dtetas, fit_dteta, xc)
+        plot_traj_diff(start_positions, dtetas, fit_dteta, xc)
         plt.show()
     return opt_traj, opt_xy_prime, xc
 
@@ -183,7 +185,8 @@ def field_on_traj(optimal_traj, opt_xy_prime, hp_interp, delta=0.0005):
     for i, z_step in enumerate(optimal_traj):
         xh = z_step[0] + dx * np.cos(opt_xy_prime[i][0])
         zh = z_step[2] - dx * np.sin(opt_xy_prime[i][0])
-        B_all[i] = hp_interp(np.stack((xh, yh, zh), axis=-1))
+        # B_all[i] = hp_interp(np.stack((xh, yh, zh), axis=-1))
+        B_all[i] = hp_interp(np.stack((xh, zh), axis=-1))
     for j, B_dx in enumerate(B_all):
         b_pf[j] = np.polyfit(dx, B_dx[:, 1], 5)
         a_pf[j] = np.polyfit(dx, B_dx[:, 0], 5)
@@ -194,7 +197,7 @@ def field_on_traj(optimal_traj, opt_xy_prime, hp_interp, delta=0.0005):
 def plot_coeffs(z, b_coeffs, a_coeffs, int_b_coeffs, int_a_coeffs, save_file=None, show_plot=True):
     fig1, ax1 = plt.subplots(nrows=2, ncols=1, figsize=(11, 8.5), sharex=True)
     ax1[0].set_title(f'$\\int B1 =$ {int_b_coeffs[-1]:.5f} $T \\cdot m$ ; $\\int A1 =$ {int_a_coeffs[-1]:.5f} $T \\cdot m$')
-    ax1[1].set_title(f'$\\int B2 =$ {int_b_coeffs[-2]:.5f} ; $\\int A2 =$ {int_a_coeffs[-2]:.5f}')
+    ax1[1].set_title(f'$\\int B2 =$ {int_b_coeffs[-2]:.5f} $T \\cdot m / m$; $\\int A2 =$ {int_a_coeffs[-2]:.5f} $T \\cdot m / m$')
     ax1[0].plot(z, b_coeffs[:, -1], label='$B_y$ [B1]')
     ax1[0].plot(z, a_coeffs[:, -1] * 100, label='$B_x$*100 [A1]')
     ax1[1].plot(z, b_coeffs[:, -2], label='$\\frac{\\delta B_y}{\\delta x}$ [B2]')
@@ -247,4 +250,16 @@ def plot_coeffs(z, b_coeffs, a_coeffs, int_b_coeffs, int_a_coeffs, save_file=Non
         plt.show()
 
 if __name__ == '__main__':
-    pass
+    # Show use of functions on data from ABEND-35
+    filename = 'ABEND-35.txt'
+    eb = 2.0 # beam energy in GeV
+    c = 299792458 # speed of light in m/s
+    HR = eb * 1e9 / c
+    Teta_nom = -10 * np.pi / 180
+    Teta_in = -Teta_nom / 2
+    ds = 0.0005
+    hp_interp, xyzB_grid, x_mesh, z_mesh, B_grid = interpolate_grid(filename, ds=ds, neighbors=12, downsample_factor=1)
+    plot_field_map(x_mesh, z_mesh, B_grid, save_file='field_map.pdf')
+    optimal_traj, optimal_xy_prime, xc = find_optimal_start(hp_interp, xyzB_grid, Teta_in, -0.028, -0.023, -0.54, 0.54, ds, HR)
+    b_pf, a_pf, int_b_pf, int_a_pf = field_on_traj(optimal_traj, optimal_xy_prime, hp_interp)
+    plot_coeffs(optimal_traj[:, 2], b_pf, a_pf, int_b_pf, int_a_pf, save_file='multipoles')
